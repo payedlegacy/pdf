@@ -461,13 +461,15 @@
 
                 <!-- TOOLBAR: COMPRESS -->
                 <div id="toolbar-compress" class="hidden bg-amber-50 border-b border-amber-100 p-4 flex flex-wrap items-center gap-4 text-xs">
-                    <label class="font-extrabold text-amber-900" data-i18n="lbl_quality">Kualiti Mampatan:</label>
-                    <input type="range" id="compress-quality" min="10" max="90" value="50" oninput="document.getElementById('compress-val').innerText = this.value + '%'" class="w-48 accent-amber-500">
-                    <span class="text-amber-800 font-bold">Kualiti Semasa: <span id="compress-val">50%</span></span>
+                    <label class="font-extrabold text-amber-900" data-i18n="lbl_quality">Tahap Mampatan:</label>
+                    <input type="range" id="compress-quality" min="10" max="90" value="45" oninput="updateCompressInfo()" class="w-44 accent-amber-500">
+                    <span class="text-amber-800 font-bold" id="compress-val">Sederhana</span>
                     <div class="flex gap-2 ml-auto">
-                        <button onclick="document.getElementById('compress-quality').value=25; document.getElementById('compress-val').innerText='25%'" class="px-2 py-1 bg-white border border-amber-200 rounded font-bold text-amber-800">Tinggi (~70%)</button>
-                        <button onclick="document.getElementById('compress-quality').value=50; document.getElementById('compress-val').innerText='50%'" class="px-2 py-1 bg-white border border-amber-200 rounded font-bold text-amber-800">Sederhana</button>
+                        <button onclick="setCompressPreset(20)" class="px-2 py-1 bg-white border border-amber-200 rounded font-bold text-amber-800">Kecil (fail minimum)</button>
+                        <button onclick="setCompressPreset(45)" class="px-2 py-1 bg-white border border-amber-200 rounded font-bold text-amber-800">Sederhana (disyorkan)</button>
+                        <button onclick="setCompressPreset(75)" class="px-2 py-1 bg-white border border-amber-200 rounded font-bold text-amber-800">Tinggi (kualiti terbaik)</button>
                     </div>
+                    <span id="compress-info" class="w-full text-[11px] font-bold text-amber-800"></span>
                 </div>
 
                 <div id="doc-area" class="flex-1 overflow-auto bg-slate-200 p-4 flex justify-center items-start relative">
@@ -505,6 +507,7 @@
                                     <label>Tahap Sensitiviti (Buang Latar):</label>
                                     <input type="range" id="sign-threshold" min="50" max="250" value="180" class="w-40 accent-emerald-600" oninput="applySignThreshold()">
                                     <span id="sign-thr-val" class="w-10 text-emerald-700">180</span>
+                                    <button onclick="signAutoThreshold()" class="px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg font-bold" title="Kira tahap terbaik secara automatik">🎯 Auto</button>
                                 </div>
                                 <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
                                     <label>Warna Dakwat:</label>
@@ -630,12 +633,26 @@
                                     <input type="range" id="pp-zoom" min="100" max="300" value="100" class="w-full accent-emerald-600" oninput="ppZoom=+this.value/100; document.getElementById('pp-zoom-val').textContent=this.value+'%'; renderPassport()">
                                 </div>
                                 <div class="text-xs font-bold text-slate-700">
-                                    <label class="block mb-1">Toleransi Buang Latar: <span id="pp-tol-val" class="text-emerald-700">60</span></label>
-                                    <input type="range" id="pp-tol" min="20" max="140" value="60" class="w-full accent-emerald-600" oninput="document.getElementById('pp-tol-val').textContent=this.value; ppProcessed=null; renderPassport()">
+                                    <label class="block mb-1">Kekuatan Buang Latar: <span id="pp-tol-val" class="text-emerald-700">60</span></label>
+                                    <input type="range" id="pp-tol" min="15" max="150" value="60" class="w-full accent-emerald-600" oninput="document.getElementById('pp-tol-val').textContent=this.value; ppInvalidate(true)">
                                 </div>
-                                <p class="text-[11px] font-semibold text-slate-500">Seret gambar di dalam bingkai untuk laras kedudukan muka. Gunakan slider zoom untuk besarkan.</p>
+
+                                <!-- BERUS MANUAL: buang baki latar / pulihkan bahagian terpotong -->
+                                <div class="text-xs font-bold text-slate-700 border-t border-slate-200 pt-3">
+                                    <label class="block mb-1">Berus Manual <span class="font-semibold text-slate-500">(baiki baki latar atau pulih muka/rambut)</span>:</label>
+                                    <div class="flex flex-wrap gap-2 mb-2">
+                                        <button id="pp-brush-pan" onclick="setPpBrush('pan',this)" class="px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-[11px] font-bold">🖐️ Gerak/Gerak Zoom</button>
+                                        <button id="pp-brush-erase" onclick="setPpBrush('erase',this)" class="px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[11px] font-bold">🖌️ Buang Latar</button>
+                                        <button id="pp-brush-restore" onclick="setPpBrush('restore',this)" class="px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[11px] font-bold">🧽 Pulih (muka/rambut)</button>
+                                    </div>
+                                    <label class="block mb-1">Saiz berus: <span id="pp-brush-val" class="text-emerald-700">40px</span></label>
+                                    <input type="range" id="pp-brush" min="12" max="120" value="40" class="w-full accent-emerald-600" oninput="ppBrushSize=+this.value; document.getElementById('pp-brush-val').textContent=this.value+'px'">
+                                </div>
+
+                                <p class="text-[11px] font-semibold text-slate-500">Auto buang latar berjalan sendiri. Kalau ada baki latar → pilih 🖌️ Buang Latar dan sapu. Kalau muka/rambut terkena → 🧽 Pulih.</p>
                                 <div class="flex flex-wrap gap-2">
-                                    <button onclick="ppReset()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">↺ Reset Kedudukan</button>
+                                    <button onclick="ppAutoRedo()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">🔄 Auto Semula</button>
+                                    <button onclick="ppReset()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">↺ Reset</button>
                                     <button onclick="ppDownloadSheet()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">📥 Eksport A4 (8-Up) PDF</button>
                                 </div>
                             </div>
@@ -827,6 +844,36 @@
         const ALL_MODES = ['protect', 'fill', 'sign', 'convert', 'merge', 'passport', 'qr', 'compress'];
         const DOC_MODES = ['protect', 'fill', 'convert', 'compress'];
 
+        let originalFileSize = 0;   // saiz fail asal (untuk laporan mampatan)
+
+        function fmtKB(bytes) {
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+            return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+        }
+
+        // tiga tahap mampatan: (nilai slider → skala & kualiti JPEG diurus dalam generateFinalPDFBytes)
+        function setCompressPreset(v) {
+            const s = document.getElementById('compress-quality');
+            if (s) s.value = v;
+            updateCompressInfo();
+        }
+
+        function updateCompressInfo() {
+            const s = document.getElementById('compress-quality');
+            const lbl = document.getElementById('compress-val');
+            const info = document.getElementById('compress-info');
+            if (!s) return;
+            const v = +s.value;
+            let nama, nota;
+            if (v <= 30) { nama = 'Kecil (fail minimum)'; nota = 'resolusi rendah, fail paling kecil'; }
+            else if (v <= 60) { nama = 'Sederhana (disyorkan)'; nota = 'seimbang kualiti & saiz'; }
+            else { nama = 'Tinggi (kualiti terbaik)'; nota = 'resolusi penuh, fail lebih besar'; }
+            if (lbl) lbl.textContent = nama;
+            if (info) {
+                info.textContent = nota + (originalFileSize ? ' · fail asal ' + fmtKB(originalFileSize) + ' · tekan 📥 Muat Turun untuk hasil' : ' · muat naik fail PDF dahulu');
+            }
+        }
+
         function setMode(mode) {
             currentMode = mode;
             ALL_MODES.forEach(m => {
@@ -864,7 +911,8 @@
             renderWatermark();
             if (typeof updateBatchWmHint === 'function') updateBatchWmHint();
             if (typeof updateDocHint === 'function') updateDocHint();
-            if (mode === 'passport') requestAnimationFrame(() => { ppProcessed = null; renderPassport(); });
+            if (typeof updateCompressInfo === 'function') updateCompressInfo();
+            if (mode === 'passport') requestAnimationFrame(() => renderPassport());
             if (mode === 'sign' && signSource) requestAnimationFrame(() => renderSignPreview());
             if (mode === 'qr' && document.getElementById('qr-box').children.length === 0) requestAnimationFrame(() => generateQR());
         }
@@ -917,6 +965,7 @@
             
             document.getElementById('ws-filename').innerText = file.name;
             document.getElementById('ws-filemeta').innerText = `${(file.size / 1024).toFixed(1)} KB`;
+            originalFileSize = file.size;      // untuk laporan mampatan
 
             pdfDocObj = null;
             imageSrcUrl = null;
@@ -1821,9 +1870,42 @@
 
         function signReset() {
             signSource = null;
+            signSourceCanvas = null;
             const cv = document.getElementById('sign-canvas');
             cv.width = 10; cv.height = 10;
             document.getElementById('sign-status').textContent = 'Tiada gambar lagi.';
+        }
+
+        // 🎯 Auto: kaedah Otsu — cari tahap pemisah terbaik antara dakwat & kertas
+        function signAutoThreshold() {
+            if (!signSourceCanvas) { alert('Muat naik gambar tandatangan dahulu.'); return; }
+            const cv = signSourceCanvas;
+            const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+            const hist = new Array(256).fill(0);
+            let total = 0;
+            for (let i = 0; i < d.length; i += 4) {
+                const lum = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+                hist[lum]++;
+                total++;
+            }
+            let sum = 0;
+            for (let t = 0; t < 256; t++) sum += t * hist[t];
+            let sumB = 0, wB = 0, best = 0, thr = 180;
+            for (let t = 0; t < 256; t++) {
+                wB += hist[t];
+                if (!wB) continue;
+                const wF = total - wB;
+                if (!wF) break;
+                sumB += t * hist[t];
+                const mB = sumB / wB, mF = (sum - sumB) / wF;
+                const between = wB * wF * (mB - mF) * (mB - mF);
+                if (between > best) { best = between; thr = t; }
+            }
+            // letak sedikit di atas tahap Otsu supaya sisa kertas kelabu turut lutsinar
+            const nilai = Math.max(50, Math.min(250, Math.round(thr + 40)));
+            const s = document.getElementById('sign-threshold');
+            s.value = nilai;
+            applySignThreshold();
         }
 
         function signUseInFill() {
@@ -2096,7 +2178,14 @@
            TOOL #8 — STUDIO PASPORT PRO (35mm × 50mm, tukar latar, A4 8-up)
            ===================================================================== */
         const PP_FRAME_W = 350, PP_FRAME_H = 500;      // nisbah 35:50
-        let passportImg = null, ppProcessed = null, ppZoom = 1, ppOffX = 0, ppOffY = 0, ppTarget = '#ffffff';
+        let passportImg = null;
+        let ppSrcCanvas = null;        // sumber (diperkecil) — rujukan tetap
+        let ppMask = null;             // Uint8Array: 1 = subjek (kekal), 0 = latar (dibuang)
+        let ppComposite = null;        // hasil: subjek di atas warna latar pilihan
+        let ppDirty = true;            // perlu bina semula komposit
+        let ppZoom = 1, ppOffX = 0, ppOffY = 0, ppTarget = '#ffffff';
+        let ppBrush = 'pan';           // 'pan' | 'erase' | 'restore'
+        let ppBrushSize = 40;          // px pada kanvas bingkai
 
         async function handlePassportFile(e) {
             const f = (e.target.files || [])[0];
@@ -2105,7 +2194,7 @@
             showLoading('Memuatkan gambar...');
             try {
                 passportImg = await loadImgEl(URL.createObjectURL(f));
-                ppProcessed = null;
+                ppSrcCanvas = null; ppMask = null; ppComposite = null; ppDirty = true;
                 ppZoom = 1; ppOffX = 0; ppOffY = 0;
                 const z = document.getElementById('pp-zoom'); if (z) { z.value = 100; }
                 const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
@@ -2120,9 +2209,30 @@
             }
         }
 
+        function setPpBrush(mode, btn) {
+            ppBrush = mode;
+            ['pan', 'erase', 'restore'].forEach(m => {
+                const b = document.getElementById('pp-brush-' + m);
+                if (!b) return;
+                if (m === mode) { b.classList.add('border-emerald-500', 'bg-emerald-50'); b.classList.remove('border-slate-200', 'bg-white'); }
+                else { b.classList.remove('border-emerald-500', 'bg-emerald-50'); b.classList.add('border-slate-200', 'bg-white'); }
+            });
+        }
+
+        function ppInvalidate(rebuildMask) {
+            if (rebuildMask) ppMask = null;
+            ppDirty = true;
+            renderPassport();
+        }
+
+        function ppAutoRedo() {
+            ppMask = null; ppDirty = true;
+            renderPassport();
+        }
+
         function setPpTarget(col, btn) {
             ppTarget = col;
-            ppProcessed = null;
+            ppDirty = true;                    // warna latar berubah → bina semula komposit (mask kekal)
             document.querySelectorAll('.pp-swatch').forEach(b => b.classList.remove('border-emerald-500'));
             if (btn) btn.classList.add('border-emerald-500');
             renderPassport();
@@ -2136,59 +2246,165 @@
             };
         }
 
-        // buang latar: sampel warna sudut + flood fill dengan toleransi RGB
-        function processPassportBg() {
+        // sumber diperkecil (maks 1100px) — kekal untuk semua operasi
+        function ppSource() {
             if (!passportImg) return null;
             const maxDim = 1100;
             const s = Math.min(1, maxDim / Math.max(passportImg.naturalWidth, passportImg.naturalHeight));
             const w = Math.max(1, Math.round(passportImg.naturalWidth * s));
             const h = Math.max(1, Math.round(passportImg.naturalHeight * s));
+            if (ppSrcCanvas && ppSrcCanvas.width === w && ppSrcCanvas.height === h) return ppSrcCanvas;
             const cv = document.createElement('canvas');
             cv.width = w; cv.height = h;
-            const c = cv.getContext('2d');
-            c.drawImage(passportImg, 0, 0, w, h);
-            const im = c.getImageData(0, 0, w, h);
-            const d = im.data;
+            cv.getContext('2d').drawImage(passportImg, 0, 0, w, h);
+            ppSrcCanvas = cv;
+            return cv;
+        }
 
-            // sampel latar dari sudut + tepi tengah
-            const pts = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1], [w >> 1, 0], [w >> 1, h - 1], [0, h >> 1], [w - 1, h >> 1]];
-            let sr = 0, sg = 0, sb = 0;
-            pts.forEach(p => { const i = (p[1] * w + p[0]) * 4; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; });
-            const n = pts.length;
-            const br = sr / n, bg = sg / n, bb = sb / n;
-            const tol = +document.getElementById('pp-tol').value;
-            const tgt = hexToRgbObj(ppTarget);
-            const tol2 = tol * tol * 3;
+        /* =====================================================================
+           BUANG LATAR (versi mantap):
+           1) palet warna latar dari bingkai tepi (bukan satu purata) → tahan
+              gradien/cahaya tidak sekata
+           2) flood fill dari sempadan sahaja (kawasan dalam subjek tidak tersentuh)
+           3) penjaga gelap: rambut/baju gelap tidak dikira latar
+           4) zon lindung elips muka/subjek di tengah → muka TIDAK akan dipadam
+           ===================================================================== */
+        function computePassportMask() {
+            const src = ppSource();
+            if (!src) return null;
+            const w = src.width, h = src.height;
+            const d = src.getContext('2d').getImageData(0, 0, w, h).data;
+            const tolEl = document.getElementById('pp-tol');
+            const tol = tolEl ? +tolEl.value : 60;
+            const tol2 = tol * tol;                                   // jejari Euclidean (unit RGB) = tol
 
-            const near = (i) => {
-                const dr = d[i] - br, dg = d[i + 1] - bg, db = d[i + 2] - bb;
-                return (dr * dr + dg * dg + db * db) <= tol2;
+            // (1) palet latar dari bingkai tepi (kuantisasi 4-bit/channel)
+            const ring = Math.max(2, Math.round(Math.min(w, h) * 0.025));
+            const bins = new Map();
+            for (let y = 0; y < h; y += 2) {
+                for (let x = 0; x < w; x += 2) {
+                    if (!(x < ring || x >= w - ring || y < ring || y >= h - ring)) continue;
+                    const i = (y * w + x) * 4;
+                    const key = ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4);
+                    const e = bins.get(key) || [0, 0, 0, 0];
+                    e[0] += d[i]; e[1] += d[i + 1]; e[2] += d[i + 2]; e[3]++;
+                    bins.set(key, e);
+                }
+            }
+            const palette = [];
+            let bgAcc = 0, bgW = 0;
+            bins.forEach(e => {
+                if (e[3] < 5) return;
+                const r = e[0] / e[3], g = e[1] / e[3], b = e[2] / e[3];
+                palette.push([r, g, b]);
+                bgAcc += (0.299 * r + 0.587 * g + 0.114 * b) * e[3];
+                bgW += e[3];
+            });
+            const bgLum = bgW ? bgAcc / bgW : 200;      // purata berwajaran kawasan tepi
+            const darkGuard = Math.max(35, tol * 1.1);  // rambut/baju gelap sentiasa dilindungi
+
+            // (4) zon lindung: di dalam elips muka/subjek, padanan warna perlu LEBIH KETAT
+            //     (halo latar di sekeliling kepala masih dibuang, tetapi kulit muka dilindungi)
+            const pcx = w * 0.5, pcy = h * 0.40, prx = w * 0.32, pry = h * 0.36;
+            const tolLindung2 = (tol * 0.45) * (tol * 0.45);   // padanan jauh lebih ketat dalam zon muka
+            const dalamLindung = (x, y) => {
+                const dx = (x - pcx) / prx, dy = (y - pcy) / pry;
+                return (dx * dx + dy * dy) <= 1;
             };
 
+            const nearBg = (i, x, y, dilindungi) => {
+                const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                if (lum < bgLum - darkGuard) return false;      // (3) rambut/baju gelap
+                const had = dilindungi ? tolLindung2 : tol2;
+                for (let k = 0; k < palette.length; k++) {
+                    const p = palette[k];
+                    const dr = d[i] - p[0], dg = d[i + 1] - p[1], db = d[i + 2] - p[2];
+                    if (dr * dr + dg * dg + db * db <= had) return true;
+                }
+                return false;
+            };
+
+            const mask = new Uint8Array(w * h);
+            mask.fill(1);                                   // 1 = subjek
             const visited = new Uint8Array(w * h);
             const stack = [];
             const push = (x, y) => {
                 const p = y * w + x;
                 if (visited[p]) return;
-                if (!near(p * 4)) return;
-                visited[p] = 1; stack.push(p);
+                const dl = dalamLindung(x, y);
+                if (!nearBg(p * 4, x, y, dl)) return;
+                visited[p] = 1;
+                stack.push(p);
             };
             for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
             for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
-
             while (stack.length) {
                 const p = stack.pop();
-                const i = p * 4;
-                d[i] = tgt.r; d[i + 1] = tgt.g; d[i + 2] = tgt.b; d[i + 3] = 255;
+                mask[p] = 0;
                 const x = p % w, y = (p - x) / w;
                 if (x > 0) push(x - 1, y);
                 if (x < w - 1) push(x + 1, y);
                 if (y > 0) push(x, y - 1);
                 if (y < h - 1) push(x, y + 1);
             }
-            c.putImageData(im, 0, 0);
-            ppProcessed = cv;
+            ppMask = mask;
+            return mask;
+        }
+
+        // bina komposit: subjek (dengan tepi lembut) di atas warna latar pilihan
+        function buildPassportComposite() {
+            const src = ppSource();
+            if (!src) return null;
+            if (!ppMask) computePassportMask();
+            if (!ppMask) return null;
+            const w = src.width, h = src.height;
+            const sd = src.getContext('2d').getImageData(0, 0, w, h).data;
+
+            // tepi lembut: box blur 2px (separable) pada mask
+            const R = 2;
+            const tmp = new Float32Array(w * h);
+            for (let y = 0; y < h; y++) {
+                let acc = 0;
+                for (let k = -R; k <= R; k++) acc += ppMask[y * w + Math.min(w - 1, Math.max(0, k))];
+                for (let x = 0; x < w; x++) {
+                    tmp[y * w + x] = acc / (2 * R + 1);
+                    acc += ppMask[y * w + Math.min(w - 1, x + R + 1)] - ppMask[y * w + Math.max(0, x - R)];
+                }
+            }
+            const alpha = new Float32Array(w * h);
+            for (let x = 0; x < w; x++) {
+                let acc = 0;
+                for (let k = -R; k <= R; k++) acc += tmp[Math.min(h - 1, Math.max(0, k)) * w + x];
+                for (let y = 0; y < h; y++) {
+                    alpha[y * w + x] = acc / (2 * R + 1);
+                    acc += tmp[Math.min(h - 1, y + R + 1) * w + x] - tmp[Math.max(0, y - R) * w + x];
+                }
+            }
+
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            const ctx = cv.getContext('2d');
+            const im = ctx.createImageData(w, h);
+            const od = im.data;
+            const tgt = hexToRgbObj(ppTarget);
+            for (let p = 0; p < w * h; p++) {
+                const a = alpha[p];
+                const i = p * 4;
+                od[i] = Math.round(sd[i] * a + tgt.r * (1 - a));
+                od[i + 1] = Math.round(sd[i + 1] * a + tgt.g * (1 - a));
+                od[i + 2] = Math.round(sd[i + 2] * a + tgt.b * (1 - a));
+                od[i + 3] = 255;
+            }
+            ctx.putImageData(im, 0, 0);
+            ppComposite = cv;
             return cv;
+        }
+
+        // transformasi: kedudukan sumber di dalam bingkai (untuk lukis + berus)
+        function ppTransform(src) {
+            const s = Math.max(PP_FRAME_W / src.width, PP_FRAME_H / src.height) * ppZoom;
+            const w = src.width * s, h = src.height * s;
+            return { s: s, w: w, h: h, x: (PP_FRAME_W - w) / 2 + ppOffX, y: (PP_FRAME_H - h) / 2 + ppOffY };
         }
 
         function renderPassport() {
@@ -2205,27 +2421,55 @@
                 c.fillText('Muat naik / ambil gambar', PP_FRAME_W / 2, PP_FRAME_H / 2);
                 return;
             }
-            const src = ppProcessed || processPassportBg();
-            if (!src) return;
-            const base = Math.max(PP_FRAME_W / src.width, PP_FRAME_H / src.height);
-            const s = base * ppZoom;
-            const w = src.width * s, h = src.height * s;
-            const x = (PP_FRAME_W - w) / 2 + ppOffX;
-            const y = (PP_FRAME_H - h) / 2 + ppOffY;
-            c.drawImage(src, x, y, w, h);
+            if (ppDirty || !ppComposite) { buildPassportComposite(); ppDirty = false; }
+            if (!ppComposite) return;
+            const t = ppTransform(ppComposite);
+            c.drawImage(ppComposite, t.x, t.y, t.w, t.h);
         }
 
         function ppReset() {
             ppZoom = 1; ppOffX = 0; ppOffY = 0;
+            ppMask = null; ppDirty = true;
             const z = document.getElementById('pp-zoom'); if (z) z.value = 100;
             const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
+            setPpBrush('pan', null);
             renderPassport();
+        }
+
+        // lukis berus pada mask (map kanvas bingkai → koordinat sumber)
+        let ppLastPaint = 0;
+        function ppPaintAt(clientX, clientY) {
+            const cv = document.getElementById('pp-canvas');
+            const src = ppSource();
+            if (!cv || !src || !ppMask) return;
+            const r = cv.getBoundingClientRect();
+            const fx = (clientX - r.left) * (cv.width / r.width);
+            const fy = (clientY - r.top) * (cv.height / r.height);
+            const t = ppTransform(src);
+            const sx = (fx - t.x) / t.s;
+            const sy = (fy - t.y) / t.s;
+            const rad = Math.max(2, (ppBrushSize / 2) / t.s);
+            const val = (ppBrush === 'erase') ? 0 : 1;
+            const w = src.width, h = src.height;
+            const x0 = Math.max(0, Math.floor(sx - rad)), x1 = Math.min(w - 1, Math.ceil(sx + rad));
+            const y0 = Math.max(0, Math.floor(sy - rad)), y1 = Math.min(h - 1, Math.ceil(sy + rad));
+            const rad2 = rad * rad;
+            for (let y = y0; y <= y1; y++) {
+                for (let x = x0; x <= x1; x++) {
+                    const dx = x - sx, dy = y - sy;
+                    if (dx * dx + dy * dy <= rad2) ppMask[y * w + x] = val;
+                }
+            }
+            ppDirty = true;
+            const now = Date.now();
+            if (now - ppLastPaint > 90) { ppLastPaint = now; renderPassport(); }
         }
 
         // eksport templat A4 dengan 8 keping gambar pasport + garisan potong
         async function buildPassportPdf() {
             if (!passportImg) return null;
-            const src = ppProcessed || processPassportBg();
+            if (ppDirty || !ppComposite) { buildPassportComposite(); ppDirty = false; }
+            const src = ppComposite;
             if (!src) return null;
             const { PDFDocument, rgb } = PDFLib;
 
@@ -2236,13 +2480,9 @@
             const c = cv.getContext('2d');
             c.fillStyle = ppTarget;
             c.fillRect(0, 0, PW, PH);
-            const k = PW / PP_FRAME_W;
-            const base = Math.max(PP_FRAME_W / src.width, PP_FRAME_H / src.height);
-            const s = base * ppZoom;
-            const w = src.width * s, h = src.height * s;
-            const x = ((PP_FRAME_W - w) / 2 + ppOffX) * k;
-            const y = ((PP_FRAME_H - h) / 2 + ppOffY) * k;
-            c.drawImage(src, x, y, w * k, h * k);
+            const k = PW / PP_FRAME_W;                       // skala pratonton → cetakan
+            const t = ppTransform(src);
+            c.drawImage(src, t.x * k, t.y * k, t.w * k, t.h * k);
             const jpg = cv.toDataURL('image/jpeg', 0.95);
 
             const out = await PDFDocument.create();
@@ -2280,22 +2520,26 @@
             } finally { hideLoading(); }
         }
 
-        // seret gambar dalam bingkai pasport (pan)
+        // seret gambar dalam bingkai pasport (pan) ATAU sapu berus (buang/pulih)
         (function initPassportPan() {
             document.addEventListener('DOMContentLoaded', () => {
                 const cv = document.getElementById('pp-canvas');
                 if (!cv) return;
-                let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+                let dragging = false, painting = false, sx = 0, sy = 0, ox = 0, oy = 0;
                 const move = (e) => {
                     if (!dragging) return;
                     const p = e.touches ? e.touches[0] : e;
-                    ppOffX = ox + (p.clientX - sx);
-                    ppOffY = oy + (p.clientY - sy);
-                    renderPassport();
+                    if (painting) { ppPaintAt(p.clientX, p.clientY); }
+                    else {
+                        ppOffX = ox + (p.clientX - sx);
+                        ppOffY = oy + (p.clientY - sy);
+                        renderPassport();
+                    }
                     if (e.cancelable) e.preventDefault();
                 };
                 const up = () => {
-                    dragging = false;
+                    if (painting) renderPassport();
+                    dragging = false; painting = false;
                     document.removeEventListener('mousemove', move);
                     document.removeEventListener('mouseup', up);
                     document.removeEventListener('touchmove', move);
@@ -2304,9 +2548,15 @@
                 const down = (e) => {
                     if (!passportImg) return;
                     dragging = true;
+                    painting = (ppBrush === 'erase' || ppBrush === 'restore');
                     const p = e.touches ? e.touches[0] : e;
                     sx = p.clientX; sy = p.clientY;
                     ox = ppOffX; oy = ppOffY;
+                    if (painting) {
+                        if (!ppMask) computePassportMask();
+                        if (!ppComposite) { ppDirty = true; renderPassport(); }
+                        ppPaintAt(p.clientX, p.clientY);
+                    }
                     document.addEventListener('mousemove', move);
                     document.addEventListener('mouseup', up);
                     document.addEventListener('touchmove', move, { passive: false });
@@ -2522,12 +2772,26 @@
             const tmpCanvas = document.createElement('canvas');
             const tCtx = tmpCanvas.getContext('2d');
 
+            // Mod mampatan: skala render dikurangkan (fail jauh lebih kecil).
+            // Mod lain: skala 2.0 untuk kualiti (teks/gambar tajam).
+            let renderScale = 2.0;
+            if (currentMode === 'compress') {
+                const q = quality;
+                renderScale = q >= 0.7 ? 2.0 : (q >= 0.5 ? 1.6 : (q >= 0.35 ? 1.25 : 1.0));
+            }
+
             for (let p = 1; p <= totalPagesNum; p++) {
                 if (pdfDocObj) {
                     const page = await pdfDocObj.getPage(p);
-                    const vp = page.getViewport({ scale: 2.0 });
-                    tmpCanvas.width = vp.width; 
-                    tmpCanvas.height = vp.height;
+                    let vp = page.getViewport({ scale: renderScale });
+                    // had saiz piksel (elak fail membengkak untuk halaman besar)
+                    const maxDim = currentMode === 'compress' ? 1700 : 2600;
+                    if (Math.max(vp.width, vp.height) > maxDim) {
+                        const k = maxDim / Math.max(vp.width, vp.height);
+                        vp = page.getViewport({ scale: renderScale * k });
+                    }
+                    tmpCanvas.width = Math.round(vp.width);
+                    tmpCanvas.height = Math.round(vp.height);
                     await page.render({ canvasContext: tCtx, viewport: vp }).promise;
                 } else if (imageSrcUrl) {
                     const img = new Image();
@@ -2540,7 +2804,16 @@
                 await embedCanvasToPdf(tmpCanvas, outPdf, p, quality);
             }
 
-            return await outPdf.save();
+            const outBytes = await outPdf.save();
+            if (currentMode === 'compress' && originalFileSize) {
+                const pct = Math.round(outBytes.length / originalFileSize * 100);
+                const el = document.getElementById('compress-info');
+                if (el) {
+                    el.textContent = '✅ Hasil: ' + fmtKB(originalFileSize) + ' → ' + fmtKB(outBytes.length) +
+                        (pct <= 100 ? '  (−' + (100 - pct) + '% lebih kecil)' : '  (lebih besar — cuba tahap "Kecil")');
+                }
+            }
+            return outBytes;
         }
 
         async function processAndExport() {

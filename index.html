@@ -681,6 +681,21 @@
                                     <input type="checkbox" id="pp-guide" class="w-4 h-4 accent-emerald-600" checked onchange="renderPassport()">
                                     <span>👤 Panduan kepala (garis mata &amp; dagu)</span>
                                 </label>
+
+                                <!-- LATAR BELAKANG (pilihan) + AUTO CROP -->
+                                <div class="border-t border-slate-200 pt-3">
+                                    <p class="flex justify-between font-bold text-slate-700 mb-2">
+                                        <span>🎨 Latar Belakang</span><span class="text-[10px] text-slate-500">(pilihan)</span>
+                                    </p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button onclick="ppSetBg('none', this)" class="pp-bg-btn px-3 py-2 rounded-xl border-2 border-emerald-500 bg-white text-[11px] font-extrabold">🖼️ Asal</button>
+                                        <button onclick="ppSetBg('#ffffff', this)" class="pp-bg-btn px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[11px] font-extrabold">⚪ Putih</button>
+                                        <button onclick="ppSetBg('#003366', this)" class="pp-bg-btn px-3 py-2 rounded-xl border-2 border-slate-200 text-white text-[11px] font-extrabold" style="background:#003366">🔵 Biru</button>
+                                        <button onclick="ppSetBg('#cc0000', this)" class="pp-bg-btn px-3 py-2 rounded-xl border-2 border-slate-200 text-white text-[11px] font-extrabold" style="background:#cc0000">🔴 Merah</button>
+                                    </div>
+                                    <button onclick="ppAutoCrop()" class="mt-2 w-full px-3 py-2.5 bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-900 rounded-xl text-[11px] font-extrabold">✂️ Auto Crop — ambil muka &amp; baju sahaja</button>
+                                    <p class="text-[10px] font-semibold text-slate-500 mt-1">Auto Crop tidak mengubah gambar — ia hanya mengezum supaya muka &amp; baju memenuhi bingkai.</p>
+                                </div>
                             </div>
 
                             <div class="flex flex-wrap justify-center gap-2">
@@ -751,6 +766,27 @@
             </a>
         </div>
     </footer>
+
+    <!-- SIMPAN / KONGSI (berfungsi dalam pelayar telefon & dalam-aplikasi) -->
+    <div id="modal-save" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[90] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl flex flex-col max-h-[92vh] overflow-auto">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-black text-slate-900 text-base">✅ Fail anda sedia</h3>
+                <button onclick="closeSavePanel()" class="text-slate-400 hover:text-slate-700 font-bold text-xl px-2">✕</button>
+            </div>
+            <div id="save-preview" class="bg-slate-100 rounded-2xl p-3 mb-3 flex items-center justify-center min-h-[120px]"></div>
+            <p id="save-name" class="text-[11px] font-bold text-slate-600 text-center break-all mb-3"></p>
+            <div class="space-y-2">
+                <button id="save-share" onclick="shareSavedFile()" class="hidden w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md">📤 Kongsi / Simpan ke Galeri</button>
+                <button onclick="redownloadSaved()" class="w-full px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl">📥 Muat Turun Semula</button>
+                <a id="save-open" href="#" target="_blank" rel="noopener" class="block w-full text-center px-4 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-extrabold rounded-xl">🔗 Buka dalam Tab Baharu</a>
+            </div>
+            <p class="text-[11px] font-semibold text-slate-500 mt-3 leading-relaxed">
+                📱 <b>Di telefon:</b> tekan <b>📤 Kongsi → Simpan Imej / Simpan Fail</b>. Kalau butang itu tiada, <b>tekan lama</b> gambar di atas → <b>Simpan Gambar</b>.<br>
+                💻 <b>Di komputer:</b> fail biasanya sudah ada dalam folder <b>Downloads</b>.
+            </p>
+        </div>
+    </div>
 
     <!-- SIGNATURE MODAL -->
     <div id="modal-sig" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -1765,12 +1801,86 @@
             return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
         }
 
-        function triggerDownload(blob, name) {
-            const url = URL.createObjectURL(blob);
+        /* =====================================================================
+           SIMPAN / KONGSI — kukuh untuk telefon (termasuk pelayar dalam-aplikasi
+           Telegram/WhatsApp yang menyekat muat turun automatik)
+           ===================================================================== */
+        let saveState = null;
+
+        function triggerDownload(blob, name, senyap) {
+            // 1) cuba muat turun automatik (jangan buang <a> serta-merta → boleh batalkan muat turun)
+            try {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name;
+                a.rel = 'noopener';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60000);
+            } catch (e) { /* pelayar sekat → panel di bawah jadi jaring keselamatan */ }
+            // 2) tunjuk panel simpan/kongsi (jalan keluar untuk telefon)
+            if (!senyap) showSavePanel(blob, name);
+        }
+
+        function showSavePanel(blob, name) {
+            const modal = document.getElementById('modal-save');
+            const prev = document.getElementById('save-preview');
+            const nm = document.getElementById('save-name');
+            const openA = document.getElementById('save-open');
+            const shareBtn = document.getElementById('save-share');
+            if (!modal || !prev) return;
+            if (saveState && saveState.url) { try { URL.revokeObjectURL(saveState.url); } catch (e) {} }
+            saveState = { blob: blob, name: name, url: URL.createObjectURL(blob) };
+            prev.innerHTML = '';
+            if ((blob.type || '').indexOf('image/') === 0) {
+                const img = document.createElement('img');
+                img.src = saveState.url;
+                img.alt = name;
+                img.className = 'max-h-[42vh] w-auto rounded-lg shadow';
+                prev.appendChild(img);
+            } else {
+                prev.innerHTML = '<div class="text-center py-6"><div class="text-5xl mb-2">📄</div><p class="text-xs font-bold text-slate-600">Fail PDF sedia dimuat turun</p></div>';
+            }
+            if (nm) nm.textContent = name;
+            if (openA) openA.href = saveState.url;
+            let bolehKongsi = false;
+            try {
+                bolehKongsi = !!(navigator.canShare) && navigator.canShare({ files: [new File([blob], name, { type: blob.type || 'application/octet-stream' })] });
+            } catch (e) { bolehKongsi = false; }
+            if (shareBtn) shareBtn.classList.toggle('hidden', !bolehKongsi);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeSavePanel() {
+            const modal = document.getElementById('modal-save');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        }
+
+        async function shareSavedFile() {
+            if (!saveState) return;
+            try {
+                const file = new File([saveState.blob], saveState.name, { type: saveState.blob.type || 'application/octet-stream' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: saveState.name });
+                } else {
+                    alert('Pelayar ini tidak menyokong kongsi fail. Sila tekan "Muat Turun Semula" atau tekan lama gambar.');
+                }
+            } catch (e) { /* pengguna batalkan kongsi */ }
+        }
+
+        function redownloadSaved() {
+            if (!saveState) return;
             const a = document.createElement('a');
-            a.href = url; a.download = name;
-            document.body.appendChild(a); a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 20000);
+            a.href = saveState.url;
+            a.download = saveState.name;
+            a.rel = 'noopener';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => a.remove(), 5000);
         }
 
         // bangunkan output mengikut alat yang sedang aktif (.pdf atau .png)
@@ -1791,9 +1901,10 @@
                 return { blob: new Blob([bytes], { type: 'application/pdf' }), name: 'PDFEasy_CANTUM_' + stamp() + '.pdf', mime: 'application/pdf' };
             }
             if (currentMode === 'passport') {
-                const bytes = await buildPassportPdf();
-                if (!bytes) { alert('Muat naik / ambil gambar dahulu.'); return null; }
-                return { blob: new Blob([bytes], { type: 'application/pdf' }), name: 'PDFEasy_PASPOR_8UP_' + stamp() + '.pdf', mime: 'application/pdf' };
+                if (!passportImg) { alert('Ambil selfie atau muat naik gambar dahulu.'); return null; }
+                const bytes = await ppA4PdfBytes();
+                if (!bytes) { alert('Gagal menjana templat. Sila cuba lagi.'); return null; }
+                return { blob: new Blob([bytes], { type: 'application/pdf' }), name: 'PDFEasy_Pasport_A4_' + stamp() + '.pdf', mime: 'application/pdf' };
             }
             if (currentMode === 'convert' && batchImages.length) {
                 const bytes = await buildBatchPdfBytes();
@@ -2265,6 +2376,199 @@
         function ppContrast() { const el = document.getElementById('pp-contrast'); return el ? (+el.value) : 100; }
         function ppFilter() { return 'brightness(' + ppBrightness() + '%) contrast(' + ppContrast() + '%)'; }
 
+        /* ---- LATAR BELAKANG (pilihan): putih / biru / merah + auto crop ---- */
+        let ppBgColour = 'none';        // 'none' = kekalkan latar asal
+        let ppMask = null;              // 1 = subjek (kekal), 0 = latar
+        let ppSrcSmall = null;          // sumber diperkecil untuk pemprosesan laju
+        let ppBgTol = 70;               // kekuatan padanan warna latar
+
+        function hexToRgbObj(hex) {
+            const h = String(hex || '#000000').replace('#', '');
+            return { r: parseInt(h.slice(0, 2), 16) || 0, g: parseInt(h.slice(2, 4), 16) || 0, b: parseInt(h.slice(4, 6), 16) || 0 };
+        }
+
+        function ppSetBg(colour, btn) {
+            ppBgColour = colour || 'none';
+            document.querySelectorAll('.pp-bg-btn').forEach(b => {
+                b.classList.remove('border-emerald-500');
+                b.classList.add('border-slate-200');
+            });
+            if (btn) { btn.classList.remove('border-slate-200'); btn.classList.add('border-emerald-500'); }
+            ppMask = null;                       // kira semula mask untuk warna baharu
+            renderPassport();
+        }
+
+        // sumber diperkecil (maks 1200px) — supaya laju walaupun gambar telefon besar
+        function ppSmallSource() {
+            if (!passportImg) return null;
+            const maxDim = 1200;
+            const s = Math.min(1, maxDim / Math.max(passportImg.naturalWidth, passportImg.naturalHeight));
+            const w = Math.max(1, Math.round(passportImg.naturalWidth * s));
+            const h = Math.max(1, Math.round(passportImg.naturalHeight * s));
+            if (ppSrcSmall && ppSrcSmall.width === w && ppSrcSmall.height === h) return ppSrcSmall;
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            cv.getContext('2d').drawImage(passportImg, 0, 0, w, h);
+            ppSrcSmall = cv;
+            return cv;
+        }
+
+        /* mask subjek: palet warna tepi + flood fill + penjaga gelap + zon lindung muka
+           (muka & baju TIDAK akan dipadam) */
+        function ppBuildMask() {
+            const src = ppSmallSource();
+            if (!src) return null;
+            const w = src.width, h = src.height;
+            const d = src.getContext('2d').getImageData(0, 0, w, h).data;
+            const tol = ppBgTol, tol2 = tol * tol;
+            const ring = Math.max(2, Math.round(Math.min(w, h) * 0.02));
+            const bins = new Map();
+            for (let y = 0; y < h; y += 2) {
+                for (let x = 0; x < w; x += 2) {
+                    if (!(x < ring || x >= w - ring || y < ring || y >= h - ring)) continue;
+                    const i = (y * w + x) * 4;
+                    const key = ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4);
+                    const e = bins.get(key) || [0, 0, 0, 0];
+                    e[0] += d[i]; e[1] += d[i + 1]; e[2] += d[i + 2]; e[3]++;
+                    bins.set(key, e);
+                }
+            }
+            const pal = [];
+            let bgAcc = 0, bgW = 0;
+            bins.forEach(e => {
+                if (e[3] < 5) return;
+                const r = e[0] / e[3], g = e[1] / e[3], b = e[2] / e[3];
+                pal.push([r, g, b]);
+                bgAcc += (0.299 * r + 0.587 * g + 0.114 * b) * e[3];
+                bgW += e[3];
+            });
+            if (!pal.length) return null;
+            const bgLum = bgAcc / bgW;
+            const guard = Math.max(35, tol * 1.1);          // rambut/baju gelap sentiasa selamat
+            const pcx = w * 0.5, pcy = h * 0.40, prx = w * 0.32, pry = h * 0.36;
+            const tolG = (tol * 0.45) * (tol * 0.45);       // zon muka: padanan jauh lebih ketat
+            const mask = new Uint8Array(w * h);
+            mask.fill(1);
+            const seen = new Uint8Array(w * h);
+            const st = [];
+            const push = (x, y) => {
+                const p = y * w + x;
+                if (seen[p]) return;
+                const i = p * 4;
+                const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                if (lum < bgLum - guard) return;
+                const dx = (x - pcx) / prx, dy = (y - pcy) / pry;
+                const dalam = (dx * dx + dy * dy) <= 1;
+                const had = dalam ? tolG : tol2;
+                for (let k = 0; k < pal.length; k++) {
+                    const pr = pal[k];
+                    const dr = d[i] - pr[0], dg = d[i + 1] - pr[1], db = d[i + 2] - pr[2];
+                    if (dr * dr + dg * dg + db * db <= had) { seen[p] = 1; st.push(p); return; }
+                }
+            };
+            for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+            for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+            while (st.length) {
+                const p = st.pop();
+                mask[p] = 0;
+                const x = p % w, y = (p - x) / w;
+                if (x > 0) push(x - 1, y);
+                if (x < w - 1) push(x + 1, y);
+                if (y > 0) push(x, y - 1);
+                if (y < h - 1) push(x, y + 1);
+            }
+            ppMask = mask;
+            return mask;
+        }
+
+        // kanvas gabungan subjek + warna latar (tepi dilembutkan)
+        function ppCompositeCanvas() {
+            if (ppBgColour === 'none') return null;
+            const src = ppSmallSource();
+            if (!src) return null;
+            if (!ppMask) ppBuildMask();
+            if (!ppMask) return null;
+            const w = src.width, h = src.height;
+            const sd = src.getContext('2d').getImageData(0, 0, w, h).data;
+            const R = 2;
+            const tmp = new Float32Array(w * h);
+            for (let y = 0; y < h; y++) {
+                let acc = 0;
+                for (let k = -R; k <= R; k++) acc += ppMask[y * w + Math.min(w - 1, Math.max(0, k))];
+                for (let x = 0; x < w; x++) {
+                    tmp[y * w + x] = acc / (2 * R + 1);
+                    acc += ppMask[y * w + Math.min(w - 1, x + R + 1)] - ppMask[y * w + Math.max(0, x - R)];
+                }
+            }
+            const al = new Float32Array(w * h);
+            for (let x = 0; x < w; x++) {
+                let acc = 0;
+                for (let k = -R; k <= R; k++) acc += tmp[Math.min(h - 1, Math.max(0, k)) * w + x];
+                for (let y = 0; y < h; y++) {
+                    al[y * w + x] = acc / (2 * R + 1);
+                    acc += tmp[Math.min(h - 1, y + R + 1) * w + x] - tmp[Math.max(0, y - R) * w + x];
+                }
+            }
+            const tgt = hexToRgbObj(ppBgColour);
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            const ctx = cv.getContext('2d');
+            const im = ctx.createImageData(w, h);
+            const od = im.data;
+            for (let p = 0; p < w * h; p++) {
+                const a = al[p], i = p * 4;
+                od[i] = Math.round(sd[i] * a + tgt.r * (1 - a));
+                od[i + 1] = Math.round(sd[i + 1] * a + tgt.g * (1 - a));
+                od[i + 2] = Math.round(sd[i + 2] * a + tgt.b * (1 - a));
+                od[i + 3] = 255;
+            }
+            ctx.putImageData(im, 0, 0);
+            return cv;
+        }
+
+        // lukis sumber (dengan ganti latar jika dipilih) ke segi empat pada kanvas
+        function ppDrawSource(c, x, y, w, h) {
+            if (ppBgColour !== 'none') {
+                const comp = ppCompositeCanvas();
+                if (comp) { c.drawImage(comp, 0, 0, comp.width, comp.height, x, y, w, h); return; }
+            }
+            c.drawImage(passportImg, x, y, w, h);
+        }
+
+        // ✂️ Auto crop: kesan subjek (muka & baju) → zum supaya memenuhi bingkai (GAMBAR TIDAK DIUBAH)
+        function ppAutoCrop() {
+            if (!passportImg) { alert('Ambil selfie atau muat naik gambar dahulu.'); return; }
+            if (!ppMask) ppBuildMask();
+            const src = ppSmallSource();
+            if (!src || !ppMask) { alert('Tak dapat menganalisis gambar. Cuba zoom manual.'); return; }
+            const w = src.width, h = src.height;
+            let top = h, bottom = -1, left = w, right = -1;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    if (!ppMask[y * w + x]) continue;
+                    if (y < top) top = y;
+                    if (y > bottom) bottom = y;
+                    if (x < left) left = x;
+                    if (x > right) right = x;
+                }
+            }
+            if (bottom <= top || right <= left) { alert('Subjek tidak dapat dikesan (latar mungkin terlalu serupa). Cuba zoom manual.'); return; }
+            const bh = bottom - top;
+            const base = Math.max(PP_FRAME_W / w, PP_FRAME_H / h);
+            let zum = (0.86 * PP_FRAME_H) / bh / base;
+            zum = Math.max(1, Math.min(3, zum));
+            ppZoom = Math.round(zum * 100);
+            const z = document.getElementById('pp-zoom');
+            if (z) z.value = Math.min(250, ppZoom);
+            const zv = document.getElementById('pp-zoom-val');
+            if (zv) zv.textContent = ppZoom + '%';
+            const s = base * (ppZoom / 100);
+            const cxS = (left + right) / 2, cyS = (top + bottom) / 2;
+            ppOffX = (PP_FRAME_W / 2 - cxS * s) - (PP_FRAME_W - w * s) / 2;
+            ppOffY = (PP_FRAME_H / 2 - cyS * s) - (PP_FRAME_H - h * s) / 2;
+            renderPassport();
+        }
+
         async function handlePassportFile(e) {
             const f = (e.target.files || [])[0];
             if (!f) return;
@@ -2273,6 +2577,12 @@
             try {
                 passportImg = await loadImgEl(URL.createObjectURL(f));
                 ppZoom = 100; ppOffX = 0; ppOffY = 0; ppA4Cache = null;
+                ppMask = null; ppSrcSmall = null; ppBgColour = 'none';      // gambar baharu → latar asal dulu
+                document.querySelectorAll('.pp-bg-btn').forEach((b, i) => {
+                    b.classList.remove('border-emerald-500');
+                    b.classList.add('border-slate-200');
+                    if (i === 0) { b.classList.remove('border-slate-200'); b.classList.add('border-emerald-500'); }
+                });
                 const z = document.getElementById('pp-zoom'); if (z) z.value = 100;
                 const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
                 ['pp-bright', 'pp-contrast'].forEach(id => { const el = document.getElementById(id); if (el) el.value = 100; });
@@ -2316,7 +2626,7 @@
                 const r = ppDrawRect(PP_FRAME_W, PP_FRAME_H);
                 c.save();
                 c.filter = ppFilter();                       // ☀️ kecerahan & 🌓 kontras
-                c.drawImage(passportImg, r.x, r.y, r.w, r.h);
+                ppDrawSource(c, r.x, r.y, r.w, r.h);
                 c.restore();
             } else {
                 c.fillStyle = '#94a3b8';
@@ -2362,7 +2672,7 @@
             const r = ppDrawRect(px, py);
             c.save();
             c.filter = ppFilter();
-            c.drawImage(passportImg, r.x, r.y, r.w, r.h);
+            ppDrawSource(c, r.x, r.y, r.w, r.h);
             c.restore();
             return cv;
         }
@@ -2403,19 +2713,45 @@
             return a4;
         }
 
+        function canvasToBlob(cv, type, q) {
+            return new Promise(res => {
+                try {
+                    if (cv.toBlob) cv.toBlob(b => res(b), type, q);
+                    else {
+                        const d = cv.toDataURL(type, q);
+                        const bin = atob(d.split(',')[1]);
+                        const arr = new Uint8Array(bin.length);
+                        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                        res(new Blob([arr], { type: type }));
+                    }
+                } catch (e) { res(null); }
+            });
+        }
+
         async function ppDownloadA4Jpg() {
             if (!passportImg) { alert('Ambil selfie atau muat naik gambar dahulu.'); return; }
             showLoading('Menjana templat A4 (150 DPI)...');
             try {
                 const a4 = ppBuildA4Canvas(true);
                 if (!a4) { alert('Gagal menjana templat.'); return; }
-                const a = document.createElement('a');
-                a.href = a4.toDataURL('image/jpeg', 0.95);
-                a.download = 'PDFEasy_Pasport_A4_8keping_' + stamp() + '.jpg';
-                document.body.appendChild(a); a.click(); a.remove();
+                const blob = await canvasToBlob(a4, 'image/jpeg', 0.95);
+                if (!blob) { alert('Gagal menyediakan fail. Cuba lagi.'); return; }
+                triggerDownload(blob, 'PDFEasy_Pasport_A4_8keping_' + stamp() + '.jpg');
             } catch (err) {
                 alert('Ralat menjana templat A4: ' + (err && err.message ? err.message : err));
             } finally { hideLoading(); }
+        }
+
+        // templat A4 sebagai bait PDF (dikongsi oleh butang PDF, Muat Turun, Cetak & Kongsi)
+        async function ppA4PdfBytes() {
+            const a4 = ppA4Cache || ppBuildA4Canvas(true);
+            if (!a4) return null;
+            const { PDFDocument } = PDFLib;
+            const out = await PDFDocument.create();
+            const page = out.addPage([595.28, 841.89]);            // A4 dalam point
+            const emb = await out.embedJpg(a4.toDataURL('image/jpeg', 0.95));
+            page.drawImage(emb, { x: 0, y: 0, width: 595.28, height: 841.89 });
+            return await out.save();
         }
 
         // versi PDF (satu halaman A4) — cetakan lebih tajam
@@ -2423,14 +2759,8 @@
             if (!passportImg) { alert('Ambil selfie atau muat naik gambar dahulu.'); return; }
             showLoading('Menjana PDF A4...');
             try {
-                const a4 = ppA4Cache || ppBuildA4Canvas(true);
-                if (!a4) { alert('Gagal menjana templat.'); return; }
-                const { PDFDocument } = PDFLib;
-                const out = await PDFDocument.create();
-                const page = out.addPage([595.28, 841.89]);            // A4 dalam point
-                const emb = await out.embedJpg(a4.toDataURL('image/jpeg', 0.95));
-                page.drawImage(emb, { x: 0, y: 0, width: 595.28, height: 841.89 });
-                const bytes = await out.save();
+                const bytes = await ppA4PdfBytes();
+                if (!bytes) { alert('Gagal menjana templat.'); return; }
                 triggerDownload(new Blob([bytes], { type: 'application/pdf' }), 'PDFEasy_Pasport_A4_' + stamp() + '.pdf');
             } catch (err) {
                 alert('Ralat menjana PDF: ' + (err && err.message ? err.message : err));

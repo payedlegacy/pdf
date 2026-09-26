@@ -443,6 +443,14 @@
                     <button onclick="clearBatch()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-200 hover:bg-purple-100 text-purple-800 text-xs font-bold rounded-xl">
                         🗑️ Kosongkan
                     </button>
+
+                    <!-- 🧩 KOLAJ A4: banyak gambar dalam satu halaman (untuk laporan) -->
+                    <span class="w-full sm:w-auto font-extrabold text-purple-900 mt-1">🧩 Kolaj A4 (susun banyak gambar 1 halaman):</span>
+                    <button onclick="collageDownload(2)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-300 hover:bg-purple-100 text-purple-800 text-xs font-extrabold rounded-xl">2 gambar</button>
+                    <button onclick="collageDownload(4)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold rounded-xl shadow-sm">4 gambar (2×2)</button>
+                    <button onclick="collageDownload(6)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold rounded-xl shadow-sm">6 gambar (2×3)</button>
+                    <button onclick="collageDownload(9)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-300 hover:bg-purple-100 text-purple-800 text-xs font-extrabold rounded-xl">9 gambar (3×3)</button>
+                    <span class="text-[10px] font-semibold text-purple-700">→ keluaran PDF A4 (auto banyak halaman), + garisan pemisah</span>
                     <span id="batch-count" class="ml-auto px-2.5 py-1 bg-white border border-purple-200 rounded-lg text-purple-800">0 gambar</span>
 
                     <!-- KAWALAN PALANG KESELAMATAN UNTUK BATCH GAMBAR -->
@@ -1119,7 +1127,8 @@
             document.getElementById('annotation-layer').innerHTML = '';
 
             try {
-                if (file.type === 'application/pdf') {
+                const jenis = jenisFail(file);
+                if (jenis === 'pdf') {
                     const arrayBuffer = await file.arrayBuffer();
                     pdfDocObj = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                     totalPagesNum = pdfDocObj.numPages;
@@ -1131,7 +1140,7 @@
                         document.getElementById('page-controls').classList.add('flex');
                     }
                     await renderPDFPage();
-                } else if (file.type.startsWith('image/')) {
+                } else if (jenis === 'imej' || jenis === 'heic') {
                     imageSrcUrl = URL.createObjectURL(file);
                     totalPagesNum = 1; currentPageNum = 1;
                     if(currentMode !== 'protect') setMode('convert');
@@ -1436,6 +1445,22 @@
         let cropIndex = -1;
         let cropRect = { x: 0, y: 0, w: 1, h: 1 };
 
+        /* =====================================================================
+           PENGESANAN JENIS FAIL — telefon sering hantar jenis MIME kosong atau
+           sambungan .jfif/.heic, jadi jangan bergantung pada file.type sahaja.
+           ===================================================================== */
+        const IMG_EXT_RX = /\.(jpe?g|jfif|pjpeg|png|webp|bmp|gif|avif|heic|heif|tiff?)$/i;
+
+        function jenisFail(f) {
+            const nama = String((f && f.name) || '').toLowerCase();
+            const t = String((f && f.type) || '').toLowerCase();
+            if (t === 'application/pdf' || /\.pdf$/i.test(nama)) return 'pdf';
+            if (t.indexOf('heic') >= 0 || t.indexOf('heif') >= 0 || /\.(heic|heif)$/i.test(nama)) return 'heic';
+            if (t.startsWith('image/') || IMG_EXT_RX.test(nama)) return 'imej';
+            if (!t && !/\./.test(nama)) return 'imej';      // jenis tak diketahui → cuba sebagai gambar
+            return 'lain';
+        }
+
         function loadImgEl(src) {
             return new Promise((res, rej) => {
                 const i = new Image();
@@ -1446,16 +1471,19 @@
         }
 
         async function handleBatchFiles(e) {
-            const files = Array.from((e && e.target && e.target.files) || [])
-                .filter(f => (f.type || '').startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(f.name || ''));
+            const semua = Array.from((e && e.target && e.target.files) || []);
+            const files = semua.filter(f => { const j = jenisFail(f); return j === 'imej' || j === 'heic'; });
             if (!files.length) { document.getElementById('file-input').value = ''; document.getElementById('file-batch').value = ''; return; }
 
             showLoading('Memuatkan ' + files.length + ' gambar...');
+            const gagal = [];
+            let adaHeic = false;
             try {
                 for (const f of files) {
+                    if (jenisFail(f) === 'heic') adaHeic = true;
                     const src = URL.createObjectURL(f);
                     let img;
-                    try { img = await loadImgEl(src); } catch (err) { URL.revokeObjectURL(src); continue; }
+                    try { img = await loadImgEl(src); } catch (err) { URL.revokeObjectURL(src); gagal.push(f.name); continue; }
                     batchImages.push({ id: ++batchSeq, src, name: f.name, imgEl: img,
                                        w: img.naturalWidth, h: img.naturalHeight, rot: 0, crop: null });
                 }
@@ -1466,7 +1494,16 @@
                 setMode('convert');
                 renderBatchStrip();
                 if (batchImages.length) openCropStudio(0);
-                if (!batchImages.length) alert('Tiada gambar yang dapat dibaca. Sila guna JPG/PNG.');
+                if (!batchImages.length) {
+                    alert('Tiada gambar yang dapat dibaca.\n\n' +
+                          (adaHeic ? 'Foto HEIC (iPhone) tidak disokong oleh pelayar. Sila tukar ke JPG dahulu, atau guna butang 📷 Kamera.\n\n' : '') +
+                          'Format disokong: JPG, JPEG, PNG, WEBP.' +
+                          (gagal.length ? '\n\nGagal dibaca: ' + gagal.slice(0, 3).join(', ') : ''));
+                } else if (gagal.length) {
+                    alert('✅ ' + batchImages.length + ' gambar dimuatkan.\n⚠️ ' + gagal.length + ' fail gagal dibaca: ' +
+                          gagal.slice(0, 3).join(', ') + (gagal.length > 3 ? ' dan ' + (gagal.length - 3) + ' lagi' : '') +
+                          (adaHeic ? '\n\n(HEIC dari iPhone tidak disokong — sila tukar ke JPG.)' : ''));
+                }
                 updateDocHint();
             } finally {
                 hideLoading();
@@ -1783,6 +1820,60 @@
             }
         }
 
+        /* =====================================================================
+           🧩 KOLAJ A4 — susun banyak gambar dalam satu halaman (untuk laporan)
+           pilihan: 2 (1×2) · 4 (2×2) · 6 (2×3) · 9 (3×3) gambar setiap halaman A4
+           ===================================================================== */
+        const COLLAGE_SUSUNAN = { 2: [1, 2], 4: [2, 2], 6: [2, 3], 9: [3, 3] };
+
+        async function buildCollagePdfBytes(perPage) {
+            const { PDFDocument, rgb } = PDFLib;
+            const susun = COLLAGE_SUSUNAN[perPage] || [2, 2];
+            const cols = susun[0], rows = susun[1];
+            const A4W = 595.28, A4H = 841.89;
+            const margin = 28, gap = 12;
+            const cellW = (A4W - margin * 2 - gap * (cols - 1)) / cols;
+            const cellH = (A4H - margin * 2 - gap * (rows - 1)) / rows;
+            const bw = batchWmConfig();
+            const out = await PDFDocument.create();
+            let page = null;
+
+            for (let i = 0; i < batchImages.length; i++) {
+                if (i % perPage === 0) page = out.addPage([A4W, A4H]);
+                const r = Math.floor((i % perPage) / cols);
+                const c = (i % perPage) % cols;
+                const x = margin + c * (cellW + gap);
+                const y = A4H - margin - cellH - r * (cellH + gap);
+
+                const cv = processedCanvas(batchImages[i]);
+                if (bw.on && bw.text) bakeWatermarkOnCanvas(cv, bw);
+
+                // muatkan gambar ke dalam sel (kekalkan nisbah, tengah)
+                const k = Math.min(cellW / cv.width, cellH / cv.height);
+                const w = cv.width * k, h = cv.height * k;
+                const emb = await out.embedJpg(cv.toDataURL('image/jpeg', 0.9));
+                page.drawImage(emb, { x: x + (cellW - w) / 2, y: y + (cellH - h) / 2, width: w, height: h });
+                page.drawRectangle({ x, y, width: cellW, height: cellH, borderColor: rgb(0.65, 0.65, 0.68), borderWidth: 0.6 });
+            }
+            return await out.save();
+        }
+
+        async function collageDownload(perPage) {
+            if (!batchImages.length) { alert('Tiada gambar. Sila tekan ➕ Tambah Gambar dahulu.'); return; }
+            const bw = batchWmConfig();
+            if (bw.on && !bw.text) { alert('Palang diaktifkan tetapi teksnya kosong.'); return; }
+            const halaman = Math.ceil(batchImages.length / perPage);
+            showLoading('Menyusun kolaj ' + perPage + ' gambar/halaman...');
+            try {
+                const bytes = await buildCollagePdfBytes(perPage);
+                triggerDownload(new Blob([bytes], { type: 'application/pdf' }),
+                    'PDFEasy_KOLAJ_' + perPage + 'gambar_' + batchImages.length + 'keping_' + stamp() + '.pdf');
+            } catch (err) {
+                console.error(err);
+                alert('Ralat menyusun kolaj: ' + (err && err.message ? err.message : err));
+            } finally { hideLoading(); }
+        }
+
         // bak watermark pada kanvas (untuk batch gambar)
         // cfg = {text, style} dari toolbar batch; jika tiada, guna tetapan tab Palang IC/ID
         function bakeWatermarkOnCanvas(cv, cfg) {
@@ -2014,7 +2105,8 @@
         async function handleSignFile(e) {
             const f = (e.target.files || [])[0];
             if (!f) return;
-            if (!((f.type || '').startsWith('image/'))) { alert('Sila pilih fail gambar (JPG/PNG).'); return; }
+            const jenis = jenisFail(f);
+            if (jenis !== 'imej' && jenis !== 'heic') { alert('Sila pilih fail gambar (JPG/PNG).'); return; }
             showLoading('Memuatkan gambar tandatangan...');
             try {
                 signSource = await loadImgEl(URL.createObjectURL(f));
@@ -2606,7 +2698,8 @@
         async function handlePassportFile(e) {
             const f = (e.target.files || [])[0];
             if (!f) return;
-            if (!((f.type || '').startsWith('image/'))) { alert('Sila pilih fail gambar (JPG/PNG).'); return; }
+            const jenis = jenisFail(f);
+            if (jenis !== 'imej' && jenis !== 'heic') { alert('Sila pilih fail gambar (JPG/PNG).'); return; }
             showLoading('Memuatkan gambar...');
             try {
                 passportImg = await loadImgEl(URL.createObjectURL(f));

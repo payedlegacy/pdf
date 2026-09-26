@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFEasy — Fill Forms, Sign & Protect ID / IC / Documents (100% Private)</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PDF-lib & PDF.js for Client-Side Processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Mammoth.js for Word .DOCX Parsing & html2canvas for PDF Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { height: 6px; width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* A4 High-Fidelity DOCX Table & Layout Styling */
+        .docx-table {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 32px 36px;
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            color: #0f172a;
+            line-height: 1.45;
+            box-sizing: border-box;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .docx-table table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 12px 0 !important;
+            table-layout: auto;
+        }
+        .docx-table td, .docx-table th {
+            border: 1px solid #475569 !important;
+            padding: 6px 10px !important;
+            font-size: 11px !important;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+        .docx-table p {
+            margin: 4px 0 !important;
+            font-size: 12px;
+        }
+        .docx-table img {
+            max-width: 100% !important;
+            height: auto !important;
+            display: inline-block;
+        }
+
+        /* Draggable & Resizable Annotation Overlay */
+        .ann-box {
+            position: absolute;
+            user-select: none;
+            touch-action: none;
+            cursor: move;
+            z-index: 30;
+            border: 1.5px dashed #3b82f6;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 6px;
+            padding: 2px 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ann-box:hover, .ann-box.active {
+            border: 2px solid #16a34a;
+            background: #ffffff;
+            box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
+        }
+        .ann-toolbar {
+            position: absolute;
+            top: -32px;
+            left: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #0f172a;
+            padding: 3px 6px;
+            border-radius: 8px;
+            color: white;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 40;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .ann-resize-handle {
+            position: absolute;
+            right: -6px;
+            bottom: -6px;
+            width: 14px;
+            height: 14px;
+            background: #16a34a;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: se-resize;
+            z-index: 40;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="resetToHome()">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-md shadow-brand-500/20">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg text-slate-900 tracking-tight">PDF<span class="text-brand-600">Easy</span></h1>
+                    <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider" data-i18n="tagline">100% Private & No Ads</p>
+                </div>
+            </div>
+
+            <nav class="hidden lg:flex items-center space-x-6 text-sm font-semibold text-slate-600">
+                <button onclick="switchTab('protect')" class="hover:text-brand-600 transition flex items-center gap-1.5"><i data-lucide="shield" class="w-4 h-4 text-red-500"></i> <span data-i18n="nav_protect">Protect ID / IC / Doc</span></button>
+                <button onclick="switchTab('fill')" class="hover:text-brand-600 transition flex items-center gap-1.5"><i data-lucide="edit-3" class="w-4 h-4 text-brand-600"></i> <span data-i18n="nav_fill">Fill Forms & Sign</span></button>
+                <button onclick="switchTab('compress')" class="hover:text-brand-600 transition flex items-center gap-1.5"><i data-lucide="minimize-2" class="w-4 h-4 text-amber-500"></i> <span data-i18n="nav_compress">Compress PDF</span></button>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <select id="langSelector" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-2.5 py-1.5 outline-none cursor-pointer hover:bg-slate-200 transition">
+                        <option value="en">🌐 English</option>
+                        <option value="ms">🇲🇾 B. Melayu</option>
+                        <option value="zh">🇨🇳 中文</option>
+                        <option value="es">🇪🇸 Español</option>
+                    </select>
+                </div>
+
+                <span class="hidden sm:inline-flex items-center gap-1 text-xs font-bold bg-brand-50 text-brand-700 px-3 py-1.5 rounded-full border border-brand-200">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> <span data-i18n="badge_privacy">Browser-Only</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full flex flex-col justify-center">
+
+        <!-- VIEW 1: HOME / DROPZONE -->
+        <div id="homeView" class="space-y-8">
+            <div class="text-center space-y-3 max-w-2xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight" data-i18n="hero_title">
+                    Fill Forms, Sign & Protect ID / IC Documents
+                </h2>
+                <p class="text-slate-600 text-sm sm:text-base" data-i18n="hero_desc">
+                    Type text into PDF forms, add digital signatures, and protect ID/Passport/MyKad documents with security cross-lines & custom watermarks — 100% private inside your browser.
+                </p>
+            </div>
+
+            <!-- TAB SELECTOR CARDS -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                
+                <div onclick="selectMode('protect')" class="bg-gradient-to-b from-red-50/50 to-white p-5 rounded-2xl border-2 border-red-200 hover:border-red-500 hover:shadow-xl transition cursor-pointer text-center space-y-3 group relative overflow-hidden">
+                    <span class="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Safe ID</span>
+                    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mx-auto group-hover:scale-110 transition">
+                        <i data-lucide="shield" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm" data-i18n="card_4_title">Protect ID / IC / Passport</h3>
+                    <p class="text-xs text-slate-500" data-i18n="card_4_desc">Add cross lines & custom text (e.g. "FOR MAXIS ONLY").</p>
+                </div>
+
+                <div onclick="selectMode('fill')" class="bg-white p-5 rounded-2xl border-2 border-slate-200 hover:border-brand-500 hover:shadow-lg transition cursor-pointer text-center space-y-3 group">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto group-hover:scale-110 transition">
+                        <i data-lucide="edit-3" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm" data-i18n="card_2_title">Fill PDF Forms & Sign</h3>
+                    <p class="text-xs text-slate-500" data-i18n="card_2_desc">Click to type text, fill details, and add drawn signatures.</p>
+                </div>
+
+                <div onclick="selectMode('compress')" class="bg-white p-5 rounded-2xl border-2 border-slate-200 hover:border-brand-500 hover:shadow-lg transition cursor-pointer text-center space-y-3 group">
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mx-auto group-hover:scale-110 transition">
+                        <i data-lucide="minimize-2" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm" data-i18n="card_3_title">Compress PDF Size</h3>
+                    <p class="text-xs text-slate-500" data-i18n="card_3_desc">Reduce PDF file size for online portal submissions.</p>
+                </div>
+            </div>
+
+            <div id="dropZone" class="bg-white border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-3xl p-8 sm:p-12 text-center space-y-4 transition shadow-sm cursor-pointer relative max-w-3xl mx-auto" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)" onclick="document.getElementById('fileInput').click()">
+                <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                    <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                </div>
+                <div class="space-y-1">
+                    <h4 class="font-bold text-slate-800 text-lg" data-i18n="dropzone_title">Drag & Drop ID Image, PDF or Word (.DOCX) here</h4>
+                    <p class="text-xs text-slate-500" data-i18n="dropzone_sub">Supports .PNG, .JPG, .PDF, .DOCX (Max 50MB)</p>
+                </div>
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg" onchange="handleFileSelected(event)">
+            </div>
+
+            <!-- PRIVACY ASSURANCE BADGE -->
+            <div class="bg-slate-100 border border-slate-200 rounded-2xl p-4 text-center text-xs text-slate-600 flex items-center justify-center gap-2 max-w-3xl mx-auto">
+                <i data-lucide="lock" class="w-4 h-4 text-brand-600"></i>
+                <span data-i18n="privacy_guarantee"><strong>100% Privacy Guaranteed:</strong> Documents and ID copies are processed locally inside your browser. Zero server upload.</span>
+            </div>
+        </div>
+
+        <!-- VIEW 2: WORKSPACE -->
+        <div id="workspaceView" class="hidden space-y-6">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-brand-50 text-brand-600 p-2.5 rounded-xl">
+                        <i data-lucide="file-check" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 id="fileNameLabel" class="font-bold text-slate-900 text-sm sm:text-base truncate max-w-xs sm:max-w-md">borang_claim.pdf</h3>
+                        <p id="fileSizeLabel" class="text-xs text-slate-500 font-mono">0 KB • Ready to process</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button onclick="resetToHome()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" data-i18n="btn_choose_another">
+                        Choose Another File
+                    </button>
+                    <button id="primaryActionBtn" onclick="executeProcess()" class="flex-1 sm:flex-none px-5 py-2 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-500/20 transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span id="actionBtnText" data-i18n="btn_download">Download Safe PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MULTI-PAGE NAVIGATION BAR (VISIBLE WHEN PDF HAS > 1 PAGE) -->
+            <div id="pageNavControls" class="hidden flex items-center justify-between bg-slate-900 text-white p-3 rounded-2xl shadow-md text-xs font-bold">
+                <button onclick="changePdfPage(-1)" id="btnPrevPage" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition flex items-center gap-1 text-slate-300">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i> <span data-i18n="pg_prev">Previous Page</span>
+                </button>
+                
+                <span id="pageIndicatorLabel" class="font-mono text-brand-400">Page 1 of 1</span>
+
+                <button onclick="changePdfPage(1)" id="btnNextPage" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition flex items-center gap-1 text-slate-300">
+                    <span data-i18n="pg_next">Next Page</span> <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- WATERMARK & ID SAFETY TOOLBAR (ACTIVE IN PROTECT MODE) -->
+            <div id="watermarkToolbar" class="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-lg space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2 text-xs font-bold text-red-400">
+                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                        <span data-i18n="wm_heading">ID / IC / MyKad & Document Security Studio</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                            <input type="checkbox" id="chkCrossLines" checked onchange="updateWatermarkLive()" class="rounded accent-brand-500">
+                            <span data-i18n="wm_crosslines">Add Security Cross Lines (Palang)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- PRESET BUTTONS FOR QUICK WATERMARK -->
+                <div class="space-y-2">
+                    <p class="text-[11px] text-slate-400 font-semibold" data-i18n="wm_presets_label">Quick Watermark Presets:</p>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <button onclick="applyPreset('FOR MAXIS USE ONLY')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-brand-400 font-mono">FOR MAXIS ONLY</button>
+                        <button onclick="applyPreset('FOR CUCKOO USE ONLY')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-brand-400 font-mono">FOR CUCKOO ONLY</button>
+                        <button onclick="applyPreset('FOR BANK USE ONLY')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-brand-400 font-mono">FOR BANK ONLY</button>
+                        <button onclick="applyPreset('FOR CLAIM USE ONLY')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-brand-400 font-mono">FOR CLAIM ONLY</button>
+                        <button onclick="applyPreset('FOR VERIFICATION ONLY')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-brand-400 font-mono">FOR VERIFICATION ONLY</button>
+                    </div>
+                </div>
+
+                <!-- ENHANCED CONTROLS FOR WATERMARK FONT SIZE, ROTATION & COLOR -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
+                    <div class="space-y-1 sm:col-span-2">
+                        <label class="text-[11px] text-slate-400 font-semibold" data-i18n="wm_text_input">Custom Watermark Text:</label>
+                        <input type="text" id="wmTextInput" value="FOR REGISTRATION ONLY" oninput="updateWatermarkLive()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white outline-none focus:border-brand-500">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[11px] text-slate-400 font-semibold">Text Size (Font):</label>
+                        <input type="range" id="wmFontSize" min="14" max="48" value="24" oninput="updateWatermarkLive()" class="w-full accent-brand-500 cursor-pointer">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[11px] text-slate-400 font-semibold" data-i18n="wm_color">Text Color:</label>
+                        <select id="wmColorSelect" onchange="updateWatermarkLive()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white outline-none">
+                            <option value="red">🔴 Safety Red</option>
+                            <option value="black">⚫ Solid Black</option>
+                            <option value="blue">🔵 Bank Blue</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMPRESS PDF TOOLBAR (ACTIVE IN COMPRESS MODE) -->
+            <div id="compressToolbar" class="hidden bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-lg space-y-4">
+                <div class="flex items-center gap-2 text-xs font-bold text-amber-400 border-b border-slate-800 pb-3">
+                    <i data-lucide="minimize-2" class="w-4 h-4"></i>
+                    <span>PDF Compression Level & Target Settings</span>
+                </div>
+
+                <!-- PRESET COMPRESSION LEVELS -->
+                <div class="space-y-2">
+                    <p class="text-[11px] text-slate-400 font-semibold">Quick Compression Level Presets:</p>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <button onclick="setCompressPreset(25)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 text-red-400 font-bold">🔴 Extreme (~70% Smaller)</button>
+                        <button onclick="setCompressPreset(50)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 text-amber-400 font-bold">🟡 Recommended (~50% Smaller)</button>
+                        <button onclick="setCompressPreset(80)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 text-brand-400 font-bold">🟢 Low (~20% Smaller / High Quality)</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[11px] text-slate-400 font-semibold">
+                            <span>Image Quality (%):</span>
+                            <span id="compressQualityLabel" class="text-amber-400 font-bold">50%</span>
+                        </div>
+                        <input type="range" id="compressQualitySlider" min="10" max="90" value="50" oninput="updateCompressLabel(this.value)" class="w-full accent-amber-500 cursor-pointer">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[11px] text-slate-400 font-semibold">Resolution Downsampling:</label>
+                        <select id="compressScaleSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white outline-none">
+                            <option value="1.0">100% Original Resolution</option>
+                            <option value="0.85" selected>85% Standard Web Scale</option>
+                            <option value="0.65">65% Small Scale (Max Compression)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOOLBAR FOR STANDARD FILL & SIGN (INCLUDES GLOBAL FONTS SELECTOR) -->
+            <div id="fillToolbar" class="hidden flex flex-wrap items-center justify-between gap-3 bg-slate-900 text-white p-3.5 rounded-2xl shadow-lg text-xs font-semibold w-full">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="enableTextInputMode()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 text-brand-400 border border-slate-700">
+                        <i data-lucide="type" class="w-4 h-4"></i> <span data-i18n="tool_add_text">Click Canvas to Add Text</span>
+                    </button>
+
+                    <!-- GLOBAL STANDARD OFFICIAL FONTS SELECTOR -->
+                    <div class="flex items-center gap-1 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700">
+                        <label class="text-[10px] text-slate-400 font-bold">Font:</label>
+                        <select id="globalFontSelect" onchange="updateSelectedFont(this.value)" class="bg-transparent text-white text-xs font-bold outline-none cursor-pointer">
+                            <option value="Arial, sans-serif" class="bg-slate-900 text-white">Arial (Standard Form)</option>
+                            <option value="'Times New Roman', serif" class="bg-slate-900 text-white">Times New Roman (Official Legal)</option>
+                            <option value="'Courier New', monospace" class="bg-slate-900 text-white">Courier New (Monospace)</option>
+                            <option value="Georgia, serif" class="bg-slate-900 text-white">Georgia (Serif)</option>
+                            <option value="Helvetica, sans-serif" class="bg-slate-900 text-white">Helvetica (Clean)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="openSignatureModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 text-amber-400 border border-slate-700">
+                        <i data-lucide="pen-tool" class="w-4 h-4"></i> <span data-i18n="tool_signature">Add Signature</span>
+                    </button>
+                </div>
+
+                <button onclick="clearAllAnnotations()" class="px-3 py-2 bg-slate-800 hover:bg-red-900/50 rounded-xl transition flex items-center gap-1.5 text-red-400 border border-slate-700">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> <span>Clear All</span>
+                </button>
+            </div>
+
+            <!-- INTERACTIVE CANVAS PREVIEW AREA -->
+            <div id="editorWorkspace" class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm min-h-[450px] flex flex-col items-center justify-center space-y-4">
+                
+                <!-- TEMPORARY CONTAINER FOR DOCX RENDERING -->
+                <div id="docxContainer" class="hidden docx-table w-full max-w-3xl bg-white p-8 shadow-md border rounded-xl overflow-auto text-xs text-slate-800"></div>
+
+                <div id="canvasContainer" class="relative border border-slate-300 rounded-xl overflow-hidden shadow-md max-w-full bg-slate-100 flex items-center justify-center min-w-[320px] min-h-[400px]">
+                    <canvas id="pdfCanvas" class="block max-w-full h-auto"></canvas>
+                    <div id="overlayLayer" class="absolute inset-0 pointer-events-auto cursor-crosshair"></div>
+                </div>
+
+                <div id="statusNotification" class="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-4 h-4 text-brand-600"></i>
+                    <span id="statusMessageText">Preview active. Drag text or signature boxes directly onto any form field.</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SIGNATURE MODAL -->
+    <div id="sigModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-slate-900 flex items-center gap-2"><i data-lucide="pen-tool" class="text-brand-600"></i> <span data-i18n="sig_title">Draw Signature</span></h3>
+                <button onclick="closeSignatureModal()" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="border-2 border-dashed border-slate-300 rounded-2xl overflow-hidden bg-slate-50">
+                <canvas id="sigCanvas" width="380" height="180" class="w-full cursor-crosshair bg-white"></canvas>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+                <button onclick="clearSignature()" class="text-red-600 hover:underline font-semibold" data-i18n="sig_clear">Clear Pad</button>
+                <div class="space-x-2">
+                    <button onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-xl" data-i18n="sig_cancel">Cancel</button>
+                    <button onclick="saveSignature()" class="px-4 py-2 bg-brand-600 text-white font-bold rounded-xl shadow hover:bg-brand-500 transition" data-i18n="sig_use">Use Signature</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500 space-y-1">
+        <p>&copy; 2026 PDFEasy.app • <span data-i18n="footer_rights">Global Client-Side Utility Studio</span></p>
+        <p class="text-[11px] text-slate-400" data-i18n="footer_sub">Zero server upload. Complete ID and data privacy guaranteed.</p>
+    </footer>
+
+    <script>
+        const translations = {
+            en: {
+                tagline: "100% Private & No Ads",
+                nav_protect: "Protect ID / IC / Doc",
+                nav_fill: "Fill Forms & Sign",
+                nav_compress: "Compress PDF",
+                badge_privacy: "Browser-Only",
+                hero_title: "Fill Forms, Sign & Protect ID / IC Documents",
+                hero_desc: "Type text into PDF forms, add digital signatures, and protect ID/Passport/MyKad documents with security cross-lines & custom watermarks — 100% private inside your browser.",
+                card_4_title: "Protect ID / IC / Passport",
+                card_4_desc: "Add cross lines & custom text (e.g. 'FOR MAXIS ONLY').",
+                card_2_title: "Fill PDF Forms & Sign",
+                card_2_desc: "Click to type text, fill details, and add drawn signatures.",
+                card_3_title: "Compress PDF Size",
+                card_3_desc: "Reduce PDF file size for online portal submissions.",
+                dropzone_title: "Drag & Drop ID Image, PDF or Word (.DOCX) here",
+                dropzone_sub: "Supports .PNG, .JPG, .PDF, .DOCX (Max 50MB)",
+                privacy_guarantee: "100% Privacy Guaranteed: Documents and ID copies are processed locally inside your browser. Zero server upload.",
+                btn_choose_another: "Choose Another File",
+                btn_download: "Download Safe PDF",
+                tool_add_text: "Click Canvas to Add Text",
+                tool_signature: "Add Signature",
+                tool_instruction: "Click anywhere on the document to add text. Drag or resize to adjust exact position.",
+                wm_heading: "ID / IC / MyKad & Document Security Studio",
+                wm_crosslines: "Add Security Cross Lines (Palang)",
+                wm_presets_label: "Quick Watermark Presets:",
+                wm_text_input: "Custom Watermark Text:",
+                wm_color: "Text Color:",
+                sig_title: "Draw Signature",
+                sig_clear: "Clear Pad",
+                sig_cancel: "Cancel",
+                sig_use: "Use Signature",
+                footer_rights: "Global Client-Side Utility Studio",
+                footer_sub: "Zero server upload. Complete ID and data privacy guaranteed.",
+                pg_prev: "Previous Page",
+                pg_next: "Next Page"
+            },
+            ms: {
+                tagline: "100% Selamat & Tanpa Iklan",
+                nav_protect: "Palang ID / IC / Borang",
+                nav_fill: "Isi Borang & Tandatangan",
+                nav_compress: "Kecilkan Saiz PDF",
+                badge_privacy: "Pelayar Sahaja",
+                hero_title: "Isi Borang PDF, Sain & Palang Keselamatan ID/IC",
+                hero_desc: "Taip pada borang PDF, tambah tandatangan digital, atau buat palang keselamatan ('FOR CUCKOO ONLY') pada gambar IC/Pasport terus dalam peranti anda.",
+                card_4_title: "Keselamatan ID / IC / Pasport",
+                card_4_desc: "Buat palang & tulis tujuan pendaftaran (cth: 'FOR MAXIS ONLY').",
+                card_2_title: "Isi Borang & Tandatangan",
+                card_2_desc: "Klik borang untuk taip nama, IC, dan lukis tandatangan.",
+                card_3_title: "Kecilkan Saiz PDF",
+                card_3_desc: "Turunkan saiz fail PDF untuk permohonan portal rasmi.",
+                dropzone_title: "Tarik gambar IC, PDF atau Word (.DOCX) ke sini",
+                dropzone_sub: "Menyokong fail .PNG, .JPG, .PDF, .DOCX (Maksimum 50MB)",
+                privacy_guarantee: "Jaminan Privasi 100%: Fail & salinan ID diproses di dalam peranti anda. Kami tidak pernah memuat naik dokumen anda.",
+                btn_choose_another: "Pilih Fail Lain",
+                btn_download: "Muat Turun PDF Selamat",
+                tool_add_text: "Klik Pada Borang Untuk Taip",
+                tool_signature: "Tambah Tandatangan",
+                tool_instruction: "Klik di mana-mana bahagian borang untuk taip. Tarik & laraskan kedudukan perkataan atau sain.",
+                wm_heading: "Studio Palang Keselamatan ID / IC & Dokumen",
+                wm_crosslines: "Tambah Garisan Palang Keselamatan",
+                wm_presets_label: "Pilihan Teks Watermark Pantas:",
+                wm_text_input: "Teks Watermark Kustom:",
+                wm_color: "Warna Teks:",
+                sig_title: "Lukis Tandatangan",
+                sig_clear: "Padam Pad",
+                sig_cancel: "Batal",
+                sig_use: "Guna Tandatangan",
+                footer_rights: "Dibina khusus untuk keselamatan ID & Dokumen",
+                footer_sub: "Tiada fail dihantar ke pelayan luar. Privasi data terjamin 100%.",
+                pg_prev: "Muka Sebelum",
+                pg_next: "Muka Selepas"
+            },
+            zh: {
+                tagline: "100% 隐私无广告",
+                nav_protect: "身份证/护照/文档保护",
+                nav_fill: "填写与签名",
+                nav_compress: "压缩 PDF",
+                badge_privacy: "仅限浏览器",
+                hero_title: "填写表单、数字签名与身份证/文档安全保护",
+                hero_desc: "在 PDF 表格中输入文字、添加签名，并为身份证/护照图片添加斜线划线和安全水印。",
+                card_4_title: "身份证 / 护照安全保护",
+                card_4_desc: "添加安全划线和用途说明（如 'FOR MAXIS ONLY'）。",
+                card_2_title: "填写 PDF 与签名",
+                card_2_desc: "点击输入文本并绘制手写数字签名。",
+                card_3_title: "压缩 PDF 体积",
+                card_3_desc: "减小 PDF 文件大小，方便提交。",
+                dropzone_title: "拖放身份证图片、PDF 或 Word 到此处",
+                dropzone_sub: "支持 .PNG, .JPG, .PDF, .DOCX (最大 50MB)",
+                privacy_guarantee: "100% 隐私保证：您的文档和身份证图片均在本地处理，绝不上传到服务器。",
+                btn_choose_another: "选择其他文件",
+                btn_download: "下载安全 PDF",
+                tool_add_text: "点击文档添加文字",
+                tool_signature: "添加数字签名",
+                tool_instruction: "点击文档任意位置添加文字，拖动或调整大小以精确定位。",
+                wm_heading: "身份证/护照与文档安全保护 Studio",
+                wm_crosslines: "添加斜线划线 (Cross Lines)",
+                wm_presets_label: "快捷水印选项：",
+                wm_text_input: "自定义水印文字：",
+                wm_color: "文字颜色：",
+                sig_title: "绘制手写签名",
+                sig_clear: "清除",
+                sig_cancel: "取消",
+                sig_use: "使用签名",
+                footer_rights: "全球客户端 PDF 与身份证安全工具箱",
+                footer_sub: "零服务器上传，完整保护您的个人隐私与身份证数据。",
+                pg_prev: "上一页",
+                pg_next: "下一页"
+            },
+            es: {
+                tagline: "100% Privado y Sin Anuncios",
+                nav_protect: "Proteger ID / Doc",
+                nav_fill: "Rellenar y Firmar",
+                nav_compress: "Comprimir PDF",
+                badge_privacy: "Solo Navegador",
+                hero_title: "Rellenar PDF, Firmar y Proteger Documentos de Identidad",
+                hero_desc: "Escribe en formularios PDF, añade firma digital y protege fotos de pasaportes e identificaciones con marcas de agua.",
+                card_4_title: "Proteger ID / Pasaporte",
+                card_4_desc: "Añade líneas cruzadas y texto de uso exclusivo.",
+                card_2_title: "Rellenar y Firmar",
+                card_2_desc: "Escribe texto, añade identificación y dibuja firmas.",
+                card_3_title: "Comprimir PDF",
+                card_3_desc: "Reduce el tamaño del PDF para trámites web.",
+                dropzone_title: "Arrastra tu documento o ID aquí",
+                dropzone_sub: "Admite .PNG, .JPG, .PDF, .DOCX (Máx. 50MB)",
+                privacy_guarantee: "100% Privacidad Garantizada: Archivos procesados localmente en tu navegador. Cero cargas al servidor.",
+                btn_choose_another: "Elegir otro archivo",
+                btn_download: "Descargar PDF Seguro",
+                tool_add_text: "Clic para Añadir Texto",
+                tool_signature: "Firma Digital",
+                tool_instruction: "Haz clic en cualquier parte del documento para escribir. Arrasta para ajustar la posición exacta.",
+                wm_heading: "Estudio de Seguridad y Marcas de Agua",
+                wm_crosslines: "Añadir Líneas Cruzadas",
+                wm_presets_label: "Ajustes Rápidos:",
+                wm_text_input: "Texto de Marca de Agua:",
+                wm_color: "Color de Texto:",
+                sig_title: "Dibujar Firma",
+                sig_clear: "Borrar",
+                sig_cancel: "Cancelar",
+                sig_use: "Usar Firma",
+                footer_rights: "Estudio de Utilidades para Todo el Mundo",
+                footer_sub: "Sin carga a servidores. Privacidad total garantizada.",
+                pg_prev: "Página Anterior",
+                pg_next: "Página Siguiente"
+            }
+        };
+
+        let currentLang = 'en';
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    el.innerText = translations[lang][key];
+                }
+            });
+        }
+
+        // STATE VARIABLES (MULTI-PAGE ENABLED)
+        let currentFile = null;
+        let currentMode = 'protect';
+        let pdfDocJs = null;
+        let pdfBytesData = null;
+        let currentPageNum = 1;
+        let totalPagesCount = 1;
+        let annotations = []; // [{ id, pageNum, type, x, y, width, height, text, fontSize, fontFamily, url, imgObj }]
+        let loadedImage = null;
+        let activeAnnotationId = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+            initSignaturePad();
+            setupOverlayEvents();
+        });
+
+        function switchTab(mode) {
+            currentMode = mode;
+            document.getElementById('homeView').classList.remove('hidden');
+            document.getElementById('workspaceView').classList.add('hidden');
+        }
+
+        function selectMode(mode) {
+            currentMode = mode;
+            document.getElementById('fileInput').click();
+        }
+
+        function resetToHome() {
+            currentFile = null;
+            pdfDocJs = null;
+            pdfBytesData = null;
+            currentPageNum = 1;
+            totalPagesCount = 1;
+            annotations = [];
+            loadedImage = null;
+            document.getElementById('homeView').classList.remove('hidden');
+            document.getElementById('workspaceView').classList.add('hidden');
+            document.getElementById('pageNavControls').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('overlayLayer').innerHTML = '';
+            document.getElementById('docxContainer').innerHTML = '';
+            document.getElementById('docxContainer').classList.add('hidden');
+        }
+
+        function handleDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('border-brand-500', 'bg-brand-50'); }
+        function handleDragLeave(e) { e.preventDefault(); document.getElementById('dropZone').classList.remove('border-brand-500', 'bg-brand-50'); }
+        function handleFileDrop(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.remove('border-brand-500', 'bg-brand-50');
+            if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
+        }
+        function handleFileSelected(e) {
+            if (e.target.files.length > 0) processFile(e.target.files[0]);
+        }
+
+        async function processFile(file) {
+            currentFile = file;
+            annotations = [];
+            currentPageNum = 1;
+            totalPagesCount = 1;
+
+            document.getElementById('fileNameLabel').innerText = file.name;
+            document.getElementById('fileSizeLabel').innerText = `${(file.size / 1024).toFixed(1)} KB • Ready to process`;
+            
+            document.getElementById('homeView').classList.add('hidden');
+            document.getElementById('workspaceView').classList.remove('hidden');
+
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            const isImage = file.type.startsWith('image/') || /\.(png|jpg|jpeg)$/i.test(file.name);
+            const isDocx = file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc');
+
+            // TOOLBAR TOGGLES
+            if (currentMode === 'protect') {
+                document.getElementById('watermarkToolbar').classList.remove('hidden');
+                document.getElementById('compressToolbar').classList.add('hidden');
+                document.getElementById('fillToolbar').classList.add('hidden');
+            } else if (currentMode === 'compress') {
+                document.getElementById('watermarkToolbar').classList.add('hidden');
+                document.getElementById('compressToolbar').classList.remove('hidden');
+                document.getElementById('fillToolbar').classList.add('hidden');
+            } else {
+                document.getElementById('watermarkToolbar').classList.add('hidden');
+                document.getElementById('compressToolbar').classList.add('hidden');
+                document.getElementById('fillToolbar').classList.remove('hidden');
+            }
+
+            if (isImage) {
+                document.getElementById('pageNavControls').classList.add('hidden');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        loadedImage = img;
+                        renderImageCanvas();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else if (isPdf) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    pdfBytesData = e.target.result;
+                    try {
+                        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytesData) });
+                        pdfDocJs = await loadingTask.promise;
+                        totalPagesCount = pdfDocJs.numPages;
+
+                        if (totalPagesCount > 1) {
+                            document.getElementById('pageNavControls').classList.remove('hidden');
+                            updatePageIndicator();
+                        } else {
+                            document.getElementById('pageNavControls').classList.add('hidden');
+                        }
+
+                        await renderPdfPage(currentPageNum);
+                    } catch(err) {
+                        console.error('PDF load error:', err);
+                        alert('Could not render PDF. Please ensure file is valid.');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (isDocx) {
+                document.getElementById('pageNavControls').classList.add('hidden');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    mammoth.convertToHtml({ arrayBuffer: arrayBuffer }, {
+                        convertImage: mammoth.images.inline(function(element) {
+                            return element.read("base64").then(function(imageBuffer) {
+                                return {
+                                    src: "data:" + element.contentType + ";base64," + imageBuffer
+                                };
+                            });
+                        })
+                    }).then(function(result) {
+                        renderDocxHtmlToCanvas(result.value);
+                    }).catch(function(err) {
+                        console.error('Docx conversion error:', err);
+                        alert('Ralat membaca fail Word. Sila pastikan fail .docx sah.');
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function updatePageIndicator() {
+            document.getElementById('pageIndicatorLabel').innerText = `Page ${currentPageNum} of ${totalPagesCount}`;
+        }
+
+        async function changePdfPage(delta) {
+            const newPage = currentPageNum + delta;
+            if (newPage >= 1 && newPage <= totalPagesCount) {
+                currentPageNum = newPage;
+                updatePageIndicator();
+                await renderPdfPage(currentPageNum);
+            }
+        }
+
+        async function renderDocxHtmlToCanvas(htmlContent) {
+            const docxBox = document.getElementById('docxContainer');
+            docxBox.classList.remove('hidden');
+            docxBox.innerHTML = htmlContent;
+
+            await new Promise(r => setTimeout(r, 250));
+
+            try {
+                const renderedCanvas = await html2canvas(docxBox, {
+                    scale: 2.0,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+
+                const canvas = document.getElementById('pdfCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = renderedCanvas.width;
+                canvas.height = renderedCanvas.height;
+
+                ctx.drawImage(renderedCanvas, 0, 0);
+
+                if (currentMode === 'protect') {
+                    drawWatermarkOverlay(ctx, canvas.width, canvas.height);
+                }
+
+                const overlay = document.getElementById('overlayLayer');
+                overlay.style.width = `${canvas.width}px`;
+                overlay.style.height = `${canvas.height}px`;
+
+                renderAnnotationsOnOverlay();
+                document.getElementById('statusMessageText').innerText = 'Borang berjaya ditukar. Klik borang untuk taip atau tambah sain!';
+            } catch(err) {
+                console.error('Html2canvas error:', err);
+            }
+        }
+
+        function renderImageCanvas() {
+            if (!loadedImage) return;
+            const canvas = document.getElementById('pdfCanvas');
+            const ctx = canvas.getContext('2d');
+            const maxW = 750;
+            const scale = Math.min(1, maxW / loadedImage.width);
+            canvas.width = loadedImage.width * scale;
+            canvas.height = loadedImage.height * scale;
+
+            ctx.drawImage(loadedImage, 0, 0, canvas.width, canvas.height);
+
+            if (currentMode === 'protect') {
+                drawWatermarkOverlay(ctx, canvas.width, canvas.height);
+            }
+
+            const overlay = document.getElementById('overlayLayer');
+            overlay.style.width = `${canvas.width}px`;
+            overlay.style.height = `${canvas.height}px`;
+            renderAnnotationsOnOverlay();
+        }
+
+        async function renderPdfPage(num) {
+            if (!pdfDocJs) return;
+            const page = await pdfDocJs.getPage(num);
+            const viewport = page.getViewport({ scale: 1.35 });
+            const canvas = document.getElementById('pdfCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+            if (currentMode === 'protect') {
+                drawWatermarkOverlay(ctx, canvas.width, canvas.height);
+            }
+
+            const overlay = document.getElementById('overlayLayer');
+            overlay.style.width = `${viewport.width}px`;
+            overlay.style.height = `${viewport.height}px`;
+
+            renderAnnotationsOnOverlay();
+        }
+
+        function drawWatermarkOverlay(ctx, width, height) {
+            const text = document.getElementById('wmTextInput').value || 'FOR REGISTRATION ONLY';
+            const colorOption = document.getElementById('wmColorSelect').value;
+            const addCrossLines = document.getElementById('chkCrossLines').checked;
+            const customFontSize = document.getElementById('wmFontSize').value || 24;
+
+            let strokeColor = 'rgba(220, 38, 38, 0.85)';
+            let textColor = 'rgba(220, 38, 38, 0.9)';
+
+            if (colorOption === 'black') {
+                strokeColor = 'rgba(15, 23, 42, 0.85)';
+                textColor = 'rgba(15, 23, 42, 0.9)';
+            } else if (colorOption === 'blue') {
+                strokeColor = 'rgba(37, 99, 235, 0.85)';
+                textColor = 'rgba(37, 99, 235, 0.9)';
+            }
+
+            if (addCrossLines) {
+                ctx.save();
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 4]);
+
+                ctx.beginPath();
+                ctx.moveTo(30, 30);
+                ctx.lineTo(width - 30, height - 30);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(30, 60);
+                ctx.lineTo(width - 60, height - 30);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.translate(width / 2, height / 2);
+            ctx.rotate(-Math.PI / 7);
+            ctx.font = `bold ${customFontSize}px Arial, sans-serif`;
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+            ctx.fillRect(-textWidth / 2 - 14, -customFontSize / 1.2, textWidth + 28, parseInt(customFontSize) + 16);
+
+            ctx.fillStyle = textColor;
+            ctx.fillText(text, 0, 4);
+            ctx.restore();
+        }
+
+        function applyPreset(presetText) {
+            document.getElementById('wmTextInput').value = presetText;
+            updateWatermarkLive();
+        }
+
+        function updateWatermarkLive() {
+            if (loadedImage) {
+                renderImageCanvas();
+            } else if (pdfDocJs) {
+                renderPdfPage(currentPageNum);
+            }
+        }
+
+        // COMPRESSION HELPERS
+        function setCompressPreset(val) {
+            document.getElementById('compressQualitySlider').value = val;
+            updateCompressLabel(val);
+        }
+
+        function updateCompressLabel(val) {
+            document.getElementById('compressQualityLabel').innerText = `${val}%`;
+        }
+
+        function updateSelectedFont(fontFamily) {
+            if (activeAnnotationId) {
+                const ann = annotations.find(a => a.id === activeAnnotationId);
+                if (ann && ann.type === 'text') {
+                    ann.fontFamily = fontFamily;
+                    renderAnnotationsOnOverlay();
+                }
+            }
+        }
+
+        function setupOverlayEvents() {
+            const overlay = document.getElementById('overlayLayer');
+            overlay.onclick = function(e) {
+                if (e.target !== overlay || currentMode === 'protect') return;
+                const rect = overlay.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                createInputBox(x, y);
+            };
+        }
+
+        function createInputBox(x, y) {
+            const overlay = document.getElementById('overlayLayer');
+            const selectedFont = document.getElementById('globalFontSelect').value;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Type text...';
+            input.style.fontFamily = selectedFont;
+            input.className = 'absolute bg-white/95 border-2 border-brand-500 rounded px-2 py-1 text-xs font-bold text-slate-900 shadow-xl outline-none z-40';
+            input.style.left = `${x}px`;
+            input.style.top = `${y}px`;
+            input.style.minWidth = '140px';
+
+            input.onkeydown = function(e) { if (e.key === 'Enter') input.blur(); };
+            input.onblur = function() {
+                const val = input.value.trim();
+                if (val !== '') {
+                    annotations.push({
+                        id: Date.now(),
+                        pageNum: currentPageNum,
+                        type: 'text',
+                        x: Math.max(0, x),
+                        y: Math.max(0, y),
+                        text: val,
+                        fontSize: 14,
+                        fontFamily: selectedFont
+                    });
+                    renderAnnotationsOnOverlay();
+                }
+                input.remove();
+            };
+
+            overlay.appendChild(input);
+            setTimeout(() => input.focus(), 50);
+        }
+
+        // RENDER ANNOTATIONS FOR CURRENT PAGE ONLY
+        function renderAnnotationsOnOverlay() {
+            const overlay = document.getElementById('overlayLayer');
+            overlay.innerHTML = '';
+
+            const pageAnnotations = annotations.filter(a => a.pageNum === currentPageNum);
+
+            pageAnnotations.forEach((ann) => {
+                const box = document.createElement('div');
+                box.className = `ann-box ${activeAnnotationId === ann.id ? 'active' : ''}`;
+                box.style.left = `${ann.x}px`;
+                box.style.top = `${ann.y}px`;
+
+                const toolbar = document.createElement('div');
+                toolbar.className = 'ann-toolbar';
+
+                if (ann.type === 'text') {
+                    box.style.fontSize = `${ann.fontSize || 14}px`;
+                    box.style.fontFamily = ann.fontFamily || 'Arial, sans-serif';
+                    box.style.fontWeight = 'bold';
+                    box.style.color = '#0f172a';
+                    box.innerText = ann.text;
+
+                    const btnMinus = document.createElement('button');
+                    btnMinus.className = 'hover:text-amber-400 font-black px-1';
+                    btnMinus.innerText = 'A-';
+                    btnMinus.onclick = (e) => { e.stopPropagation(); ann.fontSize = Math.max(9, (ann.fontSize || 14) - 2); renderAnnotationsOnOverlay(); };
+
+                    const btnPlus = document.createElement('button');
+                    btnPlus.className = 'hover:text-amber-400 font-black px-1';
+                    btnPlus.innerText = 'A+';
+                    btnPlus.onclick = (e) => { e.stopPropagation(); ann.fontSize = Math.min(36, (ann.fontSize || 14) + 2); renderAnnotationsOnOverlay(); };
+
+                    toolbar.appendChild(btnMinus);
+                    toolbar.appendChild(btnPlus);
+
+                } else if (ann.type === 'sig') {
+                    box.style.width = `${ann.width || 140}px`;
+                    box.style.height = `${ann.height || 70}px`;
+
+                    const img = document.createElement('img');
+                    img.src = ann.url;
+                    img.className = 'w-full h-full object-contain pointer-events-none';
+                    box.appendChild(img);
+
+                    const resizeHandle = document.createElement('div');
+                    resizeHandle.className = 'ann-resize-handle';
+                    makeResizable(resizeHandle, ann);
+                    box.appendChild(resizeHandle);
+                }
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'text-red-400 hover:text-red-300 font-black ml-1';
+                delBtn.innerText = '✕';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    annotations = annotations.filter(a => a.id !== ann.id);
+                    renderAnnotationsOnOverlay();
+                };
+                toolbar.appendChild(delBtn);
+
+                box.appendChild(toolbar);
+                makeDraggable(box, ann);
+                overlay.appendChild(box);
+            });
+        }
+
+        function makeDraggable(el, ann) {
+            let startX = 0, startY = 0, initialX = 0, initialY = 0;
+
+            const onStart = (e) => {
+                activeAnnotationId = ann.id;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX;
+                startY = clientY;
+                initialX = ann.x;
+                initialY = ann.y;
+
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onEnd);
+            };
+
+            const onMove = (e) => {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+
+                const overlay = document.getElementById('overlayLayer');
+                const maxW = overlay.clientWidth - (ann.width || 80);
+                const maxH = overlay.clientHeight - (ann.height || 30);
+
+                ann.x = Math.max(0, Math.min(maxW, initialX + dx));
+                ann.y = Math.max(0, Math.min(maxH, initialY + dy));
+
+                el.style.left = `${ann.x}px`;
+                el.style.top = `${ann.y}px`;
+                if (e.cancelable) e.preventDefault();
+            };
+
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+            };
+
+            el.onmousedown = onStart;
+            el.ontouchstart = onStart;
+        }
+
+        function makeResizable(handleEl, ann) {
+            let startX = 0, startY = 0, startW = 0, startH = 0;
+
+            const onStart = (e) => {
+                e.stopPropagation();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX;
+                startY = clientY;
+                startW = ann.width || 140;
+                startH = ann.height || 70;
+
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onEnd);
+            };
+
+            const onMove = (e) => {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                ann.width = Math.max(40, startW + (clientX - startX));
+                ann.height = Math.max(20, startH + (clientY - startY));
+                renderAnnotationsOnOverlay();
+                if (e.cancelable) e.preventDefault();
+            };
+
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+            };
+
+            handleEl.onmousedown = onStart;
+            handleEl.ontouchstart = onStart;
+        }
+
+        function clearAllAnnotations() {
+            annotations = annotations.filter(a => a.pageNum !== currentPageNum);
+            renderAnnotationsOnOverlay();
+        }
+
+        function enableTextInputMode() {
+            alert(translations[currentLang].tool_instruction || 'Click anywhere on the document to type.');
+        }
+
+        let isDrawing = false;
+        let sigCtx = null;
+
+        function initSignaturePad() {
+            const sigCanvas = document.getElementById('sigCanvas');
+            sigCtx = sigCanvas.getContext('2d');
+            sigCtx.strokeStyle = '#0f172a';
+            sigCtx.lineWidth = 2.5;
+            sigCtx.lineCap = 'round';
+
+            sigCanvas.onmousedown = (e) => { isDrawing = true; sigCtx.beginPath(); sigCtx.moveTo(e.offsetX, e.offsetY); };
+            sigCanvas.onmousemove = (e) => { if (!isDrawing) return; sigCtx.lineTo(e.offsetX, e.offsetY); sigCtx.stroke(); };
+            sigCanvas.onmouseup = () => { isDrawing = false; };
+
+            sigCanvas.ontouchstart = (e) => {
+                isDrawing = true;
+                const rect = sigCanvas.getBoundingClientRect();
+                sigCtx.beginPath();
+                sigCtx.moveTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                e.preventDefault();
+            };
+            sigCanvas.ontouchmove = (e) => {
+                if (!isDrawing) return;
+                const rect = sigCanvas.getBoundingClientRect();
+                sigCtx.lineTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                sigCtx.stroke();
+                e.preventDefault();
+            };
+            sigCanvas.ontouchend = () => { isDrawing = false; };
+        }
+
+        function openSignatureModal() { document.getElementById('sigModal').classList.remove('hidden'); }
+        function closeSignatureModal() { document.getElementById('sigModal').classList.add('hidden'); }
+        function clearSignature() { sigCtx.clearRect(0, 0, 380, 180); }
+        
+        function saveSignature() {
+            const sigCanvas = document.getElementById('sigCanvas');
+            const signatureDataUrl = sigCanvas.toDataURL('image/png');
+            closeSignatureModal();
+            
+            const imgObj = new Image();
+            imgObj.src = signatureDataUrl;
+            imgObj.onload = () => {
+                annotations.push({
+                    id: Date.now(),
+                    pageNum: currentPageNum,
+                    type: 'sig',
+                    x: 100,
+                    y: 120,
+                    width: 140,
+                    height: 70,
+                    url: signatureDataUrl,
+                    imgObj: imgObj
+                });
+                renderAnnotationsOnOverlay();
+            };
+        }
+
+        // BAKE ALL ANNOTATIONS PAGE BY PAGE & EXPORT PERFECT MULTI-PAGE PDF
+        async function executeProcess() {
+            if (!currentFile) return;
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const pdfDocLib = await PDFDocument.create();
+
+                let qualityVal = 0.92;
+                if (currentMode === 'compress') {
+                    const qualitySlider = parseInt(document.getElementById('compressQualitySlider').value || 50);
+                    qualityVal = qualitySlider / 100.0;
+                }
+
+                // MULTI-PAGE PDF PROCESSING
+                if (pdfDocJs && totalPagesCount > 0) {
+                    const tempCanvas = document.createElement('canvas');
+                    const tempCtx = tempCanvas.getContext('2d');
+
+                    for (let p = 1; p <= totalPagesCount; p++) {
+                        const page = await pdfDocJs.getPage(p);
+                        const viewport = page.getViewport({ scale: 1.35 });
+                        tempCanvas.height = viewport.height;
+                        tempCanvas.width = viewport.width;
+
+                        await page.render({ canvasContext: tempCtx, viewport: viewport }).promise;
+
+                        if (currentMode === 'protect') {
+                            drawWatermarkOverlay(tempCtx, tempCanvas.width, tempCanvas.height);
+                        }
+
+                        // Bake page-specific annotations
+                        const pageAnns = annotations.filter(a => a.pageNum === p);
+                        for (const ann of pageAnns) {
+                            if (ann.type === 'text') {
+                                const fontFam = ann.fontFamily || 'Arial, sans-serif';
+                                tempCtx.font = `bold ${ann.fontSize || 14}px ${fontFam}`;
+                                tempCtx.fillStyle = '#0f172a';
+                                tempCtx.fillText(ann.text, ann.x + 4, ann.y + (ann.fontSize || 14) + 2);
+                            } else if (ann.type === 'sig' && ann.imgObj) {
+                                tempCtx.drawImage(ann.imgObj, ann.x, ann.y, ann.width, ann.height);
+                            }
+                        }
+
+                        const pageImgUrl = tempCanvas.toDataURL('image/jpeg', qualityVal);
+                        const pageImgBytes = await fetch(pageImgUrl).then(res => res.arrayBuffer());
+                        const embeddedImg = await pdfDocLib.embedJpg(pageImgBytes);
+
+                        const pdfPage = pdfDocLib.addPage([embeddedImg.width, embeddedImg.height]);
+                        pdfPage.drawImage(embeddedImg, {
+                            x: 0,
+                            y: 0,
+                            width: embeddedImg.width,
+                            height: embeddedImg.height
+                        });
+                    }
+                } else {
+                    // SINGLE PAGE (IMAGE / DOCX)
+                    const canvas = document.getElementById('pdfCanvas');
+                    const ctx = canvas.getContext('2d');
+
+                    const pageAnns = annotations.filter(a => a.pageNum === 1);
+                    for (const ann of pageAnns) {
+                        if (ann.type === 'text') {
+                            const fontFam = ann.fontFamily || 'Arial, sans-serif';
+                            ctx.font = `bold ${ann.fontSize || 14}px ${fontFam}`;
+                            ctx.fillStyle = '#0f172a';
+                            ctx.fillText(ann.text, ann.x + 4, ann.y + (ann.fontSize || 14) + 2);
+                        } else if (ann.type === 'sig' && ann.imgObj) {
+                            ctx.drawImage(ann.imgObj, ann.x, ann.y, ann.width, ann.height);
+                        }
+                    }
+
+                    const imgDataUrl = canvas.toDataURL('image/jpeg', qualityVal);
+                    const imageBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+                    const embeddedImage = await pdfDocLib.embedJpg(imageBytes);
+
+                    const page = pdfDocLib.addPage([embeddedImage.width, embeddedImage.height]);
+                    page.drawImage(embeddedImage, {
+                        x: 0,
+                        y: 0,
+                        width: embeddedImage.width,
+                        height: embeddedImage.height
+                    });
+                }
+
+                const baseName = currentFile.name.replace(/\.[^/.]+$/, "");
+                const outputFilename = `Safe_Protected_${baseName}.pdf`;
+
+                const pdfBytes = await pdfDocLib.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                downloadBlob(blob, outputFilename);
+
+            } catch (err) {
+                console.error('Processing error:', err);
+                alert('Ralat semasa memproses fail ke PDF: ' + err.message);
+            }
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+    </script>
+</body>
+</html>

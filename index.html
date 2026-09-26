@@ -19,6 +19,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         body {
@@ -187,24 +188,48 @@
             </div>
 
             <!-- TABS MODE -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <button onclick="setMode('protect')" id="tab-protect" class="relative p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-slate-800 text-center transition-all shadow-sm">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <button onclick="setMode('protect')" id="tab-protect" class="relative p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-slate-800 text-center transition-all shadow-sm">
                     <span class="absolute -top-2.5 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Safe ID</span>
                     <div class="text-2xl mb-1">🛡️</div>
                     <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_protect">Palang IC/ID</h3>
                 </button>
                 
-                <button onclick="setMode('fill')" id="tab-fill" class="p-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                <button onclick="setMode('fill')" id="tab-fill" class="p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
                     <div class="text-2xl mb-1">✍️</div>
-                    <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_fill">Isi Borang & Sain</h3>
+                    <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_fill">Isi Borang &amp; Sain</h3>
                 </button>
 
-                <button onclick="setMode('convert')" id="tab-convert" class="p-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                <button onclick="setMode('sign')" id="tab-sign" class="p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                    <span class="absolute -top-2.5 right-2 bg-blue-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Baru</span>
+                    <div class="text-2xl mb-1">🧽</div>
+                    <h3 class="font-bold text-xs sm:text-sm">Bersih Sain</h3>
+                </button>
+
+                <button onclick="setMode('convert')" id="tab-convert" class="p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
                     <div class="text-2xl mb-1">🖼️</div>
                     <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_convert">Tukar Gambar ke PDF</h3>
                 </button>
 
-                <button onclick="setMode('compress')" id="tab-compress" class="p-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                <button onclick="setMode('merge')" id="tab-merge" class="p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                    <span class="absolute -top-2.5 right-2 bg-blue-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Baru</span>
+                    <div class="text-2xl mb-1">🔗</div>
+                    <h3 class="font-bold text-xs sm:text-sm">Cantum / Pisah PDF</h3>
+                </button>
+
+                <button onclick="setMode('passport')" id="tab-passport" class="p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                    <span class="absolute -top-2.5 right-2 bg-blue-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Baru</span>
+                    <div class="text-2xl mb-1">🪪</div>
+                    <h3 class="font-bold text-xs sm:text-sm">Studio Pasport</h3>
+                </button>
+
+                <button onclick="setMode('qr')" id="tab-qr" class="p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                    <span class="absolute -top-2.5 right-2 bg-blue-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Baru</span>
+                    <div class="text-2xl mb-1">🔳</div>
+                    <h3 class="font-bold text-xs sm:text-sm">Jana QR</h3>
+                </button>
+
+                <button onclick="setMode('compress')" id="tab-compress" class="p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
                     <div class="text-2xl mb-1">🗜️</div>
                     <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_compress">Mampatkan PDF</h3>
                 </button>
@@ -246,22 +271,22 @@
                         </div>
                     </div>
 
-                    <!-- ACTION BUTTONS: KONGSI (FAIL), CETAK, WHATSAPP, TELEGRAM, MUAT TURUN -->
+                    <!-- ACTION BUTTONS UNIVERSAL (berfungsi untuk SEMUA alat) -->
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button onclick="shareDocument('native')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
-                            📤 <span data-i18n="btn_share_doc">Kongsi Dokumen</span>
+                        <button onclick="shareCurrent('native')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
+                            📤 <span data-i18n="btn_share_doc">Kongsi</span>
                         </button>
-                        <button onclick="shareDocument('whatsapp')" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <button onclick="shareCurrent('whatsapp')" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
                             💬 WhatsApp
                         </button>
-                        <button onclick="shareDocument('telegram')" class="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <button onclick="shareCurrent('telegram')" class="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
                             ✈️ Telegram
                         </button>
-                        <button onclick="printGeneratedPDF()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <button onclick="printCurrent()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
                             🖨️ <span data-i18n="btn_print">Cetak</span>
                         </button>
-                        <button onclick="processAndExport()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
-                            📥 <span data-i18n="btn_download">Muat Turun PDF</span>
+                        <button onclick="downloadCurrent()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
+                            📥 <span data-i18n="btn_download">Muat Turun</span>
                         </button>
                     </div>
                 </div>
@@ -445,11 +470,176 @@
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-auto bg-slate-200 p-4 flex justify-center items-start relative">
+                <div id="doc-area" class="flex-1 overflow-auto bg-slate-200 p-4 flex justify-center items-start relative">
+                    <div id="doc-hint" class="hidden absolute inset-0 items-center justify-center text-center p-6">
+                        <div class="bg-white/95 border border-slate-300 rounded-2xl p-6 shadow-lg max-w-sm">
+                            <p class="font-black text-slate-800 text-base">📄 Muat naik fail dahulu</p>
+                            <p class="text-xs font-semibold text-slate-500 mt-1">Tekan <b>⬅️ Kembali</b>, kemudian pilih fail PDF atau gambar untuk alat ini.</p>
+                        </div>
+                    </div>
                     <div id="document-wrapper" class="relative shadow-2xl bg-white border border-slate-300">
                         <canvas id="main-canvas" class="block max-w-full h-auto"></canvas>
                         <div id="watermark-layer" class="absolute inset-0 pointer-events-auto overflow-hidden flex items-center justify-center z-10"></div>
                         <div id="annotation-layer" class="absolute inset-0 pointer-events-auto z-20 cursor-text"></div>
+                    </div>
+                </div>
+
+                <!-- ================= PANEL: BERSIH SAIN ================= -->
+                <div id="panel-sign" class="hidden flex-1 overflow-auto bg-slate-100 p-4">
+                    <div class="max-w-3xl mx-auto space-y-3">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                            <h3 class="font-black text-slate-900 text-base mb-1">🧽 Bersih Sain — buang latar kertas</h3>
+                            <p class="text-xs font-semibold text-slate-500 mb-3">Ambil gambar tandatangan atas kertas putih / kelabu. Kami akan buang latar dan jadikan dakwat lutsinar (PNG).</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input type="file" id="sign-file" accept="image/*" class="sr-file" onchange="handleSignFile(event)">
+                                <label for="sign-file" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Muat Naik Gambar Tandatangan</label>
+                                <input type="file" id="sign-camera" accept="image/*" capture="environment" class="sr-file" onchange="handleSignFile(event)">
+                                <label for="sign-camera" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Gambar (Kamera)</label>
+                                <span id="sign-status" class="text-[11px] font-bold text-slate-500">Tiada gambar lagi.</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                            <div class="flex flex-wrap items-center gap-4">
+                                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                    <label>Tahap Sensitiviti (Buang Latar):</label>
+                                    <input type="range" id="sign-threshold" min="50" max="250" value="180" class="w-40 accent-emerald-600" oninput="applySignThreshold()">
+                                    <span id="sign-thr-val" class="w-10 text-emerald-700">180</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                    <label>Warna Dakwat:</label>
+                                    <select id="sign-ink" class="bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-bold" onchange="applySignThreshold()">
+                                        <option value="#0f172a">Hitam Pekat (#0f172a)</option>
+                                        <option value="#2563eb">Biru Pen (#2563eb)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex justify-center bg-[repeating-conic-gradient(#e2e8f0_0%_25%,#ffffff_0%_50%)] bg-[length:16px_16px] rounded-xl border border-slate-200 p-3 min-h-[160px] items-center">
+                                <canvas id="sign-canvas" class="max-w-full h-auto"></canvas>
+                            </div>
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                                <button onclick="signDownload()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">📥 Muat Turun PNG Lutsinar</button>
+                                <button onclick="signUseInFill()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl shadow-sm">✍️ Guna dalam “Isi Borang”</button>
+                                <button onclick="signReset()" class="px-3 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">↺ Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= PANEL: JANA QR ================= -->
+                <div id="panel-qr" class="hidden flex-1 overflow-auto bg-slate-100 p-4">
+                    <div class="max-w-3xl mx-auto space-y-3">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                            <h3 class="font-black text-slate-900 text-base mb-1">🔳 Penjana Kod QR</h3>
+                            <p class="text-xs font-semibold text-slate-500 mb-3">Jana QR untuk pautan WhatsApp, laman web, teks promosi atau kad perniagaan digital.</p>
+                            <textarea id="qr-text" rows="2" class="w-full border border-slate-300 rounded-xl p-3 text-sm font-semibold outline-none" placeholder="Contoh: https://wa.me/60199514983 atau https://pdf.payedlegacy.my">https://pdf.payedlegacy.my</textarea>
+                            <div class="mt-2 flex flex-wrap items-center gap-2">
+                                <button onclick="qrPreset('wa')" class="px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-xl">💬 WhatsApp (wa.me)</button>
+                                <button onclick="qrPreset('tg')" class="px-3 py-2 bg-sky-50 border border-sky-200 text-sky-800 text-xs font-bold rounded-xl">✈️ Telegram</button>
+                                <button onclick="qrPreset('web')" class="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl">🌐 Laman Web</button>
+                                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                    <label>Warna QR:</label>
+                                    <input type="color" id="qr-color" value="#0f172a" class="w-9 h-9 rounded border border-slate-300 cursor-pointer" onchange="generateQR()">
+                                </div>
+                                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                    <label>Saiz:</label>
+                                    <input type="range" id="qr-size" min="200" max="600" value="320" step="20" class="w-28 accent-emerald-600" oninput="document.getElementById('qr-size-val').textContent=this.value+'px'" onchange="generateQR()">
+                                    <span id="qr-size-val" class="text-emerald-700">320px</span>
+                                </div>
+                                <button onclick="generateQR()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">🔳 Jana QR Sekarang</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                            <div class="flex justify-center">
+                                <div id="qr-box" class="p-3 bg-white border border-slate-200 rounded-xl"></div>
+                            </div>
+                            <p id="qr-status" class="text-center text-[11px] font-bold text-slate-500 mt-2">Belum dijana.</p>
+                            <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+                                <button onclick="downloadCurrent()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">📥 Muat Turun QR (PNG)</button>
+                                <button onclick="printCurrent()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm">🖨️ Cetak</button>
+                                <button onclick="shareCurrent()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl shadow-sm">📤 Kongsi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= PANEL: CANTUM / PISAH PDF ================= -->
+                <div id="panel-merge" class="hidden flex-1 overflow-auto bg-slate-100 p-4">
+                    <div class="max-w-3xl mx-auto space-y-3">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                            <h3 class="font-black text-slate-900 text-base mb-1">🔗 Cantum PDF (Merge)</h3>
+                            <p class="text-xs font-semibold text-slate-500 mb-3">Muat naik beberapa fail PDF, susun kedudukan (tarik ikon ☰ atau guna ⬆⬇), kemudian cantum jadi satu fail.</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input type="file" id="file-merge" accept="application/pdf,.pdf" multiple class="sr-file" onchange="handleMergeFiles(event)">
+                                <label for="file-merge" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Tambah Fail PDF</label>
+                                <button onclick="mergeDownload()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">🔗 Cantum &amp; Muat Turun</button>
+                                <button onclick="clearMerge()" class="px-3 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">🗑️ Kosongkan</button>
+                                <span id="merge-count" class="text-[11px] font-bold text-slate-500">0 fail</span>
+                            </div>
+                            <div id="merge-list" class="mt-3 space-y-2"></div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                            <h3 class="font-black text-slate-900 text-base mb-1">✂️ Pisah PDF (Split)</h3>
+                            <p class="text-xs font-semibold text-slate-500 mb-2">Muat naik satu PDF, taip julat muka surat (contoh: <b>1,3-5</b>) untuk diekstrak jadi fail baharu.</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input type="file" id="file-split" accept="application/pdf,.pdf" class="sr-file" onchange="handleSplitFile(event)">
+                                <label for="file-split" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📄 Muat Naik PDF</label>
+                                <input type="text" id="split-range" placeholder="1,3-5" class="border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold w-32 outline-none">
+                                <button onclick="splitDownload()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">✂️ Pisah &amp; Muat Turun</button>
+                                <span id="split-status" class="text-[11px] font-bold text-slate-500">Tiada fail.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= PANEL: STUDIO PASPORT ================= -->
+                <div id="panel-passport" class="hidden flex-1 overflow-auto bg-slate-100 p-4">
+                    <div class="max-w-3xl mx-auto space-y-3">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                            <h3 class="font-black text-slate-900 text-base mb-1">🪪 Studio Pasport Pro (35mm × 50mm)</h3>
+                            <p class="text-xs font-semibold text-slate-500 mb-3">Gambar pasport rasmi + tukar latar automatik + eksport templat A4 (8 keping).</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input type="file" id="pp-file" accept="image/*" class="sr-file" onchange="handlePassportFile(event)">
+                                <label for="pp-file" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Muat Naik Fail</label>
+                                <input type="file" id="pp-camera" accept="image/*" capture="user" class="sr-file" onchange="handlePassportFile(event)">
+                                <label for="pp-camera" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">🤳 Ambil Gambar / Selfie (Kamera)</label>
+                                <span id="pp-status" class="text-[11px] font-bold text-slate-500">Tiada gambar.</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4 grid sm:grid-cols-[auto_1fr] gap-5">
+                            <div class="flex justify-center">
+                                <div class="relative">
+                                    <canvas id="pp-canvas" width="350" height="500" class="block rounded-lg border-2 border-slate-300 shadow-inner touch-none"></canvas>
+                                    <div class="absolute inset-0 border border-dashed border-emerald-500/70 pointer-events-none"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="text-xs font-bold text-slate-700">
+                                    <label class="block mb-1">Warna Latar Rasmi:</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button onclick="setPpTarget('#ffffff',this)" class="pp-swatch px-3 py-2 rounded-xl border-2 border-emerald-500 bg-white text-[11px] font-bold">Putih Bersih</button>
+                                        <button onclick="setPpTarget('#0284c7',this)" class="pp-swatch px-3 py-2 rounded-xl border-2 border-slate-200 text-white text-[11px] font-bold" style="background:#0284c7">Biru Rasmi</button>
+                                        <button onclick="setPpTarget('#dc2626',this)" class="pp-swatch px-3 py-2 rounded-xl border-2 border-slate-200 text-white text-[11px] font-bold" style="background:#dc2626">Merah Rasmi</button>
+                                    </div>
+                                </div>
+                                <div class="text-xs font-bold text-slate-700">
+                                    <label class="block mb-1">Zoom: <span id="pp-zoom-val" class="text-emerald-700">100%</span></label>
+                                    <input type="range" id="pp-zoom" min="100" max="300" value="100" class="w-full accent-emerald-600" oninput="ppZoom=+this.value/100; document.getElementById('pp-zoom-val').textContent=this.value+'%'; renderPassport()">
+                                </div>
+                                <div class="text-xs font-bold text-slate-700">
+                                    <label class="block mb-1">Toleransi Buang Latar: <span id="pp-tol-val" class="text-emerald-700">60</span></label>
+                                    <input type="range" id="pp-tol" min="20" max="140" value="60" class="w-full accent-emerald-600" oninput="document.getElementById('pp-tol-val').textContent=this.value; ppProcessed=null; renderPassport()">
+                                </div>
+                                <p class="text-[11px] font-semibold text-slate-500">Seret gambar di dalam bingkai untuk laras kedudukan muka. Gunakan slider zoom untuk besarkan.</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="ppReset()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">↺ Reset Kedudukan</button>
+                                    <button onclick="ppDownloadSheet()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">📥 Eksport A4 (8-Up) PDF</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -634,23 +824,60 @@
             });
         }
 
+        const ALL_MODES = ['protect', 'fill', 'sign', 'convert', 'merge', 'passport', 'qr', 'compress'];
+        const DOC_MODES = ['protect', 'fill', 'convert', 'compress'];
+
         function setMode(mode) {
             currentMode = mode;
-            ['protect', 'fill', 'convert', 'compress'].forEach(m => {
+            ALL_MODES.forEach(m => {
                 const btn = document.getElementById(`tab-${m}`);
                 const toolbar = document.getElementById(`toolbar-${m}`);
-                if (m === mode) {
-                    btn.classList.add('border-emerald-500', 'bg-emerald-50');
-                    btn.classList.remove('border-slate-200', 'bg-white');
-                    if(toolbar) toolbar.classList.remove('hidden');
-                } else {
-                    btn.classList.remove('border-emerald-500', 'bg-emerald-50');
-                    btn.classList.add('border-slate-200', 'bg-white');
-                    if(toolbar) toolbar.classList.add('hidden');
+                if (btn) {
+                    if (m === mode) {
+                        btn.classList.add('border-emerald-500', 'bg-emerald-50');
+                        btn.classList.remove('border-slate-200', 'bg-white');
+                    } else {
+                        btn.classList.remove('border-emerald-500', 'bg-emerald-50');
+                        btn.classList.add('border-slate-200', 'bg-white');
+                    }
                 }
+                if (toolbar) toolbar.classList.toggle('hidden', m !== mode);
             });
+
+            // alat dokumen (guna kanvas) vs panel alat khas
+            const isDoc = DOC_MODES.indexOf(mode) >= 0;
+            const docArea = document.getElementById('doc-area');
+            if (docArea) docArea.classList.toggle('hidden', !isDoc);
+            ['sign', 'qr', 'merge', 'passport'].forEach(m => {
+                const p = document.getElementById('panel-' + m);
+                if (p) p.classList.toggle('hidden', m !== mode);
+            });
+
+            // tunjuk ruang kerja (klik tab dari halaman utama terus buka alat)
+            const ws = document.getElementById('view-workspace');
+            const home = document.getElementById('view-home');
+            if (ws && ws.classList.contains('hidden')) {
+                ws.classList.remove('hidden'); ws.classList.add('flex');
+                if (home) home.classList.add('hidden');
+            }
+
             renderWatermark();
             if (typeof updateBatchWmHint === 'function') updateBatchWmHint();
+            if (typeof updateDocHint === 'function') updateDocHint();
+            if (mode === 'passport') requestAnimationFrame(() => { ppProcessed = null; renderPassport(); });
+            if (mode === 'sign' && signSource) requestAnimationFrame(() => renderSignPreview());
+            if (mode === 'qr' && document.getElementById('qr-box').children.length === 0) requestAnimationFrame(() => generateQR());
+        }
+
+        // tunjuk pesanan "muat naik fail dahulu" bila alat dokumen kosong
+        function updateDocHint() {
+            const hint = document.getElementById('doc-hint');
+            if (!hint) return;
+            const isDoc = DOC_MODES.indexOf(currentMode) >= 0;
+            const ada = !!(pdfDocObj || imageSrcUrl || (batchImages && batchImages.length));
+            const show = isDoc && !ada;
+            hint.classList.toggle('hidden', !show);
+            if (show) hint.classList.add('flex'); else hint.classList.remove('flex');
         }
 
         function setWatermarkPreset(text) {
@@ -726,6 +953,7 @@
                 resetToHome();
             } finally {
                 hideLoading();
+                if (typeof updateDocHint === 'function') updateDocHint();
             }
         }
 
@@ -1044,6 +1272,7 @@
                 renderBatchStrip();
                 if (batchImages.length) openCropStudio(0);
                 if (!batchImages.length) alert('Tiada gambar yang dapat dibaca. Sila guna JPG/PNG.');
+                updateDocHint();
             } finally {
                 hideLoading();
                 document.getElementById('file-input').value = '';
@@ -1326,33 +1555,31 @@
         }
 
         // ---- GABUNG SEMUA GAMBAR → SATU PDF ----
+        async function buildBatchPdfBytes() {
+            const bw = batchWmConfig();
+            const { PDFDocument } = PDFLib;
+            const out = await PDFDocument.create();
+            for (const item of batchImages) {
+                const cv = processedCanvas(item);
+                if (bw.on && bw.text) bakeWatermarkOnCanvas(cv, bw);   // palang pada SETIAP muka surat
+                const jpg = cv.toDataURL('image/jpeg', 0.92);
+                const emb = await out.embedJpg(jpg);
+                const pw = Math.min(595, (cv.width * 72 / 150) * 1.6);
+                const ph = pw * (cv.height / cv.width);
+                const page = out.addPage([pw, ph]);
+                page.drawImage(emb, { x: 0, y: 0, width: pw, height: ph });
+            }
+            return await out.save();
+        }
+
         async function mergeBatchToPdf() {
             if (!batchImages.length) { alert('Tiada gambar. Sila tambah gambar dahulu.'); return; }
             const bw = batchWmConfig();
             if (bw.on && !bw.text) { alert('Palang diaktifkan tetapi teks palang kosong. Sila taip teks atau kosongkan tanda “Sertakan Palang”.'); return; }
             showLoading('Menggabungkan ' + batchImages.length + ' gambar ke PDF...');
             try {
-                const { PDFDocument } = PDFLib;
-                const out = await PDFDocument.create();
-                for (const item of batchImages) {
-                    const cv = processedCanvas(item);
-                    if (bw.on && bw.text) bakeWatermarkOnCanvas(cv, bw);   // palang pada SETIAP muka surat
-                    const jpg = cv.toDataURL('image/jpeg', 0.92);
-                    const emb = await out.embedJpg(jpg);
-                    const pw = Math.min(595, (cv.width * 72 / 150) * 1.6);
-                    const ph = pw * (cv.height / cv.width);
-                    const page = out.addPage([pw, ph]);
-                    page.drawImage(emb, { x: 0, y: 0, width: pw, height: ph });
-                }
-                const bytes = await out.save();
-                const blob = new Blob([bytes], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `PDFEasy_GABUNG_${batchImages.length}_gambar_${Date.now()}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 20000);
+                const bytes = await buildBatchPdfBytes();
+                triggerDownload(new Blob([bytes], { type: 'application/pdf' }), 'PDFEasy_GABUNG_' + batchImages.length + '_gambar_' + stamp() + '.pdf');
             } catch (err) {
                 console.error(err);
                 alert('Ralat menggabungkan gambar: ' + (err && err.message ? err.message : err));
@@ -1404,6 +1631,693 @@
             c.restore();
         }
 
+        /* =====================================================================
+           TINDAKAN UNIVERSAL: Muat Turun / Cetak / Kongsi untuk SEMUA alat
+           ===================================================================== */
+        function stamp() {
+            const d = new Date();
+            const p = (n) => String(n).padStart(2, '0');
+            return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+        }
+
+        function triggerDownload(blob, name) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 20000);
+        }
+
+        // bangunkan output mengikut alat yang sedang aktif (.pdf atau .png)
+        async function buildCurrentOutput() {
+            if (currentMode === 'qr') {
+                const blob = await qrBlob();
+                if (!blob) { alert('Sila jana kod QR dahulu.'); return null; }
+                return { blob, name: 'PDFEasy_QR_' + stamp() + '.png', mime: 'image/png' };
+            }
+            if (currentMode === 'sign') {
+                const blob = await signBlob();
+                if (!blob) { alert('Sila muat naik gambar tandatangan dahulu.'); return null; }
+                return { blob, name: 'PDFEasy_SAIN_LUTSINAR_' + stamp() + '.png', mime: 'image/png' };
+            }
+            if (currentMode === 'merge') {
+                if (!mergePdfs.length) { alert('Tiada fail PDF untuk dicantum.'); return null; }
+                const bytes = await doMergeBytes();
+                return { blob: new Blob([bytes], { type: 'application/pdf' }), name: 'PDFEasy_CANTUM_' + stamp() + '.pdf', mime: 'application/pdf' };
+            }
+            if (currentMode === 'passport') {
+                const bytes = await buildPassportPdf();
+                if (!bytes) { alert('Muat naik / ambil gambar dahulu.'); return null; }
+                return { blob: new Blob([bytes], { type: 'application/pdf' }), name: 'PDFEasy_PASPOR_8UP_' + stamp() + '.pdf', mime: 'application/pdf' };
+            }
+            if (currentMode === 'convert' && batchImages.length) {
+                const bytes = await buildBatchPdfBytes();
+                return { blob: new Blob([bytes], { type: 'application/pdf' }), name: 'PDFEasy_GABUNG_' + batchImages.length + '_gambar_' + stamp() + '.pdf', mime: 'application/pdf' };
+            }
+            if (!pdfDocObj && !imageSrcUrl) { alert('Muat naik fail PDF atau gambar dahulu.'); return null; }
+            const bytes = await generateFinalPDFBytes();
+            return { blob: new Blob([bytes], { type: 'application/pdf' }), name: 'PDFEasy_' + currentMode.toUpperCase() + '_' + stamp() + '.pdf', mime: 'application/pdf' };
+        }
+
+        async function downloadCurrent() {
+            showLoading('Menyediakan fail...');
+            try {
+                const o = await buildCurrentOutput();
+                if (o) triggerDownload(o.blob, o.name);
+            } catch (err) { console.error(err); alert('Ralat menyediakan fail: ' + (err && err.message ? err.message : err)); }
+            finally { hideLoading(); }
+        }
+
+        async function printCurrent() {
+            showLoading('Menyediakan cetakan...');
+            try {
+                const o = await buildCurrentOutput();
+                if (!o) return;
+                const url = URL.createObjectURL(o.blob);
+                if (o.mime === 'image/png') {
+                    const w = window.open('', '_blank');
+                    if (w) {
+                        w.document.write('<html><head><title>Cetak PDFEasy</title></head><body style="margin:0;text-align:center"><img id="p" src="' + url + '" style="max-width:100%"><script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>');
+                        w.document.close();
+                    } else {
+                        triggerDownload(o.blob, o.name);
+                        alert('Cetakan disekat pelayar. Fail telah dimuat turun — sila cetak dari fail itu.');
+                    }
+                } else {
+                    const pw = window.open(url, '_blank');
+                    if (pw) setTimeout(() => { try { pw.focus(); pw.print(); } catch (e) {} }, 900);
+                    else { triggerDownload(o.blob, o.name); alert('Cetakan disekat pelayar. Fail PDF telah dimuat turun — sila cetak dari fail itu.'); }
+                }
+                setTimeout(() => URL.revokeObjectURL(url), 120000);
+            } catch (err) { console.error(err); alert('Ralat menjana cetakan.'); }
+            finally { hideLoading(); }
+        }
+
+        async function shareCurrent(platform) {
+            showLoading('Menyediakan fail untuk dikongsi...');
+            const shareText = 'Jom guna PDFEasy (palang IC, tandatangan, QR, pasport) secara percuma di pelayar!';
+            const appUrl = 'https://pdf.payedlegacy.my';
+            try {
+                const o = await buildCurrentOutput();
+                if (!o) return;
+                const file = new File([o.blob], o.name, { type: o.mime });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: 'PDFEasy', text: shareText + ' ' + appUrl });
+                } else {
+                    triggerDownload(o.blob, o.name);
+                    shareViaApp(platform === 'telegram' ? 'telegram' : 'whatsapp');
+                    alert('Fail telah dimuat turun. Sila lampirkan (attach) fail itu dalam WhatsApp/Telegram yang dibuka.');
+                }
+            } catch (err) {
+                if (err && err.name === 'AbortError') { hideLoading(); return; }
+                console.error(err);
+                alert('Gagal berkongsi: ' + (err && err.message ? err.message : err));
+            } finally { hideLoading(); }
+        }
+
+        /* =====================================================================
+           TOOL #3 — BERSIH SAIN (buang latar kertas → PNG lutsinar)
+           ===================================================================== */
+        let signSource = null;
+        let signSourceCanvas = null;   // salinan ASAL (tidak diproses) — elak pemprosesan berulang merosakkan hasil
+
+        async function handleSignFile(e) {
+            const f = (e.target.files || [])[0];
+            if (!f) return;
+            if (!((f.type || '').startsWith('image/'))) { alert('Sila pilih fail gambar (JPG/PNG).'); return; }
+            showLoading('Memuatkan gambar tandatangan...');
+            try {
+                signSource = await loadImgEl(URL.createObjectURL(f));
+                document.getElementById('sign-status').textContent = f.name + ' · ' + signSource.naturalWidth + '×' + signSource.naturalHeight;
+                renderSignPreview();
+            } catch (err) {
+                alert('Gagal membaca gambar: ' + (err && err.message ? err.message : err));
+            } finally {
+                hideLoading();
+                document.getElementById('sign-file').value = '';
+                document.getElementById('sign-camera').value = '';
+            }
+        }
+
+        function renderSignPreview() {
+            const cv = document.getElementById('sign-canvas');
+            const c = cv.getContext('2d');
+            if (!signSource) { cv.width = 10; cv.height = 10; c.clearRect(0, 0, 10, 10); signSourceCanvas = null; return; }
+            const maxW = 600, maxH = 380;
+            const s = Math.min(1, maxW / signSource.naturalWidth, maxH / signSource.naturalHeight);
+            cv.width = Math.max(1, Math.round(signSource.naturalWidth * s));
+            cv.height = Math.max(1, Math.round(signSource.naturalHeight * s));
+            // simpan salinan ASAL (tanpa pemprosesan) untuk rujukan setiap kali slider berubah
+            signSourceCanvas = document.createElement('canvas');
+            signSourceCanvas.width = cv.width;
+            signSourceCanvas.height = cv.height;
+            signSourceCanvas.getContext('2d').drawImage(signSource, 0, 0, cv.width, cv.height);
+            applySignThreshold();
+        }
+
+        // Algoritma: piksel lebih cerah daripada threshold = latar → alpha 0 (lutsinar)
+        //            piksel lebih gelap = dakwat → warna pekat (#0f172a / #2563eb)
+        // Selalu diproses dari signSourceCanvas (ASAL) supaya slider boleh dilaras berulang kali.
+        function applySignThreshold() {
+            const cv = document.getElementById('sign-canvas');
+            const thrEl = document.getElementById('sign-threshold');
+            const thrOut = document.getElementById('sign-thr-val');
+            if (thrOut) thrOut.textContent = thrEl.value;
+            if (!signSourceCanvas || !cv.width) return;
+            const c = cv.getContext('2d');
+            const thr = +thrEl.value;
+            const ink = document.getElementById('sign-ink').value;
+            const inkR = parseInt(ink.slice(1, 3), 16), inkG = parseInt(ink.slice(3, 5), 16), inkB = parseInt(ink.slice(5, 7), 16);
+            c.clearRect(0, 0, cv.width, cv.height);
+            c.drawImage(signSourceCanvas, 0, 0);
+            const im = c.getImageData(0, 0, cv.width, cv.height);
+            const d = im.data;
+            const soft = Math.max(1, thr * 0.55);
+            for (let i = 0; i < d.length; i += 4) {
+                const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                if (lum >= thr) {
+                    d[i + 3] = 0;                            // latar kertas → lutsinar
+                } else {
+                    d[i] = inkR; d[i + 1] = inkG; d[i + 2] = inkB;
+                    d[i + 3] = Math.min(255, Math.round((thr - lum) * 255 / soft));   // tepi lembut
+                }
+            }
+            c.putImageData(im, 0, 0);
+        }
+
+        function signBlob() {
+            return new Promise((res) => {
+                const cv = document.getElementById('sign-canvas');
+                if (!signSource || !cv.width || cv.width <= 10) return res(null);
+                cv.toBlob((b) => res(b), 'image/png');
+            });
+        }
+
+        async function signDownload() {
+            const b = await signBlob();
+            if (!b) { alert('Muat naik gambar tandatangan dahulu.'); return; }
+            triggerDownload(b, 'PDFEasy_SAIN_LUTSINAR_' + stamp() + '.png');
+        }
+
+        function signReset() {
+            signSource = null;
+            const cv = document.getElementById('sign-canvas');
+            cv.width = 10; cv.height = 10;
+            document.getElementById('sign-status').textContent = 'Tiada gambar lagi.';
+        }
+
+        function signUseInFill() {
+            if (!signSource) { alert('Muat naik gambar tandatangan dahulu.'); return; }
+            if (!pdfDocObj && !imageSrcUrl) { alert('Muat naik dokumen dahulu (alat Palang IC/ID atau Tukar Gambar ke PDF), kemudian tekan butang ini semula.'); return; }
+            const dataUrl = document.getElementById('sign-canvas').toDataURL('image/png');
+            setMode('fill');
+            setTimeout(() => addSignatureImage(dataUrl), 150);
+        }
+
+        /* =====================================================================
+           TOOL #4 — PENJANA KOD QR
+           ===================================================================== */
+        function qrPreset(kind) {
+            const el = document.getElementById('qr-text');
+            if (kind === 'wa') el.value = 'https://wa.me/60199514983?text=' + encodeURIComponent('Salam, saya berminat.');
+            else if (kind === 'tg') el.value = 'https://t.me/';
+            else el.value = 'https://pdf.payedlegacy.my';
+            generateQR();
+        }
+
+        function generateQR() {
+            const box = document.getElementById('qr-box');
+            const status = document.getElementById('qr-status');
+            const text = (document.getElementById('qr-text').value || '').trim();
+            box.innerHTML = '';
+            if (!text) { status.textContent = 'Sila masukkan teks atau pautan.'; return; }
+            if (typeof QRCode === 'undefined') { status.textContent = 'Pustaka QR tidak dimuatkan — semak sambungan internet.'; return; }
+            const size = +document.getElementById('qr-size').value;
+            const dark = document.getElementById('qr-color').value;
+            try {
+                new QRCode(box, { text: text, width: size, height: size, colorDark: dark, colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                status.textContent = '✅ QR dijana · ' + text.slice(0, 70);
+            } catch (err) {
+                status.textContent = 'Ralat menjana QR: ' + (err && err.message ? err.message : err);
+            }
+        }
+
+        // gabungkan QR + kapsyen untuk eksport (PNG)
+        function qrComposedCanvas() {
+            const box = document.getElementById('qr-box');
+            const qc = box.querySelector('canvas');
+            const qi = box.querySelector('img');
+            if (!qc && !qi) return null;
+            const qsize = qc ? qc.width : (qi.naturalWidth || 320);
+            const pad = Math.round(qsize * 0.08);
+            const cap = Math.round(qsize * 0.11);
+            const W = qsize + pad * 2, H = qsize + pad * 2 + cap;
+            const cv = document.createElement('canvas');
+            cv.width = W; cv.height = H;
+            const c = cv.getContext('2d');
+            c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
+            try { if (qc) c.drawImage(qc, pad, pad, qsize, qsize); else c.drawImage(qi, pad, pad, qsize, qsize); } catch (e) {}
+            c.fillStyle = '#0f172a';
+            c.textAlign = 'center';
+            c.font = '700 ' + Math.max(10, Math.round(qsize * 0.045)) + 'px sans-serif';
+            c.fillText('pdf.payedlegacy.my', W / 2, qsize + pad + Math.round(cap * 0.75));
+            return cv;
+        }
+
+        function qrBlob() {
+            return new Promise((res) => {
+                const cv = qrComposedCanvas();
+                if (!cv) return res(null);
+                cv.toBlob((b) => res(b), 'image/png');
+            });
+        }
+
+        /* =====================================================================
+           TOOL #5 — CANTUM & PISAH PDF
+           ===================================================================== */
+        let mergePdfs = [], mergeSeq = 0, splitPdf = null;
+
+        async function pdfPageCount(bytes) {
+            const { PDFDocument } = PDFLib;
+            const d = await PDFDocument.load(bytes, { ignoreEncryption: true });
+            return d.getPageCount();
+        }
+
+        async function handleMergeFiles(e) {
+            const files = Array.from(e.target.files || []).filter(f => (f.type === 'application/pdf') || /\.pdf$/i.test(f.name || ''));
+            if (!files.length) { document.getElementById('file-merge').value = ''; return; }
+            showLoading('Membaca ' + files.length + ' fail PDF...');
+            try {
+                for (const f of files) {
+                    try {
+                        const bytes = new Uint8Array(await f.arrayBuffer());
+                        const pages = await pdfPageCount(bytes);
+                        mergePdfs.push({ id: ++mergeSeq, name: f.name, bytes, pages });
+                    } catch (err) {
+                        alert('Gagal membaca ' + f.name + ': ' + (err && err.message ? err.message : err));
+                    }
+                }
+                renderMergeList();
+            } finally {
+                hideLoading();
+                document.getElementById('file-merge').value = '';
+            }
+        }
+
+        function renderMergeList() {
+            const list = document.getElementById('merge-list');
+            document.getElementById('merge-count').textContent = mergePdfs.length + ' fail';
+            list.innerHTML = '';
+            mergePdfs.forEach((it, i) => {
+                const row = document.createElement('div');
+                row.className = 'merge-row flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2';
+                row.dataset.idx = i;
+                row.innerHTML = '<span class="merge-handle cursor-grab select-none text-slate-500 font-black text-lg" title="Tarik untuk susun">☰</span>' +
+                    '<span class="num w-6 text-center text-[11px] font-black text-emerald-700">' + (i + 1) + '</span>' +
+                    '<span class="flex-1 truncate text-xs font-bold text-slate-700">' + escapeHtmlText(it.name) + '</span>' +
+                    '<span class="text-[11px] font-bold text-slate-500">' + it.pages + ' hlm</span>' +
+                    '<button onclick="moveMerge(' + i + ',-1)" class="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs">⬆</button>' +
+                    '<button onclick="moveMerge(' + i + ',1)" class="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs">⬇</button>' +
+                    '<button onclick="removeMerge(' + i + ')" class="px-2 py-1 bg-white border border-red-200 text-red-600 rounded-lg text-xs">🗑</button>';
+                list.appendChild(row);
+                const h = row.querySelector('.merge-handle');
+                if (h) setupMergeDrag(h, row);
+            });
+        }
+
+        function moveMerge(i, dir) {
+            const j = i + dir;
+            if (j < 0 || j >= mergePdfs.length) return;
+            const t = mergePdfs[i]; mergePdfs[i] = mergePdfs[j]; mergePdfs[j] = t;
+            renderMergeList();
+        }
+
+        function removeMerge(i) { mergePdfs.splice(i, 1); renderMergeList(); }
+        function clearMerge() { mergePdfs = []; renderMergeList(); }
+
+        // seret untuk susun (drag-and-drop dari ikon ☰)
+        function setupMergeDrag(handle, row) {
+            let dragging = false;
+            const move = (e) => {
+                if (!dragging) return;
+                const p = e.touches ? e.touches[0] : e;
+                const list = document.getElementById('merge-list');
+                const rows = Array.from(list.querySelectorAll('.merge-row'));
+                let target = rows.indexOf(row);
+                rows.forEach((r, i) => {
+                    const b = r.getBoundingClientRect();
+                    if (p.clientY >= b.top && p.clientY <= b.bottom) target = i;
+                });
+                const cur = rows.indexOf(row);
+                if (target !== cur && target >= 0) {
+                    if (target < cur) list.insertBefore(row, rows[target]);
+                    else list.insertBefore(row, rows[target].nextSibling);
+                    // kemas kini susunan array ikut DOM
+                    const order = Array.from(list.querySelectorAll('.merge-row')).map(r => +r.dataset.idx);
+                    const baru = order.map(i => mergePdfs[i]);
+                    mergePdfs = baru;
+                    Array.from(list.querySelectorAll('.merge-row')).forEach((r, i) => {
+                        r.dataset.idx = i;
+                        const n = r.querySelector('.num'); if (n) n.textContent = i + 1;
+                    });
+                }
+                if (e.cancelable) e.preventDefault();
+            };
+            const up = () => {
+                if (!dragging) return;
+                dragging = false;
+                row.classList.remove('ring-2', 'ring-emerald-400');
+                document.removeEventListener('mousemove', move);
+                document.removeEventListener('mouseup', up);
+                document.removeEventListener('touchmove', move);
+                document.removeEventListener('touchend', up);
+                renderMergeList();
+            };
+            handle.addEventListener('mousedown', (e) => {
+                dragging = true;
+                row.classList.add('ring-2', 'ring-emerald-400');
+                e.preventDefault();
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', up);
+            });
+            handle.addEventListener('touchstart', (e) => {
+                dragging = true;
+                row.classList.add('ring-2', 'ring-emerald-400');
+                document.addEventListener('touchmove', move, { passive: false });
+                document.addEventListener('touchend', up);
+            }, { passive: true });
+        }
+
+        async function doMergeBytes() {
+            const { PDFDocument } = PDFLib;
+            const out = await PDFDocument.create();
+            for (const it of mergePdfs) {
+                const src = await PDFDocument.load(it.bytes, { ignoreEncryption: true });
+                const copied = await out.copyPages(src, src.getPageIndices());
+                copied.forEach(p => out.addPage(p));
+            }
+            return await out.save();
+        }
+
+        async function mergeDownload() {
+            if (!mergePdfs.length) { alert('Tambah fail PDF dahulu.'); return; }
+            showLoading('Mencantum ' + mergePdfs.length + ' fail...');
+            try {
+                const b = await doMergeBytes();
+                triggerDownload(new Blob([b], { type: 'application/pdf' }), 'PDFEasy_CANTUM_' + stamp() + '.pdf');
+            } catch (err) { alert('Ralat mencantum: ' + (err && err.message ? err.message : err)); }
+            finally { hideLoading(); }
+        }
+
+        async function handleSplitFile(e) {
+            const f = (e.target.files || [])[0];
+            if (!f) return;
+            showLoading('Membaca PDF...');
+            try {
+                const bytes = new Uint8Array(await f.arrayBuffer());
+                const pages = await pdfPageCount(bytes);
+                splitPdf = { name: f.name, bytes, pages };
+                document.getElementById('split-status').textContent = f.name + ' · ' + pages + ' muka surat';
+                const r = document.getElementById('split-range');
+                if (!r.value) r.value = '1-' + pages;
+            } catch (err) {
+                splitPdf = null;
+                document.getElementById('split-status').textContent = 'Gagal membaca fail.';
+                alert('Gagal membaca PDF: ' + (err && err.message ? err.message : err));
+            } finally {
+                hideLoading();
+                document.getElementById('file-split').value = '';
+            }
+        }
+
+        // baca julat seperti "1,3-5" → [1,3,4,5]
+        function parsePageRanges(str, max) {
+            const set = [];
+            String(str || '').split(',').forEach(part => {
+                const t = part.trim();
+                if (!t) return;
+                const m = t.match(/^(\d+)\s*-\s*(\d+)$/);
+                if (m) {
+                    let a = +m[1], b = +m[2];
+                    if (a > b) { const tmp = a; a = b; b = tmp; }
+                    for (let i = a; i <= b; i++) if (i >= 1 && i <= max) set.push(i);
+                } else if (/^\d+$/.test(t)) {
+                    const i = +t;
+                    if (i >= 1 && i <= max) set.push(i);
+                }
+            });
+            return set.filter((v, i, arr) => arr.indexOf(v) === i).sort((x, y) => x - y);
+        }
+
+        async function doSplitBytes() {
+            const idx = parsePageRanges(document.getElementById('split-range').value, splitPdf.pages);
+            if (!idx.length) return null;
+            const { PDFDocument } = PDFLib;
+            const src = await PDFDocument.load(splitPdf.bytes, { ignoreEncryption: true });
+            const out = await PDFDocument.create();
+            const copied = await out.copyPages(src, idx.map(n => n - 1));
+            copied.forEach(p => out.addPage(p));
+            return { bytes: await out.save(), pages: idx };
+        }
+
+        async function splitDownload() {
+            if (!splitPdf) { alert('Muat naik fail PDF dahulu.'); return; }
+            const idx = parsePageRanges(document.getElementById('split-range').value, splitPdf.pages);
+            if (!idx.length) { alert('Julat muka surat tidak sah. Contoh: 1,3-5'); return; }
+            showLoading('Memisah ' + idx.length + ' muka surat...');
+            try {
+                const r = await doSplitBytes();
+                triggerDownload(new Blob([r.bytes], { type: 'application/pdf' }), 'PDFEasy_PISAH_' + idx.join('-') + '_' + stamp() + '.pdf');
+            } catch (err) { alert('Ralat memisah: ' + (err && err.message ? err.message : err)); }
+            finally { hideLoading(); }
+        }
+
+        /* =====================================================================
+           TOOL #8 — STUDIO PASPORT PRO (35mm × 50mm, tukar latar, A4 8-up)
+           ===================================================================== */
+        const PP_FRAME_W = 350, PP_FRAME_H = 500;      // nisbah 35:50
+        let passportImg = null, ppProcessed = null, ppZoom = 1, ppOffX = 0, ppOffY = 0, ppTarget = '#ffffff';
+
+        async function handlePassportFile(e) {
+            const f = (e.target.files || [])[0];
+            if (!f) return;
+            if (!((f.type || '').startsWith('image/'))) { alert('Sila pilih fail gambar.'); return; }
+            showLoading('Memuatkan gambar...');
+            try {
+                passportImg = await loadImgEl(URL.createObjectURL(f));
+                ppProcessed = null;
+                ppZoom = 1; ppOffX = 0; ppOffY = 0;
+                const z = document.getElementById('pp-zoom'); if (z) { z.value = 100; }
+                const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
+                document.getElementById('pp-status').textContent = f.name + ' · ' + passportImg.naturalWidth + '×' + passportImg.naturalHeight;
+                renderPassport();
+            } catch (err) {
+                alert('Gagal membaca gambar: ' + (err && err.message ? err.message : err));
+            } finally {
+                hideLoading();
+                document.getElementById('pp-file').value = '';
+                document.getElementById('pp-camera').value = '';
+            }
+        }
+
+        function setPpTarget(col, btn) {
+            ppTarget = col;
+            ppProcessed = null;
+            document.querySelectorAll('.pp-swatch').forEach(b => b.classList.remove('border-emerald-500'));
+            if (btn) btn.classList.add('border-emerald-500');
+            renderPassport();
+        }
+
+        function hexToRgbObj(hex) {
+            return {
+                r: parseInt(hex.slice(1, 3), 16),
+                g: parseInt(hex.slice(3, 5), 16),
+                b: parseInt(hex.slice(5, 7), 16)
+            };
+        }
+
+        // buang latar: sampel warna sudut + flood fill dengan toleransi RGB
+        function processPassportBg() {
+            if (!passportImg) return null;
+            const maxDim = 1100;
+            const s = Math.min(1, maxDim / Math.max(passportImg.naturalWidth, passportImg.naturalHeight));
+            const w = Math.max(1, Math.round(passportImg.naturalWidth * s));
+            const h = Math.max(1, Math.round(passportImg.naturalHeight * s));
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            const c = cv.getContext('2d');
+            c.drawImage(passportImg, 0, 0, w, h);
+            const im = c.getImageData(0, 0, w, h);
+            const d = im.data;
+
+            // sampel latar dari sudut + tepi tengah
+            const pts = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1], [w >> 1, 0], [w >> 1, h - 1], [0, h >> 1], [w - 1, h >> 1]];
+            let sr = 0, sg = 0, sb = 0;
+            pts.forEach(p => { const i = (p[1] * w + p[0]) * 4; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; });
+            const n = pts.length;
+            const br = sr / n, bg = sg / n, bb = sb / n;
+            const tol = +document.getElementById('pp-tol').value;
+            const tgt = hexToRgbObj(ppTarget);
+            const tol2 = tol * tol * 3;
+
+            const near = (i) => {
+                const dr = d[i] - br, dg = d[i + 1] - bg, db = d[i + 2] - bb;
+                return (dr * dr + dg * dg + db * db) <= tol2;
+            };
+
+            const visited = new Uint8Array(w * h);
+            const stack = [];
+            const push = (x, y) => {
+                const p = y * w + x;
+                if (visited[p]) return;
+                if (!near(p * 4)) return;
+                visited[p] = 1; stack.push(p);
+            };
+            for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+            for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+
+            while (stack.length) {
+                const p = stack.pop();
+                const i = p * 4;
+                d[i] = tgt.r; d[i + 1] = tgt.g; d[i + 2] = tgt.b; d[i + 3] = 255;
+                const x = p % w, y = (p - x) / w;
+                if (x > 0) push(x - 1, y);
+                if (x < w - 1) push(x + 1, y);
+                if (y > 0) push(x, y - 1);
+                if (y < h - 1) push(x, y + 1);
+            }
+            c.putImageData(im, 0, 0);
+            ppProcessed = cv;
+            return cv;
+        }
+
+        function renderPassport() {
+            const cv = document.getElementById('pp-canvas');
+            if (!cv) return;
+            const c = cv.getContext('2d');
+            cv.width = PP_FRAME_W; cv.height = PP_FRAME_H;
+            c.fillStyle = ppTarget;
+            c.fillRect(0, 0, PP_FRAME_W, PP_FRAME_H);
+            if (!passportImg) {
+                c.fillStyle = 'rgba(100,116,139,0.85)';
+                c.font = '700 14px sans-serif';
+                c.textAlign = 'center';
+                c.fillText('Muat naik / ambil gambar', PP_FRAME_W / 2, PP_FRAME_H / 2);
+                return;
+            }
+            const src = ppProcessed || processPassportBg();
+            if (!src) return;
+            const base = Math.max(PP_FRAME_W / src.width, PP_FRAME_H / src.height);
+            const s = base * ppZoom;
+            const w = src.width * s, h = src.height * s;
+            const x = (PP_FRAME_W - w) / 2 + ppOffX;
+            const y = (PP_FRAME_H - h) / 2 + ppOffY;
+            c.drawImage(src, x, y, w, h);
+        }
+
+        function ppReset() {
+            ppZoom = 1; ppOffX = 0; ppOffY = 0;
+            const z = document.getElementById('pp-zoom'); if (z) z.value = 100;
+            const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
+            renderPassport();
+        }
+
+        // eksport templat A4 dengan 8 keping gambar pasport + garisan potong
+        async function buildPassportPdf() {
+            if (!passportImg) return null;
+            const src = ppProcessed || processPassportBg();
+            if (!src) return null;
+            const { PDFDocument, rgb } = PDFLib;
+
+            // 35mm x 50mm @ 300dpi = 413 x 591 px
+            const PW = 413, PH = 591;
+            const cv = document.createElement('canvas');
+            cv.width = PW; cv.height = PH;
+            const c = cv.getContext('2d');
+            c.fillStyle = ppTarget;
+            c.fillRect(0, 0, PW, PH);
+            const k = PW / PP_FRAME_W;
+            const base = Math.max(PP_FRAME_W / src.width, PP_FRAME_H / src.height);
+            const s = base * ppZoom;
+            const w = src.width * s, h = src.height * s;
+            const x = ((PP_FRAME_W - w) / 2 + ppOffX) * k;
+            const y = ((PP_FRAME_H - h) / 2 + ppOffY) * k;
+            c.drawImage(src, x, y, w * k, h * k);
+            const jpg = cv.toDataURL('image/jpeg', 0.95);
+
+            const out = await PDFDocument.create();
+            const A4 = [595.28, 841.89];
+            const page = out.addPage(A4);
+            const emb = await out.embedJpg(jpg);
+            const phW = 99.21, phH = 141.73;          // 35mm x 50mm dalam pt
+            const gap = 8, cols = 2, rows = 4;
+            const totalW = cols * phW + (cols - 1) * gap;
+            const totalH = rows * phH + (rows - 1) * gap;
+            const startX = (A4[0] - totalW) / 2;
+            const startY = (A4[1] - totalH) / 2;
+            for (let r = 0; r < rows; r++) {
+                for (let cc = 0; cc < cols; cc++) {
+                    const px = startX + cc * (phW + gap);
+                    const py = startY + (rows - 1 - r) * (phH + gap);
+                    page.drawImage(emb, { x: px, y: py, width: phW, height: phH });
+                    page.drawRectangle({ x: px, y: py, width: phW, height: phH, borderColor: rgb(0.55, 0.55, 0.55), borderWidth: 0.5 });
+                }
+            }
+            page.drawText('PDFEasy - Templat Pasport 35mm x 50mm (8 keping) - pdf.payedlegacy.my', { x: 40, y: 24, size: 7, color: rgb(0.45, 0.45, 0.45) });
+            return await out.save();
+        }
+
+        async function ppDownloadSheet() {
+            if (!passportImg) { alert('Muat naik / ambil gambar pasport dahulu.'); return; }
+            showLoading('Menjana templat A4 (8 keping)...');
+            try {
+                const bytes = await buildPassportPdf();
+                if (!bytes) { alert('Gagal menjana fail.'); return; }
+                triggerDownload(new Blob([bytes], { type: 'application/pdf' }), 'PDFEasy_PASPOR_8UP_' + stamp() + '.pdf');
+            } catch (err) {
+                console.error(err);
+                alert('Ralat menjana templat pasport: ' + (err && err.message ? err.message : err));
+            } finally { hideLoading(); }
+        }
+
+        // seret gambar dalam bingkai pasport (pan)
+        (function initPassportPan() {
+            document.addEventListener('DOMContentLoaded', () => {
+                const cv = document.getElementById('pp-canvas');
+                if (!cv) return;
+                let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+                const move = (e) => {
+                    if (!dragging) return;
+                    const p = e.touches ? e.touches[0] : e;
+                    ppOffX = ox + (p.clientX - sx);
+                    ppOffY = oy + (p.clientY - sy);
+                    renderPassport();
+                    if (e.cancelable) e.preventDefault();
+                };
+                const up = () => {
+                    dragging = false;
+                    document.removeEventListener('mousemove', move);
+                    document.removeEventListener('mouseup', up);
+                    document.removeEventListener('touchmove', move);
+                    document.removeEventListener('touchend', up);
+                };
+                const down = (e) => {
+                    if (!passportImg) return;
+                    dragging = true;
+                    const p = e.touches ? e.touches[0] : e;
+                    sx = p.clientX; sy = p.clientY;
+                    ox = ppOffX; oy = ppOffY;
+                    document.addEventListener('mousemove', move);
+                    document.addEventListener('mouseup', up);
+                    document.addEventListener('touchmove', move, { passive: false });
+                    document.addEventListener('touchend', up);
+                    e.preventDefault();
+                };
+                cv.addEventListener('mousedown', down);
+                cv.addEventListener('touchstart', down, { passive: false });
+            });
+        })();
+
         function openSignatureModal() {
             document.getElementById('modal-sig').classList.remove('hidden');
             const canvas = document.getElementById('sig-canvas');
@@ -1448,12 +2362,19 @@
             if(canvas.toDataURL() === blank.toDataURL()) { closeSignatureModal(); return; }
 
             const dataUrl = canvas.toDataURL("image/png");
+            closeSignatureModal();
+            addSignatureImage(dataUrl);
+        }
+
+        // letak imej tandatangan (PNG lutsinar) sebagai anotasi pada dokumen semasa
+        function addSignatureImage(dataUrl) {
             const layer = document.getElementById('annotation-layer');
             const wrapper = document.getElementById('document-wrapper');
+            if (!layer || !wrapper) { alert('Ruang kerja tidak sedia.'); return; }
 
             const div = document.createElement('div');
             div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400';
-            div.style.left = (wrapper.offsetWidth / 2 - 70) + 'px';
+            div.style.left = Math.max(0, (wrapper.offsetWidth / 2 - 70)) + 'px';
             div.style.top = '180px';
 
             div.innerHTML = `
@@ -1464,7 +2385,6 @@
 
             layer.appendChild(div);
             setupDraggable(div);
-            closeSignatureModal();
         }
 
         // PEMEGANG SERET: hanya boleh ditarik dari ikon ⠿ (kotak input tidak terganggu)

@@ -2,31 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport khas mesra telefon, halang zoom tidak sengaja semasa melukis/menyeret -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- Tetapan PWA & Warna Tema Bar Telefon -->
+    <title>PDFEasy - ID / IC Protection & PDF Studio</title>
+
+    <!-- PWA & Mobile Theme -->
     <meta name="theme-color" content="#10b981">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/manifest.json">
 
-    <title>PDFEasy - ID / IC Protection & PDF Studio</title>
-
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Pustaka Pemprosesan PDF & Canvas Client-Side -->
+    <!-- PDF.js & PDF-Lib CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
     <style>
-        /* CSS Khusus Mesra Sentuhan Jari & Telefon Bimbit */
         body {
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
+        /* Drag & Touch Controls */
         .draggable-item {
             touch-action: none;
             user-select: none;
@@ -34,20 +34,18 @@
             cursor: move;
         }
 
-        /* Saiz butang selesa untuk ibu jari (Minimum 44px height) */
-        button, select, input[type="range"] {
-            min-height: 44px;
+        /* Thumb-friendly Touch Target */
+        button, select, input {
+            touch-action: manipulation;
         }
 
-        /* Canvas Tandatangan */
         #sig-canvas {
             touch-action: none;
-            border: 2px dashed #94a3b8;
-            border-radius: 0.5rem;
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.75rem;
             background-color: #f8fafc;
         }
 
-        /* Scrollbar Halus Moden */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -56,103 +54,106 @@
             background: #cbd5e1;
             border-radius: 4px;
         }
-
-        /* Animation Loading */
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #10b981;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
+<body class="bg-[#f8fafc] text-slate-800 min-h-screen flex flex-col justify-between">
 
-    <!-- BAR ATAS / HEADER -->
+    <!-- HEADER / NAVIGATION BAR -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="bg-emerald-500 text-white p-2 rounded-xl font-bold text-lg shadow-md">PDF</div>
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-500 text-white font-extrabold px-3 py-1.5 rounded-xl text-lg tracking-wide shadow-sm">
+                    PDF
+                </div>
                 <div>
-                    <h1 class="font-extrabold text-xl text-slate-900 tracking-tight leading-none">PDFEasy</h1>
-                    <span class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">100% Client-Side & Private</span>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-black text-xl text-slate-900 tracking-tight">PDFEasy</h1>
+                    </div>
+                    <p class="text-[10px] font-bold text-emerald-600 tracking-wider uppercase">100% CLIENT-SIDE & PRIVATE</p>
                 </div>
             </div>
 
-            <!-- Switcher Bahasa & Status Privasi -->
             <div class="flex items-center gap-3">
-                <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-emerald-500 font-medium">
+                <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-300 text-xs rounded-lg px-3 py-1.5 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="en">English</option>
                     <option value="bm">Bahasa Melayu</option>
-                    <option value="zh">Mandarin (中文)</option>
-                    <option value="es">Español</option>
+                    <option value="zh">中文 (Mandarin)</option>
                 </select>
-                <div class="hidden sm:flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 font-medium">
-                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
-                    <span id="label-privacy-badge">Browser-Only</span>
+                
+                <div class="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+                    <svg class="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+                    <span id="badge-privacy">Browser-Only</span>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- KANDUNGAN UTAMA / MAIN CONTENT -->
-    <main class="max-w-5xl mx-auto px-4 py-6 w-full flex-grow">
+    <!-- MAIN CONTENT -->
+    <main class="max-w-4xl mx-auto px-4 py-8 w-full flex-grow">
 
-        <!-- HEADER TAJUK DOKUMEN & MOD -->
-        <div class="text-center mb-6">
-            <h2 id="txt-title" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2">
-                ID / IC / MyKad & Document Security Studio
+        <!-- TITLE HERO -->
+        <div class="text-center mb-8">
+            <h2 id="txt-title" class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3">
+                Fill Forms, Sign & Protect ID / IC Documents
             </h2>
-            <p id="txt-subtitle" class="text-sm text-slate-600 max-w-xl mx-auto">
-                Fill PDF forms, sign digitally, and add official cross-lines or watermarks to IC/Passports — 100% processed locally inside your browser.
+            <p id="txt-subtitle" class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                Type text into PDF forms, add digital signatures, and protect ID/Passport/MyKad documents with security cross-lines & custom watermarks — 100% private inside your browser.
             </p>
         </div>
 
-        <!-- PILIHAN TABS ALATAN (MODES) -->
-        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-            <button onclick="switchMode('protect')" id="tab-protect" class="p-3 sm:p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-800 font-bold text-xs sm:text-sm flex flex-col items-center gap-1 shadow-sm transition">
-                <span class="text-lg">🛡️</span>
-                <span id="tab-protect-label">Protect ID / IC</span>
+        <!-- TAB NAVIGATION CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <!-- TAB 1: PROTECT ID -->
+            <button onclick="switchTab('protect')" id="tab-protect" class="relative p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/50 text-slate-800 text-center transition-all shadow-sm">
+                <span class="absolute -top-2.5 right-4 bg-red-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                    SAFE ID
+                </span>
+                <div class="w-10 h-10 mx-auto mb-2 text-emerald-600 flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <h3 id="tab-protect-title" class="font-bold text-sm text-slate-900 mb-1">Protect ID / IC / Passport</h3>
+                <p id="tab-protect-sub" class="text-xs text-slate-500">Add cross lines & custom text (e.g. "FOR MAXIS ONLY").</p>
             </button>
-            <button onclick="switchMode('fill')" id="tab-fill" class="p-3 sm:p-4 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs sm:text-sm flex flex-col items-center gap-1 shadow-sm transition">
-                <span class="text-lg">✍️</span>
-                <span id="tab-fill-label">Fill Forms & Sign</span>
+
+            <!-- TAB 2: FILL FORMS & SIGN -->
+            <button onclick="switchTab('fill')" id="tab-fill" class="p-5 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-slate-300 shadow-sm">
+                <div class="w-10 h-10 mx-auto mb-2 text-blue-500 flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                </div>
+                <h3 id="tab-fill-title" class="font-bold text-sm text-slate-900 mb-1">Fill PDF Forms & Sign</h3>
+                <p id="tab-fill-sub" class="text-xs text-slate-500">Click to type text, fill details, and add drawn signatures.</p>
             </button>
-            <button onclick="switchMode('compress')" id="tab-compress" class="p-3 sm:p-4 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs sm:text-sm flex flex-col items-center gap-1 shadow-sm transition">
-                <span class="text-lg">🗜️</span>
-                <span id="tab-compress-label">Compress PDF</span>
+
+            <!-- TAB 3: COMPRESS PDF -->
+            <button onclick="switchTab('compress')" id="tab-compress" class="p-5 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-slate-300 shadow-sm">
+                <div class="w-10 h-10 mx-auto mb-2 text-amber-500 flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                </div>
+                <h3 id="tab-compress-title" class="font-bold text-sm text-slate-900 mb-1">Compress PDF Size</h3>
+                <p id="tab-compress-sub" class="text-xs text-slate-500">Reduce PDF file size for online portal submissions.</p>
             </button>
         </div>
 
-        <!-- DROPZONE MUAT NAIK FAIL -->
-        <div id="upload-zone" class="border-2 border-dashed border-slate-300 bg-white rounded-2xl p-6 text-center hover:border-emerald-500 transition cursor-pointer shadow-sm relative mb-6">
+        <!-- UPLOAD DROPZONE -->
+        <div id="dropzone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 transition-all rounded-3xl p-10 text-center cursor-pointer shadow-sm mb-6 group">
             <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" class="hidden" onchange="handleFileSelect(event)">
-            <div onclick="document.getElementById('file-input').click()" class="flex flex-col items-center gap-2">
-                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl font-bold">
-                    📁
-                </div>
-                <div>
-                    <p id="txt-drop-title" class="font-bold text-slate-800 text-base">Click or Drag & Drop File Here</p>
-                    <p id="txt-drop-sub" class="text-xs text-slate-500 mt-1">Supports PDF, PNG, JPG (Max 50MB)</p>
-                </div>
+            
+            <div class="w-16 h-16 bg-emerald-50 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all shadow-sm">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
             </div>
+            
+            <h3 id="txt-drop-main" class="font-bold text-slate-800 text-lg mb-1">Drag & Drop ID Image, PDF or Word (.DOCX) here</h3>
+            <p id="txt-drop-sub" class="text-xs text-slate-400">Supports .PNG, .JPG, .PDF, .DOCX (Max 50MB)</p>
         </div>
 
-        <!-- STUDIO PAPARAN / WORKSPACE (SELEPAS FILE DILUAS NAIK) -->
+        <!-- WORKSPACE / EDITOR CANVAS CONTAINER -->
         <div id="workspace" class="hidden bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
-
-            <!-- CONTROL TOOLBAR (FON, PALANG, SAIN, NAVIGASI) -->
-            <div class="bg-slate-100 border-b border-slate-200 p-3 flex flex-wrap items-center justify-between gap-3">
-                
-                <!-- PILIHAN FON STANDARD GLOBAL & KAWALAN TEKS -->
+            
+            <!-- TOOLBAR -->
+            <div class="bg-slate-50 border-b border-slate-200 p-3 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2 flex-wrap">
-                    <select id="font-family" class="bg-white border border-slate-300 text-xs rounded-lg px-2 py-1.5 font-medium">
+                    <!-- FONT SELECTOR -->
+                    <select id="font-family" class="bg-white border border-slate-300 text-xs rounded-lg px-2.5 py-2 font-semibold text-slate-700 shadow-sm focus:ring-2 focus:ring-emerald-500">
                         <option value="Arial">Arial (Standard)</option>
                         <option value="Times New Roman">Times New Roman (Legal)</option>
                         <option value="Courier New">Courier New (Monospace)</option>
@@ -160,250 +161,216 @@
                         <option value="Helvetica">Helvetica</option>
                     </select>
 
-                    <button onclick="addTextOverlay()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm">
-                        ➕ <span id="btn-add-text">Add Text</span>
+                    <button onclick="addTextOverlay()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm">
+                        <span>➕</span> <span id="btn-add-text">Add Text</span>
                     </button>
 
-                    <button onclick="openSignatureModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm">
-                        ✍️ <span id="btn-draw-sig">Draw Signature</span>
+                    <button onclick="openSigModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm">
+                        <span>✍️</span> <span id="btn-draw-sig">Draw Signature</span>
                     </button>
                 </div>
 
-                <!-- NAVIGASI MUKA SURAT PDF (MULTI-PAGE) -->
-                <div id="page-nav" class="flex items-center gap-2 bg-white px-3 py-1 rounded-lg border border-slate-300 text-xs font-bold">
-                    <button onclick="changePage(-1)" class="text-slate-600 hover:text-slate-900 px-1">◀ Prev</button>
-                    <span>Page <span id="current-page">1</span> / <span id="total-pages">1</span></span>
-                    <button onclick="changePage(1)" class="text-slate-600 hover:text-slate-900 px-1">Next ▶</button>
+                <!-- PAGE NAVIGATION -->
+                <div id="page-nav" class="hidden items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-700 shadow-sm">
+                    <button onclick="changePage(-1)" class="hover:text-emerald-600 px-1">◀ Prev</button>
+                    <span>Page <span id="cur-page">1</span> / <span id="tot-page">1</span></span>
+                    <button onclick="changePage(1)" class="hover:text-emerald-600 px-1">Next ▶</button>
                 </div>
             </div>
 
-            <!-- KAWALAN PALANG KESELAMATAN & WATERMARK (ID / IC STUDIO MODE) -->
-            <div id="watermark-controls" class="bg-emerald-50 border-b border-emerald-200 p-3 text-xs flex flex-wrap items-center gap-4">
+            <!-- WATERMARK CONTROLS BAR -->
+            <div id="watermark-bar" class="bg-emerald-50 border-b border-emerald-200 p-3 text-xs flex flex-wrap items-center gap-4">
                 <div class="flex items-center gap-2">
                     <label class="font-bold text-emerald-900">Cross Text:</label>
-                    <input type="text" id="wm-text" value="FOR OFFICIAL USE ONLY" oninput="updateWatermark()" class="border border-emerald-300 px-2 py-1 rounded text-xs font-semibold w-48">
+                    <input type="text" id="wm-text" value="FOR OFFICIAL USE ONLY" oninput="renderOverlay()" class="border border-emerald-300 px-2.5 py-1.5 rounded-lg text-xs font-bold w-48 text-slate-800 shadow-sm focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div class="flex items-center gap-2">
-                    <label class="font-bold text-emerald-900">Size:</label>
-                    <input type="range" id="wm-size" min="14" max="48" value="22" oninput="updateWatermark()" class="w-20">
+                    <label class="font-bold text-emerald-900">Font Size:</label>
+                    <input type="range" id="wm-size" min="14" max="48" value="22" oninput="renderOverlay()" class="w-24">
                 </div>
                 <div class="flex items-center gap-2">
                     <label class="font-bold text-emerald-900">Angle:</label>
-                    <input type="range" id="wm-angle" min="-45" max="45" value="-15" oninput="updateWatermark()" class="w-20">
+                    <input type="range" id="wm-angle" min="-45" max="45" value="-15" oninput="renderOverlay()" class="w-24">
                 </div>
             </div>
 
-            <!-- KAWALAN COMPRESS PDF (% SLIDER MODE) -->
-            <div id="compress-controls" class="hidden bg-blue-50 border-b border-blue-200 p-3 text-xs flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="font-bold text-blue-900">Quality Preset:</span>
-                    <button onclick="setQuality(30)" class="bg-white border border-blue-300 px-2 py-1 rounded font-bold text-red-600 hover:bg-blue-100">🔴 Extreme (~70% smaller)</button>
-                    <button onclick="setQuality(50)" class="bg-white border border-blue-300 px-2 py-1 rounded font-bold text-amber-600 hover:bg-blue-100">🟡 Recommended (~50%)</button>
-                    <button onclick="setQuality(80)" class="bg-white border border-blue-300 px-2 py-1 rounded font-bold text-emerald-600 hover:bg-blue-100">🟢 High Quality (~20%)</button>
-                </div>
-                <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <span class="font-bold text-blue-900">Custom Quality: <span id="quality-val">50</span>%</span>
-                    <input type="range" id="quality-slider" min="10" max="90" value="50" oninput="document.getElementById('quality-val').innerText = this.value" class="w-32">
-                </div>
-            </div>
-
-            <!-- KANVAS PAPARAN DOKUMEN & ANOTASI -->
-            <div id="canvas-container" class="relative overflow-auto p-4 bg-slate-200 min-h-[400px] flex justify-center items-start">
-                <div id="canvas-wrapper" class="relative shadow-lg border border-slate-300 bg-white">
-                    <canvas id="main-canvas"></canvas>
-                    <!-- Layer teks/sain/watermark akan ditambah secara dinamik di sini -->
+            <!-- CANVAS VIEWPORT -->
+            <div class="relative overflow-auto p-4 bg-slate-200 min-h-[420px] flex justify-center items-start">
+                <div id="canvas-wrapper" class="relative shadow-xl border border-slate-300 bg-white rounded-lg">
+                    <canvas id="doc-canvas" class="block rounded-lg"></canvas>
                     <div id="annotation-layer" class="absolute inset-0 pointer-events-none"></div>
                 </div>
             </div>
 
-            <!-- BAR BOTTON EKSPORT / DOWNLOAD -->
+            <!-- ACTION FOOTER BAR -->
             <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-                <button onclick="resetWorkspace()" class="text-xs text-slate-500 hover:text-red-600 font-bold">
+                <button onclick="resetApp()" class="text-xs font-bold text-slate-500 hover:text-red-600">
                     🗑️ Clear File
                 </button>
-                <button onclick="exportSafePDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm px-6 py-3 rounded-xl shadow-md flex items-center gap-2">
+                <button onclick="downloadSafePDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm px-6 py-3 rounded-xl shadow-md flex items-center gap-2">
                     <span>📥</span> <span id="btn-export">Download Safe PDF</span>
                 </button>
             </div>
         </div>
 
+        <!-- PRIVACY BANNER -->
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 text-center flex items-center justify-center gap-2 text-xs font-semibold text-emerald-800">
+            <svg class="w-4 h-4 fill-emerald-600 shrink-0" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            <span id="txt-privacy-footer">100% Privacy Guaranteed: Documents and ID copies are processed locally inside your browser. Zero server upload.</span>
+        </div>
+
     </main>
 
-    <!-- MODAL LUKIS TANDATANGAN DIGITAL -->
+    <!-- SIGNATURE MODAL -->
     <div id="sig-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-slate-900 text-base">Draw Digital Signature</h3>
-                <button onclick="closeSignatureModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-slate-900 text-lg">Draw Digital Signature</h3>
+                <button onclick="closeSigModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
             </div>
             
             <canvas id="sig-canvas" width="380" height="180" class="w-full h-44 mb-4"></canvas>
 
             <div class="flex items-center justify-between">
-                <button onclick="clearSignatureCanvas()" class="text-xs text-slate-500 font-bold hover:text-slate-800">
+                <button onclick="clearSigPad()" class="text-xs text-slate-500 font-bold hover:text-slate-800">
                     Clear Pad
                 </button>
                 <div class="flex gap-2">
-                    <button onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-lg">Cancel</button>
-                    <button onclick="saveSignature()" class="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-lg shadow">Apply Signature</button>
+                    <button onclick="closeSigModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">Cancel</button>
+                    <button onclick="applySignature()" class="px-5 py-2 bg-emerald-600 text-white font-extrabold text-xs rounded-xl shadow-md hover:bg-emerald-700">Apply Signature</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- FOOTER -->
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
         <p>© 2026 PDFEasy.app • Global Client-Side Utility Studio</p>
-        <p class="mt-1 text-[11px] text-slate-400">Zero server upload. Complete ID and document privacy guaranteed.</p>
+        <p class="mt-0.5 text-[11px]">Zero server upload. Complete ID and data privacy guaranteed.</p>
     </footer>
 
-    <!-- LOGIK JAVASCRIPT LENGKAP -->
+    <!-- LOGIC SCRIPT -->
     <script>
-        // PDF.js Worker Configuration
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // Teks Sokongan Pelbagai Bahasa
-        const i18n = {
-            en: {
-                title: "ID / IC / MyKad & Document Security Studio",
-                subtitle: "Fill PDF forms, sign digitally, and add official cross-lines or watermarks to IC/Passports — 100% processed locally inside your browser.",
-                protect: "Protect ID / IC",
-                fill: "Fill Forms & Sign",
-                compress: "Compress PDF",
-                dropTitle: "Click or Drag & Drop File Here",
-                addText: "Add Text",
-                drawSig: "Draw Signature",
-                export: "Download Safe PDF",
-                privacy: "Browser-Only"
-            },
-            bm: {
-                title: "Studio Perlindungan ID / IC & Dokumen Rasmi",
-                subtitle: "Isi borang PDF, tandatangan digital, dan tambah palang keselamatan pada salinan MyKad/Pasport — 100% diproses di dalam pelayar anda.",
-                protect: "Palang IC / ID",
-                fill: "Isi Borang & Sain",
-                compress: "Mampat PDF",
-                dropTitle: "Klik atau Seret Fail di Sini",
-                addText: "Tambah Teks",
-                drawSig: "Lukis Sain",
-                export: "Muat Turun PDF Selamat",
-                privacy: "Tanpa Pelayan"
-            },
-            zh: {
-                title: "ID / IC / 护照 & 文档安全保护工作室",
-                subtitle: "在线填写PDF表格、数字签名，并为身份证/护照添加安全水印 — 100% 本地浏览器处理。",
-                protect: "保护身份证/IC",
-                fill: "填写与签名",
-                compress: "压缩 PDF",
-                dropTitle: "点击或拖拽文件到此处",
-                addText: "添加文本",
-                drawSig: "绘制签名",
-                export: "下载安全 PDF",
-                privacy: "仅限浏览器"
-            },
-            es: {
-                title: "Estudio de Seguridad para ID / Documentos",
-                subtitle: "Rellene formularios PDF, firme digitalmente y añada marcas de agua de seguridad — 100% procesado localmente en su navegador.",
-                protect: "Proteger ID / Cédula",
-                fill: "Rellenar y Firmar",
-                compress: "Comprimir PDF",
-                dropTitle: "Haga clic o arrastre el archivo aquí",
-                addText: "Añadir Texto",
-                drawSig: "Dibujar Firma",
-                export: "Descargar PDF Seguro",
-                privacy: "Solo Navegador"
-            }
-        };
-
-        // Pembolehubah Global (State)
-        let currentMode = 'protect';
+        let activeTab = 'protect';
         let pdfDoc = null;
         let currentPageNum = 1;
         let totalPagesNum = 1;
-        let imageFile = null;
-        let pageAnnotations = {}; // Simpan teks & sain mengikut muka surat
-        let isDrawingSignature = false;
+        let loadedImgUrl = null;
+        let isDrawing = false;
 
-        // Tukar Bahasa
+        const i18n = {
+            en: {
+                title: "Fill Forms, Sign & Protect ID / IC Documents",
+                subtitle: "Type text into PDF forms, add digital signatures, and protect ID/Passport/MyKad documents with security cross-lines & custom watermarks — 100% private inside your browser.",
+                protectTitle: "Protect ID / IC / Passport",
+                protectSub: "Add cross lines & custom text (e.g. \"FOR MAXIS ONLY\").",
+                fillTitle: "Fill PDF Forms & Sign",
+                fillSub: "Click to type text, fill details, and add drawn signatures.",
+                compressTitle: "Compress PDF Size",
+                compressSub: "Reduce PDF file size for online portal submissions.",
+                dropMain: "Drag & Drop ID Image, PDF or Word (.DOCX) here",
+                privacyBadge: "Browser-Only"
+            },
+            bm: {
+                title: "Isi Borang, Sain & Lindungi Dokumen ID / MyKad",
+                subtitle: "Taip pada borang PDF, tambah tandatangan digital, dan letak palang keselamatan pada salinan MyKad/Pasport — 100% selamat dalam pelayar anda.",
+                protectTitle: "Palang ID / MyKad / Pasport",
+                protectSub: "Tambah palang keselamatan & teks (cth: \"UNTUK URUSAN MAXIS SAHAJA\").",
+                fillTitle: "Isi Borang PDF & Sain",
+                fillSub: "Taip maklumat borang dan tambah tandatangan digital.",
+                compressTitle: "Mampatkan Saiz PDF",
+                compressSub: "Kecilkan saiz fail PDF untuk muat naik portal rasmi.",
+                dropMain: "Seret & Lepas Gambar IC, PDF atau Word di Sini",
+                privacyBadge: "Tanpa Pelayan"
+            },
+            zh: {
+                title: "填写表格、签名与保护 ID / IC 文档",
+                subtitle: "在线填写PDF表格，添加数字签名，并为身份证/护照添加安全水印 — 100% 本地浏览器处理。",
+                protectTitle: "保护身份证 / IC / 护照",
+                protectSub: "添加安全水印和自定义文本",
+                fillTitle: "填写 PDF 表格与签名",
+                fillSub: "输入文本，填写详细信息并添加签名",
+                compressTitle: "压缩 PDF 大小",
+                compressSub: "减小 PDF 文件大小以用于在线提交",
+                dropMain: "拖放身份证图片、PDF 或 Word 文件至此处",
+                privacyBadge: "仅限浏览器"
+            }
+        };
+
         function changeLanguage(lang) {
             const t = i18n[lang] || i18n.en;
             document.getElementById('txt-title').innerText = t.title;
             document.getElementById('txt-subtitle').innerText = t.subtitle;
-            document.getElementById('tab-protect-label').innerText = t.protect;
-            document.getElementById('tab-fill-label').innerText = t.fill;
-            document.getElementById('tab-compress-label').innerText = t.compress;
-            document.getElementById('txt-drop-title').innerText = t.dropTitle;
-            document.getElementById('btn-add-text').innerText = t.addText;
-            document.getElementById('btn-draw-sig').innerText = t.drawSig;
-            document.getElementById('btn-export').innerText = t.export;
-            document.getElementById('label-privacy-badge').innerText = t.privacy;
+            document.getElementById('tab-protect-title').innerText = t.protectTitle;
+            document.getElementById('tab-protect-sub').innerText = t.protectSub;
+            document.getElementById('tab-fill-title').innerText = t.fillTitle;
+            document.getElementById('tab-fill-sub').innerText = t.fillSub;
+            document.getElementById('tab-compress-title').innerText = t.compressTitle;
+            document.getElementById('tab-compress-sub').innerText = t.compressSub;
+            document.getElementById('txt-drop-main').innerText = t.dropMain;
+            document.getElementById('badge-privacy').innerText = t.privacyBadge;
         }
 
-        // Tukar Mod Alatan
-        function switchMode(mode) {
-            currentMode = mode;
-            ['protect', 'fill', 'compress'].forEach(m => {
-                const btn = document.getElementById(`tab-${m}`);
-                if (m === mode) {
-                    btn.className = "p-3 sm:p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-800 font-bold text-xs sm:text-sm flex flex-col items-center gap-1 shadow-sm transition";
+        function switchTab(tab) {
+            activeTab = tab;
+            ['protect', 'fill', 'compress'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    btn.className = "relative p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/50 text-slate-800 text-center transition-all shadow-sm";
                 } else {
-                    btn.className = "p-3 sm:p-4 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs sm:text-sm flex flex-col items-center gap-1 shadow-sm transition";
+                    btn.className = "p-5 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-slate-300 shadow-sm";
                 }
             });
 
-            document.getElementById('watermark-controls').style.display = mode === 'protect' ? 'flex' : 'none';
-            document.getElementById('compress-controls').style.display = mode === 'compress' ? 'flex' : 'none';
-            
-            if (pdfDoc || imageFile) renderCurrentPage();
+            document.getElementById('watermark-bar').style.display = tab === 'protect' ? 'flex' : 'none';
+            if (pdfDoc || loadedImgUrl) renderPage();
         }
 
-        // Pengendalian Muat Naik Fail
-        async function handleFileSelect(event) {
-            const file = event.target.files[0];
+        async function handleFileSelect(e) {
+            const file = e.target.files[0];
             if (!file) return;
 
-            document.getElementById('upload-zone').classList.add('hidden');
+            document.getElementById('dropzone').classList.add('hidden');
             document.getElementById('workspace').classList.remove('hidden');
 
             if (file.type === 'application/pdf') {
-                const arrayBuffer = await file.arrayBuffer();
-                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const buffer = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
                 totalPagesNum = pdfDoc.numPages;
                 currentPageNum = 1;
-                document.getElementById('total-pages').innerText = totalPagesNum;
+                document.getElementById('tot-page').innerText = totalPagesNum;
                 document.getElementById('page-nav').style.display = totalPagesNum > 1 ? 'flex' : 'none';
-                renderCurrentPage();
+                renderPage();
             } else if (file.type.startsWith('image/')) {
-                imageFile = URL.createObjectURL(file);
-                totalPagesNum = 1;
-                currentPageNum = 1;
+                loadedImgUrl = URL.createObjectURL(file);
                 document.getElementById('page-nav').style.display = 'none';
-                renderImageToCanvas();
+                renderImage();
             }
         }
 
-        // Paparkan Muka Surat PDF pada Canvas
-        async function renderCurrentPage() {
+        async function renderPage() {
             if (!pdfDoc) return;
-            document.getElementById('current-page').innerText = currentPageNum;
+            document.getElementById('cur-page').innerText = currentPageNum;
             const page = await pdfDoc.getPage(currentPageNum);
-            const viewport = page.getViewport({ scale: 1.2 });
+            const viewport = page.getViewport({ scale: 1.3 });
 
-            const canvas = document.getElementById('main-canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
+            const canvas = document.getElementById('doc-canvas');
+            const ctx = canvas.getContext('2d');
             canvas.width = viewport.width;
+            canvas.height = viewport.height;
 
             const wrapper = document.getElementById('canvas-wrapper');
             wrapper.style.width = `${viewport.width}px`;
             wrapper.style.height = `${viewport.height}px`;
 
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-            renderOverlayAnnotations();
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            renderOverlay();
         }
 
-        // Paparkan Gambar (IC / PNG / JPG) pada Canvas
-        function renderImageToCanvas() {
-            const canvas = document.getElementById('main-canvas');
+        function renderImage() {
+            const canvas = document.getElementById('doc-canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
             img.onload = function () {
@@ -415,65 +382,27 @@
                 wrapper.style.height = `${canvas.height}px`;
 
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                renderOverlayAnnotations();
+                renderOverlay();
             };
-            img.src = imageFile;
+            img.src = loadedImgUrl;
         }
 
-        // Navigasi Muka Surat
-        function changePage(delta) {
-            if (!pdfDoc) return;
-            const newPage = currentPageNum + delta;
-            if (newPage >= 1 && newPage <= totalPagesNum) {
-                currentPageNum = newPage;
-                renderCurrentPage();
-            }
-        }
-
-        // Tambah Teks Boleh Ditarik (Draggable Text)
-        function addTextOverlay() {
+        function renderOverlay() {
             const layer = document.getElementById('annotation-layer');
-            const font = document.getElementById('font-family').value;
+            layer.innerHTML = '';
 
-            const div = document.createElement('div');
-            div.className = 'draggable-item absolute pointer-events-auto bg-yellow-100/80 border border-yellow-400 p-1.5 rounded text-slate-900 flex items-center gap-1 shadow-md';
-            div.style.left = '50px';
-            div.style.top = '50px';
-            div.style.fontFamily = font;
-
-            div.innerHTML = `
-                <input type="text" value="Type here..." class="bg-transparent border-none text-xs font-bold focus:outline-none" style="font-family: ${font};">
-                <button onclick="this.parentElement.remove()" class="text-red-500 font-bold text-xs px-1">✕</button>
-            `;
-
-            makeElementDraggable(div);
-            layer.appendChild(div);
-        }
-
-        // Kemas kini Watermark / Palang IC
-        function updateWatermark() {
-            if (currentMode !== 'protect') return;
-            renderCurrentPage();
-        }
-
-        // Semasa render overlay, lukis palang keselamatan jika mod 'protect'
-        function renderOverlayAnnotations() {
-            const layer = document.getElementById('annotation-layer');
-            layer.innerHTML = ''; // Clear previous page overlays
-
-            if (currentMode === 'protect') {
-                const canvas = document.getElementById('main-canvas');
-                const wmText = document.getElementById('wm-text').value;
-                const wmSize = document.getElementById('wm-size').value;
-                const wmAngle = document.getElementById('wm-angle').value;
+            if (activeTab === 'protect') {
+                const text = document.getElementById('wm-text').value;
+                const size = document.getElementById('wm-size').value;
+                const angle = document.getElementById('wm-angle').value;
 
                 const div = document.createElement('div');
                 div.className = 'absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden';
                 div.innerHTML = `
-                    <div style="transform: rotate(${wmAngle}deg); opacity: 0.45;" class="text-center">
-                        <div class="border-y-4 border-red-600 py-1 px-8">
-                            <span style="font-size: ${wmSize}px;" class="font-extrabold text-red-600 tracking-widest uppercase">
-                                ${wmText}
+                    <div style="transform: rotate(${angle}deg); opacity: 0.5;" class="text-center">
+                        <div class="border-y-4 border-red-600 py-1.5 px-10">
+                            <span style="font-size: ${size}px;" class="font-black text-red-600 tracking-widest uppercase">
+                                ${text}
                             </span>
                         </div>
                     </div>
@@ -482,20 +411,46 @@
             }
         }
 
-        // Pengendalian Drag & Drop Elemen Teks/Sain (Touch & Mouse Supported)
-        function makeElementDraggable(elmnt) {
+        function changePage(delta) {
+            if (!pdfDoc) return;
+            const target = currentPageNum + delta;
+            if (target >= 1 && target <= totalPagesNum) {
+                currentPageNum = target;
+                renderPage();
+            }
+        }
+
+        function addTextOverlay() {
+            const layer = document.getElementById('annotation-layer');
+            const font = document.getElementById('font-family').value;
+
+            const div = document.createElement('div');
+            div.className = 'draggable-item absolute pointer-events-auto bg-amber-100/90 border border-amber-400 p-1.5 rounded-lg text-slate-900 flex items-center gap-1 shadow-lg';
+            div.style.left = '40px';
+            div.style.top = '40px';
+            div.style.fontFamily = font;
+
+            div.innerHTML = `
+                <input type="text" value="Type here..." class="bg-transparent border-none text-xs font-bold focus:outline-none" style="font-family: ${font};">
+                <button onclick="this.parentElement.remove()" class="text-red-500 font-bold text-xs px-1 hover:text-red-700">✕</button>
+            `;
+
+            makeDraggable(div);
+            layer.appendChild(div);
+        }
+
+        function makeDraggable(elmnt) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
 
             elmnt.onmousedown = dragMouseDown;
             elmnt.ontouchstart = dragTouchStart;
 
             function dragMouseDown(e) {
-                e = e || window.event;
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
                 e.preventDefault();
                 pos3 = e.clientX;
                 pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
+                document.onmouseup = closeDrag;
                 document.onmousemove = elementDrag;
             }
 
@@ -504,12 +459,11 @@
                 const touch = e.touches[0];
                 pos3 = touch.clientX;
                 pos4 = touch.clientY;
-                document.ontouchend = closeDragElement;
+                document.ontouchend = closeDrag;
                 document.ontouchmove = elementTouchDrag;
             }
 
             function elementDrag(e) {
-                e = e || window.event;
                 e.preventDefault();
                 pos1 = pos3 - e.clientX;
                 pos2 = pos4 - e.clientY;
@@ -529,7 +483,7 @@
                 elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
             }
 
-            function closeDragElement() {
+            function closeDrag() {
                 document.onmouseup = null;
                 document.onmousemove = null;
                 document.ontouchend = null;
@@ -537,10 +491,10 @@
             }
         }
 
-        // MODAL TANDATANGAN
+        // SIGNATURE MODAL
         let sigCanvas, sigCtx;
 
-        function openSignatureModal() {
+        function openSigModal() {
             document.getElementById('sig-modal').classList.remove('hidden');
             sigCanvas = document.getElementById('sig-canvas');
             sigCtx = sigCanvas.getContext('2d');
@@ -548,95 +502,80 @@
             sigCtx.lineWidth = 2.5;
             sigCtx.lineCap = "round";
 
-            // Event Listeners Lukis Tandatangan
-            sigCanvas.onmousedown = startSig;
-            sigCanvas.onmousemove = drawSig;
-            sigCanvas.onmouseup = stopSig;
+            sigCanvas.onmousedown = (e) => {
+                isDrawing = true;
+                sigCtx.beginPath();
+                sigCtx.moveTo(e.offsetX, e.offsetY);
+            };
+            sigCanvas.onmousemove = (e) => {
+                if (!isDrawing) return;
+                sigCtx.lineTo(e.offsetX, e.offsetY);
+                sigCtx.stroke();
+            };
+            sigCanvas.onmouseup = () => isDrawing = false;
 
             sigCanvas.ontouchstart = (e) => {
                 const touch = e.touches[0];
                 const rect = sigCanvas.getBoundingClientRect();
-                isDrawingSignature = true;
+                isDrawing = true;
                 sigCtx.beginPath();
                 sigCtx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
             };
             sigCanvas.ontouchmove = (e) => {
-                if (!isDrawingSignature) return;
+                if (!isDrawing) return;
                 const touch = e.touches[0];
                 const rect = sigCanvas.getBoundingClientRect();
                 sigCtx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
                 sigCtx.stroke();
             };
-            sigCanvas.ontouchend = stopSig;
+            sigCanvas.ontouchend = () => isDrawing = false;
         }
 
-        function startSig(e) {
-            isDrawingSignature = true;
-            sigCtx.beginPath();
-            sigCtx.moveTo(e.offsetX, e.offsetY);
-        }
-        function drawSig(e) {
-            if (!isDrawingSignature) return;
-            sigCtx.lineTo(e.offsetX, e.offsetY);
-            sigCtx.stroke();
-        }
-        function stopSig() {
-            isDrawingSignature = false;
-        }
-
-        function clearSignatureCanvas() {
+        function clearSigPad() {
             if (sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
         }
 
-        function closeSignatureModal() {
+        function closeSigModal() {
             document.getElementById('sig-modal').classList.add('hidden');
-            clearSignatureCanvas();
+            clearSigPad();
         }
 
-        function saveSignature() {
+        function applySignature() {
             const dataUrl = sigCanvas.toDataURL("image/png");
             const layer = document.getElementById('annotation-layer');
 
             const div = document.createElement('div');
-            div.className = 'draggable-item absolute pointer-events-auto border border-emerald-400 p-1 rounded bg-white/50 shadow-md group flex items-start gap-1';
-            div.style.left = '100px';
-            div.style.top = '100px';
+            div.className = 'draggable-item absolute pointer-events-auto border border-emerald-400 p-1 rounded-lg bg-white/70 shadow-lg flex items-start gap-1';
+            div.style.left = '80px';
+            div.style.top = '80px';
 
             div.innerHTML = `
                 <img src="${dataUrl}" class="w-32 h-auto pointer-events-none">
-                <button onclick="this.parentElement.remove()" class="text-red-500 font-bold text-xs">✕</button>
+                <button onclick="this.parentElement.remove()" class="text-red-500 font-bold text-xs hover:text-red-700">✕</button>
             `;
 
-            makeElementDraggable(div);
+            makeDraggable(div);
             layer.appendChild(div);
-            closeSignatureModal();
+            closeSigModal();
         }
 
-        // Tetapkan Preset Kualiti Pemampatan
-        function setQuality(val) {
-            document.getElementById('quality-slider').value = val;
-            document.getElementById('quality-val').innerText = val;
-        }
-
-        // MUAT TURUN / EKSPORT PDF SAFE
-        async function exportSafePDF() {
-            const mainCanvas = document.getElementById('main-canvas');
+        async function downloadSafePDF() {
+            const docCanvas = document.getElementById('doc-canvas');
             const { PDFDocument } = PDFLib;
-            const pdfDocOutput = await PDFDocument.create();
+            const pdfDocOut = await PDFDocument.create();
 
-            // Lukis canvas ke dalam imej PDF
-            const imgData = mainCanvas.toDataURL('image/jpeg', 0.85);
-            const imgEmbed = await pdfDocOutput.embedJpg(imgData);
+            const imgData = docCanvas.toDataURL('image/jpeg', 0.85);
+            const imgEmbed = await pdfDocOut.embedJpg(imgData);
 
-            const page = pdfDocOutput.addPage([mainCanvas.width, mainCanvas.height]);
+            const page = pdfDocOut.addPage([docCanvas.width, docCanvas.height]);
             page.drawImage(imgEmbed, {
                 x: 0,
                 y: 0,
-                width: mainCanvas.width,
-                height: mainCanvas.height
+                width: docCanvas.width,
+                height: docCanvas.height
             });
 
-            const pdfBytes = await pdfDocOutput.save();
+            const pdfBytes = await pdfDocOut.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -644,13 +583,12 @@
             link.click();
         }
 
-        // Reset Workspace
-        function resetWorkspace() {
+        function resetApp() {
             pdfDoc = null;
-            imageFile = null;
+            loadedImgUrl = null;
             document.getElementById('file-input').value = '';
             document.getElementById('workspace').classList.add('hidden');
-            document.getElementById('upload-zone').classList.remove('hidden');
+            document.getElementById('dropzone').classList.remove('hidden');
         }
     </script>
 </body>

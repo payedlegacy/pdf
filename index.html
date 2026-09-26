@@ -1,35 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PDFEasy — Fill Forms, Sign & Protect ID / IC / Documents</title>
-    <meta name="description" content="Free & private PDF tool: add safety cross-lines/watermarks to MyKad/ID, fill forms, sign digitally, and compress PDF size. 100% processed locally.">
-    
-    <!-- PWA & Mobile Theme -->
+    <title>PDFEasy — Palang ID/IC, Isi Borang, Tandatangan & Mampatkan PDF (100% Dalam Pelayar)</title>
+    <meta name="description" content="Alat PDF percuma & privasi: letak palang/watermark pada salinan MyKad, IC, lesen atau pasport, isi borang PDF, tandatangan digital, dan mampatkan saiz PDF. Semua diproses 100% dalam pelayar anda.">
     <meta name="theme-color" content="#10b981">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="/manifest.json"> <!-- Boleh dibiarkan walaupun fail tiada buat masa ini -->
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- PDF.js & PDF-Lib (Client-side processing) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
             -webkit-tap-highlight-color: transparent;
-        }
-
-        /* Anti-Zoom & Touch Friendly for Canvas */
-        .touch-safe {
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
+            touch-action: manipulation;
         }
 
         .draggable-item {
@@ -37,380 +25,477 @@
             cursor: move;
             touch-action: none;
             user-select: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            -webkit-user-select: none;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1.5px dashed #3b82f6;
+            border-radius: 6px;
+            padding: 2px 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
-
-        .draggable-item:hover, .draggable-item:active {
-            border-color: #10b981 !important;
-            z-index: 50;
-        }
-
-        /* Thumb-friendly targets */
-        button, select, input[type="range"] {
-            touch-action: manipulation;
+        .draggable-item:hover {
+            border-color: #10b981;
         }
 
         #sig-canvas {
             touch-action: none;
-            border: 2px dashed #cbd5e1;
-            border-radius: 0.75rem;
-            background-color: #f8fafc;
-            width: 100%;
+            border: 2px dashed #94a3b8;
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+            cursor: crosshair;
         }
 
-        /* Modern Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        
-        /* Spinner */
-        .spinner {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid #fff;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+        button, select, input[type="range"] {
+            min-height: 40px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+<body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
 
-    <!-- HEADER -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="resetApp()">
-                <div class="bg-emerald-500 text-white font-black px-3 py-1.5 rounded-xl text-lg tracking-wider shadow-sm">PDF</div>
-                <div class="hidden sm:block">
-                    <h1 class="font-black text-xl text-slate-900 tracking-tight leading-none">PDFEasy</h1>
-                    <p class="text-[10px] font-extrabold text-emerald-600 tracking-wider uppercase mt-0.5" data-i18n="tagline">100% Client-Side</p>
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="resetToHome()">
+                <div class="bg-emerald-600 text-white font-black px-3 py-1.5 rounded-xl text-xl shadow-md">PDF</div>
+                <div>
+                    <h1 class="font-black text-xl text-slate-900 leading-none">PDFEasy</h1>
+                    <p class="text-[10px] font-extrabold text-emerald-600 tracking-wider uppercase mt-0.5" data-i18n="tagline">100% Client-Side Privacy</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 sm:gap-4">
-                <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1.5 font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer hover:bg-slate-100">
-                    <option value="en">English</option>
-                    <option value="bm">B. Melayu</option>
-                </select>
-                
-                <!-- MONETIZATION 1: GO PRO BUTTON -->
-                <button onclick="showToast('Premium Features unlocking soon! Stay tuned.')" class="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-300 font-extrabold text-xs px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1">
-                    👑 <span class="hidden sm:inline">Go Pro</span>
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <button onclick="shareAppWeb()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition flex items-center gap-1.5 shadow-sm">
+                    🔗 <span data-i18n="btn_share_app">Kongsi Web Ini</span>
                 </button>
-
-                <div class="hidden md:flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
-                    <svg class="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
-                    <span data-i18n="browserOnly">Browser-Only</span>
+                <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-300 text-xs font-bold rounded-xl px-3 py-2 outline-none cursor-pointer">
+                    <option value="bm">🇲🇾 Bahasa Melayu</option>
+                    <option value="en">🇬🇧 English</option>
+                    <option value="zh">🇨🇳 中文</option>
+                </select>
+                <div class="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-2 rounded-full border border-emerald-200">
+                    🔒 <span data-i18n="badge_browser">Browser-Only</span>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- MAIN APP AREA -->
     <main class="max-w-5xl mx-auto px-4 py-8 w-full flex-grow flex flex-col">
 
-        <!-- INITIAL VIEW: HERO & DROPZONE -->
-        <div id="view-home" class="flex flex-col flex-grow">
-            
-            <div class="text-center mb-8">
-                <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3" data-i18n="heroTitle">
-                    Fill Forms, Sign & Protect ID / IC
+        <!-- VIEW: HOME / HERO -->
+        <div id="view-home" class="flex flex-col flex-grow space-y-6">
+            <div class="text-center">
+                <h2 id="main-title" class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3" data-i18n="hero_title">
+                    Palang ID/IC, Isi Borang & Tukar ke PDF
                 </h2>
-                <p class="text-sm sm:text-base text-slate-500 max-w-2xl mx-auto leading-relaxed" data-i18n="heroSub">
-                    Type text into PDF forms, add digital signatures, and protect MyKad/Passport copies with security cross-lines. 100% private processing inside your browser.
+                <p id="main-subtitle" class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed" data-i18n="hero_desc">
+                    Lindungi salinan MyKad/IC, klik terus pada borang PDF untuk taip, tandatangan digital, atau tukar gambar kepada PDF dengan selamat di dalam pelayar anda.
                 </p>
             </div>
 
-            <!-- TABS (MODES) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                <button onclick="setMode('protect')" id="tab-protect" class="relative p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/40 text-slate-800 text-center transition-all shadow-sm group">
-                    <span class="absolute -top-2.5 right-4 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">Safe ID</span>
-                    <div class="text-2xl mb-1 group-hover:scale-110 transition-transform">🛡️</div>
-                    <h3 class="font-bold text-sm text-slate-900 mb-0.5" data-i18n="tabProtect">Protect ID / IC</h3>
-                    <p class="text-xs text-slate-500" data-i18n="tabProtectSub">Cross lines & watermark</p>
+            <!-- TABS MODE -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button onclick="setMode('protect')" id="tab-protect" class="relative p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-slate-800 text-center transition-all shadow-sm">
+                    <span class="absolute -top-2.5 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Safe ID</span>
+                    <div class="text-2xl mb-1">🛡️</div>
+                    <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_protect">Palang IC/ID</h3>
                 </button>
-                <button onclick="setMode('fill')" id="tab-fill" class="p-5 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-slate-300 shadow-sm group">
-                    <div class="text-2xl mb-1 group-hover:scale-110 transition-transform">✍️</div>
-                    <h3 class="font-bold text-sm text-slate-900 mb-0.5" data-i18n="tabFill">Fill Forms & Sign</h3>
-                    <p class="text-xs text-slate-500" data-i18n="tabFillSub">Type details & draw signature</p>
+                
+                <button onclick="setMode('fill')" id="tab-fill" class="p-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                    <div class="text-2xl mb-1">✍️</div>
+                    <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_fill">Isi Borang & Sain</h3>
                 </button>
-                <button onclick="setMode('compress')" id="tab-compress" class="p-5 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-slate-300 shadow-sm group">
-                    <div class="text-2xl mb-1 group-hover:scale-110 transition-transform">🗜️</div>
-                    <h3 class="font-bold text-sm text-slate-900 mb-0.5" data-i18n="tabCompress">Compress PDF</h3>
-                    <p class="text-xs text-slate-500" data-i18n="tabCompressSub">Reduce size for portals</p>
+
+                <button onclick="setMode('convert')" id="tab-convert" class="p-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                    <div class="text-2xl mb-1">🖼️</div>
+                    <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_convert">Tukar Gambar ke PDF</h3>
+                </button>
+
+                <button onclick="setMode('compress')" id="tab-compress" class="p-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-center transition-all hover:border-emerald-300 shadow-sm">
+                    <div class="text-2xl mb-1">🗜️</div>
+                    <h3 class="font-bold text-xs sm:text-sm" data-i18n="tab_compress">Mampatkan PDF</h3>
                 </button>
             </div>
 
             <!-- DROPZONE -->
-            <div id="dropzone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/30 transition-all rounded-3xl p-10 text-center cursor-pointer shadow-sm mb-6 flex flex-col items-center justify-center min-h-[220px]">
-                <input type="file" id="file-input" accept="application/pdf,image/*" class="hidden" onchange="handleFileSelect(event)">
-                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-inner text-2xl">
+            <div id="dropzone" class="border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition-all rounded-3xl p-10 text-center cursor-pointer shadow-sm relative group" onclick="document.getElementById('file-input').click()">
+                <input type="file" id="file-input" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg" class="hidden" onchange="handleFileSelect(event)">
+                <div class="w-16 h-16 bg-slate-100 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
                     📁
                 </div>
-                <h3 class="font-extrabold text-slate-800 text-lg mb-1" data-i18n="dropMain">Click or Drag & Drop File Here</h3>
-                <p class="text-xs font-medium text-slate-400" data-i18n="dropSub">Supports PDF, PNG, JPG (Max 50MB)</p>
-                
-                <div class="mt-5 flex gap-2">
-                    <label class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-lg cursor-pointer transition shadow-sm" onclick="event.stopPropagation();">
-                        📷 Take Photo (Mobile)
-                        <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelect(event)">
-                    </label>
-                </div>
-            </div>
-
-            <!-- PRIVACY GUARANTEE BANNER -->
-            <div class="bg-slate-100 border border-slate-200 rounded-2xl p-4 text-center flex flex-col sm:flex-row items-center justify-center gap-2 text-xs font-semibold text-slate-600 max-w-2xl mx-auto">
-                <span class="text-lg">🔒</span>
-                <span data-i18n="privacyNote">100% Privacy Guaranteed: Files are processed locally inside your browser. We never upload your documents to any server.</span>
+                <h3 class="font-black text-slate-800 text-lg sm:text-xl mb-1" data-i18n="drop_title">Klik atau Seret Fail ke Sini</h3>
+                <p class="text-xs font-semibold text-slate-500" data-i18n="drop_sub">Menyokong .PDF, .PNG, .JPG (Max 50MB)</p>
             </div>
         </div>
 
-        <!-- WORKSPACE VIEW: EDITOR & CANVAS -->
-        <div id="view-workspace" class="hidden flex-col flex-grow">
-            
-            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[75vh] min-h-[600px]">
+        <!-- VIEW: WORKSPACE -->
+        <div id="view-workspace" class="hidden flex-col flex-grow space-y-4">
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden flex flex-col min-h-[650px]">
                 
-                <!-- FILE INFO & MAIN ACTIONS -->
-                <div class="bg-slate-50 border-b border-slate-200 p-4 flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <div class="bg-emerald-100 text-emerald-600 p-2 rounded-lg text-lg">📄</div>
-                        <div class="min-w-0">
-                            <h3 id="ws-filename" class="font-bold text-slate-900 text-sm truncate max-w-[200px] sm:max-w-xs">document.pdf</h3>
-                            <p id="ws-filemeta" class="text-xs text-slate-500 font-mono">Ready</p>
+                <!-- TOP BAR WITH BACK, PRINT, WHATSAPP, TELEGRAM & DOWNLOAD -->
+                <div class="bg-slate-50 border-b border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <button onclick="resetToHome()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                            ⬅️ <span data-i18n="btn_back">Kembali</span>
+                        </button>
+                        <div>
+                            <h3 id="ws-filename" class="font-extrabold text-slate-900 text-sm max-w-[200px] sm:max-w-xs truncate">dokumen.pdf</h3>
+                            <p id="ws-filemeta" class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Sedia Disunting</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button onclick="resetApp()" class="flex-1 sm:flex-none px-4 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg transition" data-i18n="btnBack">Cancel</button>
-                        <button onclick="processAndDownload()" id="btn-download-main" class="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-lg shadow-sm transition flex items-center justify-center gap-1.5">
-                            <span class="hidden sm:inline">📥</span> <span data-i18n="btnExport">Download PDF</span>
+
+                    <!-- ACTION BUTTONS: CETAK, WHATSAPP, TELEGRAM, MUAT TURUN -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="printGeneratedPDF()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                            🖨️ <span data-i18n="btn_print">Cetak</span>
+                        </button>
+                        <button onclick="shareViaApp('whatsapp')" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                            💬 WhatsApp
+                        </button>
+                        <button onclick="shareViaApp('telegram')" class="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                            ✈️ Telegram
+                        </button>
+                        <button onclick="processAndExport()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
+                            📥 <span data-i18n="btn_download">Muat Turun PDF</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- TOOLBARS (DYNAMIC BASED ON MODE) -->
-                <div id="toolbar-protect" class="bg-red-50/50 border-b border-red-100 p-3 flex flex-wrap items-center gap-3 text-xs">
+                <!-- TOOLBAR: PROTECT (WITH DRAGGABLE WATERMARK & OPACITY / STYLE CONTROLS) -->
+                <div id="toolbar-protect" class="bg-red-50 border-b border-red-100 p-4 flex flex-wrap items-center gap-4 text-xs">
+                    <div class="flex items-center gap-2 flex-grow sm:flex-grow-0">
+                        <label class="font-extrabold text-red-900 whitespace-nowrap" data-i18n="lbl_wm_text">Teks Palang:</label>
+                        <input type="text" id="wm-text" value="UNTUK URUSAN RASMI SAHAJA" oninput="renderWatermark()" class="border border-red-300 bg-white px-3 py-2 rounded-lg font-bold w-full sm:w-52 outline-none text-slate-800 shadow-sm">
+                    </div>
+
                     <div class="flex items-center gap-2">
-                        <label class="font-bold text-red-900" data-i18n="wmText">Cross Text:</label>
-                        <input type="text" id="wm-text" value="FOR OFFICIAL USE ONLY" oninput="renderOverlay()" class="border border-red-300 bg-white px-2.5 py-1.5 rounded-lg font-bold w-48 focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm">
-                    </div>
-                    <!-- Presets -->
-                    <div class="flex gap-1.5 flex-wrap">
-                        <button onclick="applyPreset('FOR MAXIS ONLY')" class="bg-white border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-[10px] font-bold text-red-700">MAXIS</button>
-                        <button onclick="applyPreset('FOR CUCKOO ONLY')" class="bg-white border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-[10px] font-bold text-red-700">CUCKOO</button>
-                        <button onclick="applyPreset('FOR BANK USE ONLY')" class="bg-white border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-[10px] font-bold text-red-700">BANK</button>
-                    </div>
-                </div>
-
-                <div id="toolbar-fill" class="hidden bg-blue-50/50 border-b border-blue-100 p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <select id="font-family" class="bg-white border border-blue-200 text-xs rounded-lg px-2 py-1.5 font-semibold text-slate-700 outline-none">
-                            <option value="Arial">Arial (Standard)</option>
-                            <option value="Times New Roman">Times New Roman</option>
-                            <option value="Courier New">Courier</option>
-                        </select>
-                        <button onclick="addTextAnnotation()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
-                            ➕ <span data-i18n="btnAddText">Add Text</span>
-                        </button>
-                        <button onclick="openSignatureModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
-                            ✍️ <span data-i18n="btnDrawSig">Sign</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Multi-page Controls -->
-                    <div id="page-controls" class="hidden items-center gap-2 bg-white px-3 py-1 rounded-lg border border-slate-200 font-bold text-slate-600 shadow-sm">
-                        <button onclick="changePage(-1)" class="hover:text-blue-600 px-1 text-lg leading-none">‹</button>
-                        <span>Pg <span id="lbl-cur-page">1</span> / <span id="lbl-tot-page">1</span></span>
-                        <button onclick="changePage(1)" class="hover:text-blue-600 px-1 text-lg leading-none">›</button>
-                    </div>
-                </div>
-
-                <div id="toolbar-compress" class="hidden bg-amber-50/50 border-b border-amber-100 p-3 flex flex-wrap items-center gap-4 text-xs">
-                    <div class="flex items-center gap-3">
-                        <label class="font-bold text-amber-900" data-i18n="cmpLevel">Compression Level:</label>
-                        <select id="cmp-quality" class="bg-white border border-amber-300 rounded-lg px-3 py-1.5 font-bold text-slate-700 outline-none shadow-sm">
-                            <option value="0.75">Low (High Quality)</option>
-                            <option value="0.5" selected>Medium (Recommended)</option>
-                            <option value="0.3">High (Smallest Size)</option>
+                        <label class="font-bold text-red-900" data-i18n="lbl_style">Gaya:</label>
+                        <select id="wm-style" onchange="renderWatermark()" class="bg-white border border-red-300 rounded-lg px-2 py-1.5 font-bold text-slate-800">
+                            <option value="solid">Kotak Berwarna (Solid)</option>
+                            <option value="outline">Garisan Sahaja (Outline / Telus)</option>
                         </select>
                     </div>
-                    <p class="text-amber-700 font-medium italic hidden sm:block">Note: Compression converts pages to flat images.</p>
-                </div>
 
-                <!-- CANVAS SCROLL AREA -->
-                <div class="flex-1 overflow-auto bg-slate-200 p-4 sm:p-8 flex justify-center items-start relative touch-safe" id="canvas-scroll-area">
-                    <div id="canvas-wrapper" class="relative shadow-xl bg-white border border-slate-300 touch-safe">
-                        <canvas id="doc-canvas" class="block"></canvas>
-                        <!-- Annotation Overlay -->
-                        <div id="annotation-layer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+                    <div class="flex items-center gap-2">
+                        <label class="font-bold text-red-900" data-i18n="lbl_size">Saiz:</label>
+                        <input type="range" id="wm-size" min="14" max="48" value="22" oninput="renderWatermark()" class="w-16 accent-red-600">
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label class="font-bold text-red-900" data-i18n="lbl_angle">Sudut:</label>
+                        <input type="range" id="wm-angle" min="-45" max="45" value="-15" oninput="renderWatermark()" class="w-16 accent-red-600">
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label class="font-bold text-red-900" data-i18n="lbl_opacity">Terang/Gelap:</label>
+                        <input type="range" id="wm-opacity" min="20" max="100" value="70" oninput="renderWatermark()" class="w-16 accent-red-600">
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label class="font-bold text-red-900" data-i18n="lbl_color">Warna:</label>
+                        <select id="wm-color" onchange="renderWatermark()" class="bg-white border border-red-300 rounded-lg px-2 py-1.5 font-bold text-slate-800">
+                            <option value="red">Merah Keselamatan</option>
+                            <option value="black">Hitam Pekat</option>
+                            <option value="blue">Biru Rasmi</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full pt-1 border-t border-red-200">
+                        <button onclick="setWatermarkPreset('FOR CUCKOO ONLY')" class="px-2.5 py-1 bg-white border border-red-200 hover:bg-red-100 rounded-md font-bold text-red-700">CUCKOO</button>
+                        <button onclick="setWatermarkPreset('UNTUK URUSAN BANK SAHAJA')" class="px-2.5 py-1 bg-white border border-red-200 hover:bg-red-100 rounded-md font-bold text-red-700">BANK</button>
+                        <button onclick="setWatermarkPreset('UNTUK PERMOHONAN KERJA SAHAJA')" class="px-2.5 py-1 bg-white border border-red-200 hover:bg-red-100 rounded-md font-bold text-red-700">KERJA</button>
                     </div>
                 </div>
 
-            </div>
+                <!-- TOOLBAR: FILL & SIGN (FONT SIZE FROM 6px, NO PLACEHOLDER TEXT) -->
+                <div id="toolbar-fill" class="hidden bg-blue-50 border-b border-blue-100 p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <span class="font-extrabold text-blue-900" data-i18n="fill_instruction">✍️ Klik terus pada borang untuk menaip:</span>
+                        
+                        <select id="font-family" class="bg-white border border-blue-300 rounded-xl px-3 py-2 font-bold text-slate-700 outline-none shadow-sm">
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="'Times New Roman', serif">Times New Roman</option>
+                            <option value="'Courier New', monospace">Courier</option>
+                            <option value="Georgia, serif">Georgia</option>
+                        </select>
 
-            <!-- MONETIZATION 2: CROSS-PROMOTION BANNER -->
-            <div class="mt-4 p-4 bg-white border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm hover:shadow-md transition">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl shrink-0">📈</div>
-                    <div>
-                        <h4 class="font-extrabold text-slate-900 text-sm">Need a House Loan or Financial Check?</h4>
-                        <p class="text-xs text-slate-500 font-medium">Check your DSR and property eligibility instantly with our free tools.</p>
+                        <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-xl border border-blue-300">
+                            <label class="font-bold text-slate-600">Saiz:</label>
+                            <select id="font-size" class="font-bold text-slate-800 outline-none bg-transparent">
+                                <option value="6px">6</option>
+                                <option value="8px">8</option>
+                                <option value="10px">10</option>
+                                <option value="12px">12</option>
+                                <option value="14px" selected>14</option>
+                                <option value="18px">18</option>
+                                <option value="24px">24</option>
+                                <option value="32px">32</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-xl border border-blue-300">
+                            <label class="font-bold text-slate-600">Warna:</label>
+                            <input type="color" id="font-color" value="#0f172a" class="w-6 h-6 rounded border-0 cursor-pointer">
+                        </div>
+
+                        <button onclick="openSignatureModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md">
+                            ✍️ <span data-i18n="btn_draw_sig">Lukis Tandatangan</span>
+                        </button>
+                    </div>
+
+                    <!-- PAGE CONTROLS -->
+                    <div id="page-controls" class="hidden items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 font-extrabold text-slate-700 shadow-sm">
+                        <button onclick="changePage(-1)" class="hover:text-blue-600 px-2 text-base">◀</button>
+                        <span>Muka <span id="lbl-cur-page" class="text-blue-600">1</span> / <span id="lbl-tot-page">1</span></span>
+                        <button onclick="changePage(1)" class="hover:text-blue-600 px-2 text-base">▶</button>
                     </div>
                 </div>
-                <a href="https://screener.payedlegacy.my" target="_blank" class="w-full sm:w-auto text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-sm whitespace-nowrap">
-                    Check Eligibility
-                </a>
-            </div>
 
+                <!-- TOOLBAR: CONVERT -->
+                <div id="toolbar-convert" class="hidden bg-purple-50 border-b border-purple-100 p-3 text-xs text-purple-900 font-bold">
+                    ✨ Mod Tukar Gambar ke PDF aktif. Fail imej anda akan disusun dan ditukar ke format PDF berkualiti tinggi.
+                </div>
+
+                <!-- TOOLBAR: COMPRESS -->
+                <div id="toolbar-compress" class="hidden bg-amber-50 border-b border-amber-100 p-4 flex flex-wrap items-center gap-4 text-xs">
+                    <label class="font-extrabold text-amber-900" data-i18n="lbl_quality">Kualiti Mampatan:</label>
+                    <input type="range" id="compress-quality" min="10" max="90" value="50" oninput="document.getElementById('compress-val').innerText = this.value + '%'" class="w-48 accent-amber-500">
+                    <span class="text-amber-800 font-bold">Kualiti Semasa: <span id="compress-val">50%</span></span>
+                    <div class="flex gap-2 ml-auto">
+                        <button onclick="document.getElementById('compress-quality').value=25; document.getElementById('compress-val').innerText='25%'" class="px-2 py-1 bg-white border border-amber-200 rounded font-bold text-amber-800">Tinggi (~70%)</button>
+                        <button onclick="document.getElementById('compress-quality').value=50; document.getElementById('compress-val').innerText='50%'" class="px-2 py-1 bg-white border border-amber-200 rounded font-bold text-amber-800">Sederhana</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-auto bg-slate-200 p-4 flex justify-center items-start relative">
+                    <div id="document-wrapper" class="relative shadow-2xl bg-white border border-slate-300">
+                        <canvas id="main-canvas" class="block max-w-full h-auto"></canvas>
+                        <div id="watermark-layer" class="absolute inset-0 pointer-events-auto overflow-hidden flex items-center justify-center z-10"></div>
+                        <div id="annotation-layer" class="absolute inset-0 pointer-events-auto z-20 cursor-text"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <!-- FOOTER WITH MONETIZATION 3: AFFILIATE LINK -->
+    <!-- FOOTER WITH ORGANIZED AFFILIATES & ECOSYSTEM -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center">
-        <p class="text-xs font-bold text-slate-700">© 2026 PDFEasy • Global Client-Side Utility Studio</p>
-        <p class="text-[11px] text-slate-400 mt-1 mb-3">Documents processed in-browser. Zero server retention.</p>
-        <!-- Affiliate Link (Subtle) -->
-        <a href="https://hostinger.com?REFERRAL_LINK" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-bold text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition">
-            🚀 Hosted lightning fast on Hostinger
-        </a>
+        <p class="text-xs font-extrabold text-slate-800">© 2026 PDFEasy Pro • Studio Pemprosesan Dokumen Tempatan</p>
+        <p class="text-[11px] font-semibold text-slate-500 mt-1 mb-4" data-i18n="footer_privacy">Fail diproses 100% di dalam peranti anda. Tiada data dimuat naik ke pelayan.</p>
+        
+        <!-- AFFILIATE LINKS & ECOSYSTEM (PRECISE USER URLS) -->
+        <div class="flex flex-wrap justify-center items-center gap-2.5 px-4 max-w-5xl mx-auto mb-3">
+            <a href="https://www.hostinger.com/my?REFERRALCODE=2ECPAYEDL2AL" target="_blank" rel="nofollow" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition shadow-sm">
+                🚀 Hostinger Hosting
+            </a>
+            <a href="https://j.moomoo.com/0Jzl2X" target="_blank" rel="nofollow" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-700 transition shadow-sm">
+                🪙 Moomoo MY
+            </a>
+            <a href="https://www.luno.com/wallet/rewards/enter_code?code=429D5F" target="_blank" rel="nofollow" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition shadow-sm">
+                🪙 Luno Crypto (429D5F)
+            </a>
+            <a href="https://mplusonline.com/campaigns/newuser?lang=en-US&inviteCode=A42L2G&activityId=86&_scnl=1111738" target="_blank" rel="nofollow" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 transition shadow-sm">
+                💹 MPlus Online (A42L2G)
+            </a>
+        </div>
+
+        <div class="flex flex-wrap justify-center items-center gap-3 px-4 max-w-4xl mx-auto pt-2 border-t border-slate-100">
+            <a href="https://screener.payedlegacy.my" target="_blank" class="text-[10px] font-bold text-emerald-600 hover:underline">
+                📊 Stock Screener Pro
+            </a>
+            <span class="text-slate-300">•</span>
+            <a href="https://payedlegacy.my" target="_blank" class="text-[10px] font-bold text-emerald-600 hover:underline">
+                🏠 Real Estate & House Hub
+            </a>
+        </div>
     </footer>
 
-    <!-- MODAL: SIGNATURE -->
-    <div id="modal-sig" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl flex flex-col">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="font-black text-slate-900 text-lg">Draw Signature</h3>
+    <!-- SIGNATURE MODAL -->
+    <div id="modal-sig" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-slate-900 text-lg" data-i18n="sig_title">Lukis Tandatangan</h3>
                 <button onclick="closeSignatureModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl px-2">✕</button>
             </div>
             
-            <canvas id="sig-canvas" height="200" class="w-full mb-4 touch-safe"></canvas>
+            <canvas id="sig-canvas" height="200" class="w-full mb-4 touch-none"></canvas>
             
             <div class="flex justify-between items-center">
-                <button onclick="clearSigPad()" class="text-xs font-bold text-slate-500 hover:text-red-600 px-2 py-1">Clear Pad</button>
+                <button onclick="clearSigPad()" class="text-xs font-extrabold text-slate-500 hover:text-red-600 px-2 py-2 transition" data-i18n="sig_clear">Padam</button>
                 <div class="flex gap-2">
-                    <button onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">Cancel</button>
-                    <button onclick="applySignature()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition">Apply</button>
+                    <button onclick="closeSignatureModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold rounded-xl transition" data-i18n="sig_cancel">Batal</button>
+                    <button onclick="addSignatureToCanvas()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition" data-i18n="sig_use">Guna</button>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- CUSTOM TOAST -->
-    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl transition-opacity duration-300 opacity-0 pointer-events-none z-50">
-        Notification
     </div>
 
     <!-- LOADING OVERLAY -->
     <div id="loading-overlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center text-white">
-        <div class="spinner mb-4"></div>
-        <p id="loading-text" class="text-sm font-bold tracking-wider animate-pulse">Processing Document...</p>
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-400 border-t-emerald-500 mb-4"></div>
+        <p id="loading-text" class="text-sm font-extrabold tracking-widest uppercase animate-pulse">Memproses...</p>
     </div>
 
-    <!-- APP JAVASCRIPT -->
     <script>
-        // PDF.js worker setup
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // --- STATE VARIABLES ---
         let currentMode = 'protect';
         let pdfDocObj = null;
-        let imageSrc = null;
+        let imageSrcUrl = null;
         let currentPageNum = 1;
         let totalPagesNum = 1;
-        let annotations = []; // Store by page: { page, type, x, y, val, font, w, h }
-        let isDrawingSig = false;
+        let sigCtx = null;
+        let isDrawing = false;
+        let annotations = {};
+        
+        let wmX = 0;
+        let wmY = 0;
+        let isWmDragging = false;
 
-        // --- DICTIONARY ---
-        const dict = {
-            en: {
-                tagline: "100% Client-Side",
-                browserOnly: "Browser-Only",
-                heroTitle: "Fill Forms, Sign & Protect ID / IC",
-                heroSub: "Type text into PDF forms, add digital signatures, and protect MyKad/Passport copies with security cross-lines. 100% private processing inside your browser.",
-                tabProtect: "Protect ID / IC",
-                tabProtectSub: "Cross lines & watermark",
-                tabFill: "Fill Forms & Sign",
-                tabFillSub: "Type details & draw signature",
-                tabCompress: "Compress PDF",
-                tabCompressSub: "Reduce size for portals",
-                dropMain: "Click or Drag & Drop File Here",
-                dropSub: "Supports PDF, PNG, JPG (Max 50MB)",
-                privacyNote: "100% Privacy Guaranteed: Files are processed locally inside your browser. We never upload your documents to any server.",
-                btnBack: "Cancel",
-                btnExport: "Download PDF",
-                wmText: "Cross Text:",
-                btnAddText: "Add Text",
-                btnDrawSig: "Sign",
-                cmpLevel: "Compression Level:"
-            },
+        const translations = {
             bm: {
-                tagline: "100% Tanpa Pelayan",
-                browserOnly: "Pelayar Sahaja",
-                heroTitle: "Isi Borang, Sain & Palang ID / IC",
-                heroSub: "Taip maklumat borang, lukis tandatangan, dan letak palang keselamatan pada salinan MyKad/IC. Privasi 100% terjamin kerana ia diproses di dalam pelayar anda sahaja.",
-                tabProtect: "Palang ID / IC",
-                tabProtectSub: "Garisan keselamatan",
-                tabFill: "Isi Borang & Sain",
-                tabFillSub: "Taip teks & tandatangan",
-                tabCompress: "Mampat PDF",
-                tabCompressSub: "Kecilkan fail rasmi",
-                dropMain: "Pilih atau Seret Fail di Sini",
-                dropSub: "Sokongan PDF, PNG, JPG (Maksimum 50MB)",
-                privacyNote: "Jaminan Privasi 100%: Fail diproses di dalam peranti anda. Kami tidak pernah memuat naik dokumen anda ke mana-mana pelayan.",
-                btnBack: "Batal",
-                btnExport: "Muat Turun PDF",
-                wmText: "Teks Palang:",
-                btnAddText: "Tambah Teks",
-                btnDrawSig: "Sain",
-                cmpLevel: "Tahap Mampatan:"
+                tagline: "100% Client-Side Privacy",
+                badge_browser: "Pelayar Sahaja",
+                hero_title: "Palang ID/IC, Isi Borang & Tukar ke PDF",
+                hero_desc: "Lindungi salinan MyKad/IC, klik terus pada borang PDF untuk taip, tandatangan digital, atau tukar gambar kepada PDF dengan selamat di dalam pelayar anda.",
+                tab_protect: "Palang IC/ID",
+                tab_fill: "Isi Borang & Sain",
+                tab_convert: "Tukar Gambar ke PDF",
+                tab_compress: "Mampatkan PDF",
+                drop_title: "Klik atau Seret Fail ke Sini",
+                drop_sub: "Menyokong .PDF, .PNG, .JPG (Max 50MB)",
+                btn_back: "Kembali",
+                btn_print: "Cetak / Papar PDF",
+                btn_download: "Muat Turun PDF",
+                lbl_wm_text: "Teks Palang:",
+                lbl_style: "Gaya:",
+                lbl_size: "Saiz:",
+                lbl_angle: "Sudut:",
+                lbl_opacity: "Terang/Gelap:",
+                lbl_color: "Warna:",
+                btn_draw_sig: "Lukis Tandatangan",
+                lbl_quality: "Kualiti Mampatan:",
+                footer_privacy: "Fail diproses 100% di dalam peranti anda. Tiada data dimuat naik ke pelayan.",
+                sig_title: "Lukis Tandatangan",
+                sig_clear: "Padam",
+                sig_cancel: "Batal",
+                sig_use: "Guna",
+                btn_share_app: "Kongsi Web Ini",
+                fill_instruction: "✍️ Klik terus pada borang untuk menaip:"
+            },
+            en: {
+                tagline: "100% Client-Side Privacy",
+                badge_browser: "Browser-Only",
+                hero_title: "ID/IC Protect, Form Filler & PDF Converter",
+                hero_desc: "Protect MyKad/IC copies, click directly on PDF forms to type, add digital signatures, or convert images to PDF securely inside your browser.",
+                tab_protect: "Protect ID",
+                tab_fill: "Fill & Sign",
+                tab_convert: "Image to PDF",
+                tab_compress: "Compress PDF",
+                drop_title: "Click or Drag & Drop File Here",
+                drop_sub: "Supports .PDF, .PNG, .JPG (Max 50MB)",
+                btn_back: "Back",
+                btn_print: "Print / View PDF",
+                btn_download: "Download PDF",
+                lbl_wm_text: "Cross Text:",
+                lbl_style: "Style:",
+                lbl_size: "Size:",
+                lbl_angle: "Angle:",
+                lbl_opacity: "Opacity:",
+                lbl_color: "Color:",
+                btn_draw_sig: "Draw Signature",
+                lbl_quality: "Compression Quality:",
+                footer_privacy: "Files processed 100% locally. Zero server upload.",
+                sig_title: "Draw Signature",
+                sig_clear: "Clear",
+                sig_cancel: "Cancel",
+                sig_use: "Use",
+                btn_share_app: "Share Web App",
+                fill_instruction: "✍️ Click directly on form to type:"
+            },
+            zh: {
+                tagline: "100% 浏览器隐私保护",
+                badge_browser: "纯网页处理",
+                hero_title: "身份证/IC 水印、表单填写与 PDF 转换",
+                hero_desc: "安全保护您的身份证件，直接在表单上点击输入，添加手写电子签名。",
+                tab_protect: "保护身份证",
+                tab_fill: "填写与签名",
+                tab_convert: "图片转PDF",
+                tab_compress: "压缩 PDF",
+                drop_title: "点击或拖拽文件至此处",
+                drop_sub: "支持 .PDF, .PNG, .JPG (最大 50MB)",
+                btn_back: "返回",
+                btn_print: "打印 / 预览 PDF",
+                btn_download: "下载 PDF",
+                lbl_wm_text: "水印文字:",
+                lbl_style: "样式:",
+                lbl_size: "大小:",
+                lbl_angle: "角度:",
+                lbl_opacity: "透明度:",
+                lbl_color: "颜色:",
+                btn_draw_sig: "绘制签名",
+                lbl_quality: "压缩质量:",
+                footer_privacy: "100% 本地处理，绝无服务器上传。",
+                sig_title: "绘制签名",
+                sig_clear: "清除",
+                sig_cancel: "取消",
+                sig_use: "使用",
+                btn_share_app: "分享应用",
+                fill_instruction: "✍️ 点击表单直接输入文字："
             }
         };
 
         function changeLanguage(lang) {
-            const strings = dict[lang] || dict['en'];
+            const t = translations[lang] || translations.bm;
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (strings[key]) el.innerText = strings[key];
+                if (t[key]) el.innerText = t[key];
             });
         }
 
-        // --- UI & TAB MANAGEMENT ---
         function setMode(mode) {
             currentMode = mode;
-            ['protect', 'fill', 'compress'].forEach(m => {
-                const tab = document.getElementById(`tab-${m}`);
+            ['protect', 'fill', 'convert', 'compress'].forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
                 const toolbar = document.getElementById(`toolbar-${m}`);
                 if (m === mode) {
-                    tab.classList.add('border-emerald-500', 'bg-emerald-50/40');
-                    tab.classList.remove('border-slate-200', 'bg-white');
-                    toolbar.classList.remove('hidden');
+                    btn.classList.add('border-emerald-500', 'bg-emerald-50');
+                    btn.classList.remove('border-slate-200', 'bg-white');
+                    if(toolbar) toolbar.classList.remove('hidden');
                 } else {
-                    tab.classList.remove('border-emerald-500', 'bg-emerald-50/40');
-                    tab.classList.add('border-slate-200', 'bg-white');
-                    toolbar.classList.add('hidden');
+                    btn.classList.remove('border-emerald-500', 'bg-emerald-50');
+                    btn.classList.add('border-slate-200', 'bg-white');
+                    if(toolbar) toolbar.classList.add('hidden');
                 }
             });
-            renderOverlay();
+            renderWatermark();
         }
 
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.remove('opacity-0');
-            setTimeout(() => toast.classList.add('opacity-0'), 3000);
+        function setWatermarkPreset(text) {
+            document.getElementById('wm-text').value = text;
+            renderWatermark();
         }
 
-        function toggleLoading(show, text = 'Processing...') {
-            const loader = document.getElementById('loading-overlay');
-            document.getElementById('loading-text').innerText = text;
-            show ? loader.classList.remove('hidden') : loader.classList.add('hidden');
-            loader.style.display = show ? 'flex' : 'none';
+        function resetToHome() {
+            pdfDocObj = null;
+            imageSrcUrl = null;
+            annotations = {};
+            wmX = 0; wmY = 0;
+            document.getElementById('file-input').value = '';
+            document.getElementById('view-workspace').classList.add('hidden');
+            document.getElementById('view-workspace').classList.remove('flex');
+            document.getElementById('view-home').classList.remove('hidden');
         }
 
-        // --- FILE HANDLING ---
         async function handleFileSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
 
+            showLoading('Memuatkan fail...');
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-workspace').classList.remove('hidden');
             document.getElementById('view-workspace').classList.add('flex');
@@ -418,8 +503,12 @@
             document.getElementById('ws-filename').innerText = file.name;
             document.getElementById('ws-filemeta').innerText = `${(file.size / 1024).toFixed(1)} KB`;
 
-            toggleLoading(true, 'Loading Document...');
-            annotations = [];
+            pdfDocObj = null;
+            imageSrcUrl = null;
+            annotations = {};
+            wmX = 0; wmY = 0;
+            document.getElementById('page-controls').classList.add('hidden');
+            document.getElementById('annotation-layer').innerHTML = '';
 
             try {
                 if (file.type === 'application/pdf') {
@@ -429,417 +518,530 @@
                     currentPageNum = 1;
                     
                     document.getElementById('lbl-tot-page').innerText = totalPagesNum;
-                    document.getElementById('page-controls').style.display = totalPagesNum > 1 ? 'flex' : 'none';
-                    
-                    await renderPage();
+                    if(totalPagesNum > 1) {
+                        document.getElementById('page-controls').classList.remove('hidden');
+                        document.getElementById('page-controls').classList.add('flex');
+                    }
+                    await renderPDFPage();
                 } else if (file.type.startsWith('image/')) {
-                    imageSrc = URL.createObjectURL(file);
-                    totalPagesNum = 1;
-                    currentPageNum = 1;
-                    document.getElementById('page-controls').style.display = 'none';
+                    imageSrcUrl = URL.createObjectURL(file);
+                    totalPagesNum = 1; currentPageNum = 1;
+                    if(currentMode !== 'protect') setMode('convert');
                     await renderImage();
+                } else {
+                    alert("Format tidak disokong. Sila guna PDF, PNG atau JPG.");
+                    resetToHome();
                 }
             } catch (err) {
                 console.error(err);
-                showToast("Error loading file. Please try a valid PDF/Image.");
-                resetApp();
+                alert("Ralat membaca fail.");
+                resetToHome();
+            } finally {
+                hideLoading();
             }
-            toggleLoading(false);
         }
 
-        // --- RENDERING CANVAS ---
-        async function renderPage() {
+        async function renderPDFPage() {
             if (!pdfDocObj) return;
+            saveCurrentAnnotations();
+            
             document.getElementById('lbl-cur-page').innerText = currentPageNum;
             const page = await pdfDocObj.getPage(currentPageNum);
-            const viewport = page.getViewport({ scale: 1.5 }); // High res for editing
+            const viewport = page.getViewport({ scale: 1.5 });
 
-            const canvas = document.getElementById('doc-canvas');
+            const canvas = document.getElementById('main-canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
 
-            const wrapper = document.getElementById('canvas-wrapper');
+            const wrapper = document.getElementById('document-wrapper');
             wrapper.style.width = `${viewport.width}px`;
             wrapper.style.height = `${viewport.height}px`;
 
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            renderOverlay();
+            renderWatermark();
+            restoreAnnotationsForPage();
         }
 
         async function renderImage() {
-            return new Promise((resolve) => {
-                const canvas = document.getElementById('doc-canvas');
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                img.onload = function () {
-                    // Responsive sizing
-                    const maxWidth = window.innerWidth > 800 ? 800 : window.innerWidth - 40;
-                    const scale = maxWidth / img.width;
-                    canvas.width = img.width > maxWidth ? maxWidth : img.width;
-                    canvas.height = img.width > maxWidth ? img.height * scale : img.height;
+            if (!imageSrcUrl) return;
+            const canvas = document.getElementById('main-canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            await new Promise(r => {
+                img.onload = () => {
+                    const maxW = 800;
+                    const scale = img.width > maxW ? maxW / img.width : 1;
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
 
-                    const wrapper = document.getElementById('canvas-wrapper');
+                    const wrapper = document.getElementById('document-wrapper');
                     wrapper.style.width = `${canvas.width}px`;
                     wrapper.style.height = `${canvas.height}px`;
 
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    renderOverlay();
-                    resolve();
+                    r();
                 };
-                img.src = imageSrc;
+                img.src = imageSrcUrl;
             });
+            renderWatermark();
         }
 
         function changePage(delta) {
             if (!pdfDocObj) return;
-            saveCurrentAnnotationsToState(); // Save DOM edits to state array before turning page
             const target = currentPageNum + delta;
             if (target >= 1 && target <= totalPagesNum) {
                 currentPageNum = target;
-                renderPage();
+                renderPDFPage();
             }
         }
 
-        // --- WATERMARK (PROTECT MODE) ---
-        function applyPreset(txt) {
-            document.getElementById('wm-text').value = txt;
-            renderOverlay();
-        }
-
-        // --- OVERLAY LAYER (DOM ANNOTATIONS) ---
-        function renderOverlay() {
-            const layer = document.getElementById('annotation-layer');
-            layer.innerHTML = ''; // Clear DOM
-
-            // Draw Watermark if Protect Mode
+        // DRAGGABLE WATERMARK SETUP
+        function renderWatermark() {
+            const layer = document.getElementById('watermark-layer');
+            layer.innerHTML = '';
+            
             if (currentMode === 'protect') {
-                const text = document.getElementById('wm-text').value || 'PROTECTED';
-                const div = document.createElement('div');
-                div.className = 'absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-10';
-                div.innerHTML = `
-                    <div style="transform: rotate(-20deg); opacity: 0.65;" class="text-center w-[150%]">
-                        <div class="border-y-4 border-red-600/80 py-2">
-                            <span style="font-size: clamp(20px, 4vw, 40px);" class="font-black text-red-600/90 tracking-[0.2em] uppercase whitespace-nowrap">
+                const text = document.getElementById('wm-text').value;
+                if (!text) return;
+
+                const angle = document.getElementById('wm-angle').value;
+                const size = document.getElementById('wm-size').value;
+                const style = document.getElementById('wm-style').value;
+                const opacity = parseInt(document.getElementById('wm-opacity').value) / 100;
+                const colorVal = document.getElementById('wm-color').value;
+                
+                let hexColor = 'dc2626'; // red
+                if (colorVal === 'black') hexColor = '0f172a';
+                if (colorVal === 'blue') hexColor = '2563eb';
+
+                const wmDiv = document.createElement('div');
+                wmDiv.id = 'draggable-watermark';
+                wmDiv.style.position = 'absolute';
+                wmDiv.style.left = `calc(50% + ${wmX}px)`;
+                wmDiv.style.top = `calc(50% + ${wmY}px)`;
+                wmDiv.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+                wmDiv.style.opacity = opacity;
+                wmDiv.className = "text-center cursor-move pointer-events-auto select-none";
+
+                if (style === 'solid') {
+                    wmDiv.innerHTML = `
+                        <div class="py-2 px-12 shadow-sm" style="background-color: #${hexColor}">
+                            <span style="font-size: ${size}px;" class="font-black tracking-[0.2em] uppercase text-white whitespace-nowrap">
                                 ${text}
                             </span>
                         </div>
-                    </div>
-                `;
-                layer.appendChild(div);
-            }
-
-            // Restore saved annotations for this page (Fill Mode)
-            if (currentMode === 'fill' || currentMode === 'protect') { // Show annotations in both modes for context
-                const pageAnns = annotations.filter(a => a.page === currentPageNum);
-                pageAnns.forEach(ann => {
-                    if (ann.type === 'text') restoreTextDom(ann);
-                    if (ann.type === 'sig') restoreSigDom(ann);
-                });
-            }
-        }
-
-        function saveCurrentAnnotationsToState() {
-            // Remove existing state for this page to replace with current DOM
-            annotations = annotations.filter(a => a.page !== currentPageNum);
-            
-            const layer = document.getElementById('annotation-layer');
-            const items = layer.querySelectorAll('.ann-node');
-            
-            items.forEach(item => {
-                const x = parseFloat(item.style.left) || 0;
-                const y = parseFloat(item.style.top) || 0;
-                
-                if (item.dataset.type === 'text') {
-                    const input = item.querySelector('input');
-                    if(input.value.trim() !== '') {
-                        annotations.push({
-                            id: item.dataset.id, page: currentPageNum, type: 'text',
-                            x: x, y: y, val: input.value, font: input.style.fontFamily
-                        });
-                    }
-                } else if (item.dataset.type === 'sig') {
-                    const img = item.querySelector('img');
-                    annotations.push({
-                        id: item.dataset.id, page: currentPageNum, type: 'sig',
-                        x: x, y: y, val: img.src, w: img.width, h: img.height
-                    });
+                    `;
+                } else {
+                    wmDiv.innerHTML = `
+                        <div class="border-[4px] py-2 px-12 shadow-sm" style="border-color: #${hexColor}; background: rgba(255,255,255,0.75);">
+                            <span style="font-size: ${size}px; color: #${hexColor}" class="font-black tracking-[0.2em] uppercase whitespace-nowrap">
+                                ${text}
+                            </span>
+                        </div>
+                    `;
                 }
-            });
+                
+                setupWatermarkDragging(wmDiv);
+                layer.appendChild(wmDiv);
+            }
         }
 
-        // --- ANNOTATIONS (FILL MODE) ---
-        function addTextAnnotation() {
+        function setupWatermarkDragging(elmnt) {
+            let startX = 0, startY = 0;
+
+            const onDown = (e) => {
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX; startY = clientY;
+                isWmDragging = true;
+
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onUp);
+            };
+
+            const onMove = (e) => {
+                if (!isWmDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                wmX += (clientX - startX);
+                wmY += (clientY - startY);
+                startX = clientX; startY = clientY;
+
+                elmnt.style.left = `calc(50% + ${wmX}px)`;
+                elmnt.style.top = `calc(50% + ${wmY}px)`;
+                if(e.cancelable) e.preventDefault();
+            };
+
+            const onUp = () => {
+                isWmDragging = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onUp);
+            };
+
+            elmnt.onmousedown = onDown;
+            elmnt.ontouchstart = onDown;
+        }
+
+        // INSTANT CLICK-TO-TYPE ON WORKSPACE (EMPTY INPUT, NO PLACEHOLDER TEXT)
+        document.getElementById('annotation-layer').addEventListener('click', function(e) {
+            if (currentMode !== 'fill') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.draggable-item')) return;
+
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
             const font = document.getElementById('font-family').value;
-            const ann = { id: Date.now().toString(), page: currentPageNum, type: 'text', x: 20, y: 20, val: 'Type here...', font: font };
-            restoreTextDom(ann);
-            setMode('fill'); // Force jump to fill mode
-        }
+            const size = document.getElementById('font-size').value;
+            const color = document.getElementById('font-color').value;
 
-        function restoreTextDom(ann) {
-            const layer = document.getElementById('annotation-layer');
             const div = document.createElement('div');
-            div.className = 'ann-node draggable-item pointer-events-auto bg-amber-100/90 border border-amber-400 p-1 rounded text-slate-900 flex items-center gap-1 shadow-sm z-20';
-            div.style.left = ann.x + 'px';
-            div.style.top = ann.y + 'px';
-            div.dataset.id = ann.id;
-            div.dataset.type = 'text';
+            div.className = 'draggable-item pointer-events-auto';
+            div.style.left = x + 'px';
+            div.style.top = y + 'px';
 
             div.innerHTML = `
-                <input type="text" value="${ann.val}" class="bg-transparent border-none text-sm font-bold focus:outline-none w-32" style="font-family: ${ann.font};">
-                <button onclick="this.parentElement.remove()" class="text-red-500 font-bold text-xs p-1 hover:text-red-700">✕</button>
+                <input type="text" value="" autofocus class="bg-transparent border-none outline-none font-bold w-36 px-1 text-slate-900" style="font-family: ${font}; font-size: ${size}; color: ${color};">
+                <button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
             `;
-            makeDraggable(div);
-            layer.appendChild(div);
-        }
+            
+            this.appendChild(div);
+            setupDraggable(div);
+            const inputEl = div.querySelector('input');
+            if(inputEl) inputEl.focus();
+        });
 
-        function restoreSigDom(ann) {
-            const layer = document.getElementById('annotation-layer');
-            const div = document.createElement('div');
-            div.className = 'ann-node draggable-item pointer-events-auto border border-emerald-400 p-1 rounded-lg bg-white/60 shadow-sm flex items-start gap-1 z-20';
-            div.style.left = ann.x + 'px';
-            div.style.top = ann.y + 'px';
-            div.dataset.id = ann.id;
-            div.dataset.type = 'sig';
-
-            div.innerHTML = `
-                <img src="${ann.val}" width="${ann.w || 150}" height="${ann.h || 75}" class="pointer-events-none">
-                <button onclick="this.parentElement.remove()" class="text-red-500 font-bold text-xs p-1 hover:text-red-700">✕</button>
-            `;
-            makeDraggable(div);
-            layer.appendChild(div);
-        }
-
-        // Drag Logic (Mouse + Touch support)
-        function makeDraggable(elmnt) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            const wrapper = document.getElementById('canvas-wrapper');
-
-            elmnt.onmousedown = dragMouseDown;
-            elmnt.ontouchstart = dragTouchStart;
-
-            function dragMouseDown(e) {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-                e.preventDefault();
-                pos3 = e.clientX; pos4 = e.clientY;
-                document.onmouseup = closeDrag;
-                document.onmousemove = elementDrag;
-            }
-
-            function dragTouchStart(e) {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-                const touch = e.touches[0];
-                pos3 = touch.clientX; pos4 = touch.clientY;
-                document.ontouchend = closeDrag;
-                document.ontouchmove = elementTouchDrag;
-            }
-
-            function elementDrag(e) {
-                e.preventDefault();
-                moveElement(e.clientX, e.clientY);
-            }
-
-            function elementTouchDrag(e) {
-                const touch = e.touches[0];
-                moveElement(touch.clientX, touch.clientY);
-            }
-
-            function moveElement(clientX, clientY) {
-                pos1 = pos3 - clientX;
-                pos2 = pos4 - clientY;
-                pos3 = clientX;
-                pos4 = clientY;
-                
-                // Boundary check
-                let newTop = elmnt.offsetTop - pos2;
-                let newLeft = elmnt.offsetLeft - pos1;
-                
-                if (newTop < 0) newTop = 0;
-                if (newLeft < 0) newLeft = 0;
-                if (newTop + elmnt.offsetHeight > wrapper.offsetHeight) newTop = wrapper.offsetHeight - elmnt.offsetHeight;
-                if (newLeft + elmnt.offsetWidth > wrapper.offsetWidth) newLeft = wrapper.offsetWidth - elmnt.offsetWidth;
-
-                elmnt.style.top = newTop + "px";
-                elmnt.style.left = newLeft + "px";
-            }
-
-            function closeDrag() {
-                document.onmouseup = null; document.onmousemove = null;
-                document.ontouchend = null; document.ontouchmove = null;
-            }
-        }
-
-        // --- SIGNATURE PAD ---
-        let sigCtx;
         function openSignatureModal() {
             document.getElementById('modal-sig').classList.remove('hidden');
             const canvas = document.getElementById('sig-canvas');
-            
-            // Fix canvas resolution for crisp drawing on mobile
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width;
             
             sigCtx = canvas.getContext('2d');
             sigCtx.strokeStyle = "#0f172a";
-            sigCtx.lineWidth = 3;
+            sigCtx.lineWidth = 3.5;
             sigCtx.lineCap = "round";
+            sigCtx.lineJoin = "round";
 
-            canvas.onmousedown = (e) => { isDrawingSig = true; sigCtx.beginPath(); sigCtx.moveTo(e.offsetX, e.offsetY); };
-            canvas.onmousemove = (e) => { if (!isDrawingSig) return; sigCtx.lineTo(e.offsetX, e.offsetY); sigCtx.stroke(); };
-            canvas.onmouseup = () => isDrawingSig = false;
+            canvas.onmousedown = (e) => { isDrawing = true; sigCtx.beginPath(); sigCtx.moveTo(e.offsetX, e.offsetY); };
+            canvas.onmousemove = (e) => { if (!isDrawing) return; sigCtx.lineTo(e.offsetX, e.offsetY); sigCtx.stroke(); };
+            canvas.onmouseup = () => isDrawing = false;
+            canvas.onmouseleave = () => isDrawing = false;
 
             canvas.ontouchstart = (e) => {
-                e.preventDefault(); // Stop scrolling
-                isDrawingSig = true;
+                e.preventDefault();
+                isDrawing = true;
                 const r = canvas.getBoundingClientRect();
                 sigCtx.beginPath();
                 sigCtx.moveTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
             };
             canvas.ontouchmove = (e) => {
                 e.preventDefault();
-                if (!isDrawingSig) return;
+                if (!isDrawing) return;
                 const r = canvas.getBoundingClientRect();
                 sigCtx.lineTo(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
                 sigCtx.stroke();
             };
-            canvas.ontouchend = () => isDrawingSig = false;
+            canvas.ontouchend = () => isDrawing = false;
         }
 
-        function clearSigPad() { if (sigCtx) sigCtx.clearRect(0, 0, 1000, 1000); }
+        function clearSigPad() { if(sigCtx) sigCtx.clearRect(0, 0, 1000, 1000); }
         function closeSignatureModal() { document.getElementById('modal-sig').classList.add('hidden'); clearSigPad(); }
 
-        function applySignature() {
+        function addSignatureToCanvas() {
             const canvas = document.getElementById('sig-canvas');
-            // Check if blank
             const blank = document.createElement('canvas');
             blank.width = canvas.width; blank.height = canvas.height;
-            if(canvas.toDataURL() === blank.toDataURL()) {
-                closeSignatureModal();
-                return;
-            }
-            
+            if(canvas.toDataURL() === blank.toDataURL()) { closeSignatureModal(); return; }
+
             const dataUrl = canvas.toDataURL("image/png");
-            const ann = { id: Date.now().toString(), page: currentPageNum, type: 'sig', x: 50, y: 50, val: dataUrl };
-            restoreSigDom(ann);
-            setMode('fill'); // Jump to fill mode
+            const layer = document.getElementById('annotation-layer');
+            const wrapper = document.getElementById('document-wrapper');
+
+            const div = document.createElement('div');
+            div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400';
+            div.style.left = (wrapper.offsetWidth / 2 - 70) + 'px';
+            div.style.top = '180px';
+
+            div.innerHTML = `
+                <img src="${dataUrl}" class="w-36 h-auto pointer-events-none">
+                <button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
+            `;
+
+            layer.appendChild(div);
+            setupDraggable(div);
             closeSignatureModal();
         }
 
-        // --- EXPORT & FLATTEN (SAFE PDF GENERATION) ---
-        // Uses PDF-lib to embed flattened JPEG pages to guarantee visual fidelity and security.
-        async function processAndDownload() {
-            toggleLoading(true, 'Baking PDF & Annotations...');
-            saveCurrentAnnotationsToState(); // Save whatever is on screen
+        function setupDraggable(element) {
+            let startX = 0, startY = 0, initialX = 0, initialY = 0;
 
-            try {
-                const { PDFDocument } = PDFLib;
-                const outPdf = await PDFDocument.create();
+            const onPointerDown = (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX; startY = clientY;
+                initialX = element.offsetLeft; initialY = element.offsetTop;
+
+                document.addEventListener('mousemove', onPointerMove);
+                document.addEventListener('mouseup', onPointerUp);
+                document.addEventListener('touchmove', onPointerMove, { passive: false });
+                document.addEventListener('touchend', onPointerUp);
+            };
+
+            const onPointerMove = (e) => {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                let newX = initialX + (clientX - startX);
+                let newY = initialY + (clientY - startY);
+                if(newX < 0) newX = 0;
+                if(newY < 0) newY = 0;
+                element.style.left = newX + 'px';
+                element.style.top = newY + 'px';
+                if(e.cancelable) e.preventDefault();
+            };
+
+            const onPointerUp = () => {
+                document.removeEventListener('mousemove', onPointerMove);
+                document.removeEventListener('mouseup', onPointerUp);
+                document.removeEventListener('touchmove', onPointerMove);
+                document.removeEventListener('touchend', onPointerUp);
+            };
+
+            element.onmousedown = onPointerDown;
+            element.ontouchstart = onPointerDown;
+        }
+
+        function saveCurrentAnnotations() {
+            const layer = document.getElementById('annotation-layer');
+            const items = layer.querySelectorAll('.draggable-item');
+            let pageData = [];
+            
+            items.forEach(el => {
+                const x = parseFloat(el.style.left) || 0;
+                const y = parseFloat(el.style.top) || 0;
+                const input = el.querySelector('input');
+                const img = el.querySelector('img');
                 
-                // Determine quality
-                let quality = 0.9;
-                if (currentMode === 'compress') quality = parseFloat(document.getElementById('cmp-quality').value) || 0.5;
-
-                // Hidden canvas for rendering full pages with baked overlays
-                const tmpCanvas = document.createElement('canvas');
-                const tCtx = tmpCanvas.getContext('2d');
-
-                for (let p = 1; p <= totalPagesNum; p++) {
-                    // 1. Render Base Page/Image to tmpCanvas
-                    if (pdfDocObj) {
-                        const page = await pdfDocObj.getPage(p);
-                        const vp = page.getViewport({ scale: 2.0 }); // Render high res for save
-                        tmpCanvas.width = vp.width; tmpCanvas.height = vp.height;
-                        await page.render({ canvasContext: tCtx, viewport: vp }).promise;
-                    } else if (imageSrc) {
-                        const img = new Image();
-                        img.src = imageSrc;
-                        await new Promise(r => img.onload = r);
-                        tmpCanvas.width = img.width; tmpCanvas.height = img.height;
-                        tCtx.drawImage(img, 0, 0);
-                    }
-
-                    // Ratio between export canvas and on-screen canvas (to scale coordinates)
-                    const screenCanvas = document.getElementById('doc-canvas');
-                    const scaleX = tmpCanvas.width / screenCanvas.width;
-                    const scaleY = tmpCanvas.height / screenCanvas.height;
-
-                    // 2. Draw Annotations (Fill Mode)
-                    const pageAnns = annotations.filter(a => a.page === p);
-                    for (const ann of pageAnns) {
-                        if (ann.type === 'text') {
-                            tCtx.font = `bold ${14 * scaleY}px ${ann.font}`;
-                            tCtx.fillStyle = '#0f172a';
-                            // HTML input padding adjustment (approximate baseline)
-                            tCtx.fillText(ann.val, (ann.x * scaleX) + (4 * scaleX), (ann.y * scaleY) + (18 * scaleY));
-                        } else if (ann.type === 'sig') {
-                            const sigImg = new Image();
-                            sigImg.src = ann.val;
-                            await new Promise(r => sigImg.onload = r);
-                            tCtx.drawImage(sigImg, ann.x * scaleX, ann.y * scaleY, ann.w * scaleX, ann.h * scaleY);
-                        }
-                    }
-
-                    // 3. Draw Watermark (Protect Mode)
-                    // We apply it on EVERY page being exported if mode is protect
-                    if (currentMode === 'protect') {
-                        const wmText = document.getElementById('wm-text').value;
-                        if (wmText) {
-                            tCtx.save();
-                            tCtx.translate(tmpCanvas.width / 2, tmpCanvas.height / 2);
-                            tCtx.rotate(-20 * Math.PI / 180); // -20 degrees
-                            
-                            const fontSize = tmpCanvas.width * 0.05; // Relative font size
-                            tCtx.font = `900 ${fontSize}px sans-serif`;
-                            tCtx.textAlign = 'center';
-                            tCtx.textBaseline = 'middle';
-                            
-                            // Background Line
-                            tCtx.fillStyle = 'rgba(220, 38, 38, 0.8)'; // Red-600 with opacity
-                            tCtx.fillRect(-tmpCanvas.width, -fontSize, tmpCanvas.width*2, fontSize*2);
-                            
-                            // Text
-                            tCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                            tCtx.fillText(wmText.toUpperCase(), 0, 0);
-                            tCtx.restore();
-                        }
-                    }
-
-                    // 4. Convert flattened canvas to JPEG & Embed
-                    const pageDataUrl = tmpCanvas.toDataURL('image/jpeg', quality);
-                    const pageBytes = await fetch(pageDataUrl).then(res => res.arrayBuffer());
-                    const embedImg = await outPdf.embedJpg(pageBytes);
-                    
-                    const outPage = outPdf.addPage([embedImg.width, embedImg.height]);
-                    outPage.drawImage(embedImg, { x: 0, y: 0, width: embedImg.width, height: embedImg.height });
+                if (input && input.value.trim() !== '') {
+                    pageData.push({ 
+                        type: 'text', 
+                        x, 
+                        y, 
+                        val: input.value, 
+                        font: input.style.fontFamily, 
+                        fontSize: input.style.fontSize || '14px',
+                        color: input.style.color || '#0f172a'
+                    });
+                } else if (img) {
+                    pageData.push({ type: 'sig', x, y, val: img.src, w: img.width, h: img.height });
                 }
+            });
+            annotations[currentPageNum] = pageData;
+            layer.innerHTML = '';
+        }
 
-                // 5. Save and Download
-                const finalBytes = await outPdf.save();
+        function restoreAnnotationsForPage() {
+            const pageData = annotations[currentPageNum] || [];
+            const layer = document.getElementById('annotation-layer');
+            layer.innerHTML = '';
+            
+            pageData.forEach(item => {
+                const div = document.createElement('div');
+                div.style.left = item.x + 'px';
+                div.style.top = item.y + 'px';
+                
+                if (item.type === 'text') {
+                    div.className = 'draggable-item pointer-events-auto bg-white/90 border border-blue-400 p-1.5 rounded-lg text-slate-900 flex items-center gap-1 shadow-lg';
+                    div.innerHTML = `<input type="text" value="${item.val}" class="bg-transparent border-none outline-none font-bold w-36 px-1" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                } else {
+                    div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400 p-1 rounded-lg flex items-start gap-1 shadow-lg';
+                    div.innerHTML = `<img src="${item.val}" style="width:${item.w}px; height:${item.h}px" class="pointer-events-none"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                }
+                layer.appendChild(div);
+                setupDraggable(div);
+            });
+        }
+
+        async function generateFinalPDFBytes() {
+            saveCurrentAnnotations();
+            const { PDFDocument } = PDFLib;
+            const outPdf = await PDFDocument.create();
+            
+            let quality = 0.50;
+            if(currentMode === 'compress') {
+                const slider = document.getElementById('compress-quality');
+                if(slider) quality = parseFloat(slider.value) / 100;
+            }
+
+            const tmpCanvas = document.createElement('canvas');
+            const tCtx = tmpCanvas.getContext('2d');
+
+            for (let p = 1; p <= totalPagesNum; p++) {
+                if (pdfDocObj) {
+                    const page = await pdfDocObj.getPage(p);
+                    const vp = page.getViewport({ scale: 2.0 });
+                    tmpCanvas.width = vp.width; 
+                    tmpCanvas.height = vp.height;
+                    await page.render({ canvasContext: tCtx, viewport: vp }).promise;
+                } else if (imageSrcUrl) {
+                    const img = new Image();
+                    img.src = imageSrcUrl;
+                    await new Promise(r => img.onload = r);
+                    tmpCanvas.width = img.width; 
+                    tmpCanvas.height = img.height;
+                    tCtx.drawImage(img, 0, 0);
+                }
+                await embedCanvasToPdf(tmpCanvas, outPdf, p, quality);
+            }
+
+            return await outPdf.save();
+        }
+
+        async function processAndExport() {
+            showLoading('Menyediakan & Menyimpan PDF...');
+            try {
+                const finalBytes = await generateFinalPDFBytes();
                 const blob = new Blob([finalBytes], { type: 'application/pdf' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `Safe_Document_${Date.now()}.pdf`;
+                link.download = `PDFEasy_Protected_${Date.now()}.pdf`;
                 link.click();
-                
-                showToast("✅ Download Successful!");
-
             } catch (err) {
                 console.error(err);
-                showToast("❌ Error saving document.");
+                alert("Berlaku ralat semasa menyimpan dokumen.");
             } finally {
-                toggleLoading(false);
+                hideLoading();
             }
         }
 
-        // --- RESET APP ---
-        function resetApp() {
-            pdfDocObj = null;
-            imageSrc = null;
-            annotations = [];
-            document.getElementById('file-input').value = '';
-            document.getElementById('view-workspace').classList.add('hidden');
-            document.getElementById('view-workspace').classList.remove('flex');
-            document.getElementById('view-home').classList.remove('hidden');
+        async function printGeneratedPDF() {
+            showLoading('Menjana PDF untuk Cetakan...');
+            try {
+                const finalBytes = await generateFinalPDFBytes();
+                const blob = new Blob([finalBytes], { type: 'application/pdf' });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const printWindow = window.open(blobUrl, '_blank');
+                if (printWindow) {
+                    printWindow.onload = () => {
+                        printWindow.print();
+                    };
+                }
+            } catch(err) {
+                console.error(err);
+                alert("Ralat menjana cetakan.");
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function embedCanvasToPdf(tmpCanvas, outPdf, pageNum, quality) {
+            const tCtx = tmpCanvas.getContext('2d');
+            const screenWrapper = document.getElementById('document-wrapper');
+            const scaleX = tmpCanvas.width / screenWrapper.offsetWidth;
+            const scaleY = tmpCanvas.height / screenWrapper.offsetHeight;
+
+            // 1. Bake Text & Signatures for this page
+            const pageAnns = annotations[pageNum] || [];
+            for (const ann of pageAnns) {
+                if (ann.type === 'text') {
+                    const parsedSize = parseInt(ann.fontSize || '14px') * scaleY * 1.1;
+                    tCtx.font = `bold ${parsedSize}px ${ann.font}`;
+                    tCtx.fillStyle = ann.color || '#0f172a';
+                    tCtx.fillText(ann.val, (ann.x * scaleX) + (6 * scaleX), (ann.y * scaleY) + (20 * scaleY));
+                } else if (ann.type === 'sig') {
+                    const sigImg = new Image();
+                    sigImg.src = ann.val;
+                    await new Promise(r => sigImg.onload = r);
+                    tCtx.drawImage(sigImg, ann.x * scaleX, ann.y * scaleY, ann.w * scaleX, ann.h * scaleY);
+                }
+            }
+
+            // 2. Bake Watermark (Including Dragged Offset & Opacity)
+            if (currentMode === 'protect') {
+                const wmText = document.getElementById('wm-text').value;
+                if (wmText) {
+                    const wmSize = parseInt(document.getElementById('wm-size').value) * scaleY * 1.5;
+                    const wmAngle = parseInt(document.getElementById('wm-angle').value);
+                    const wmOpacity = parseInt(document.getElementById('wm-opacity').value) / 100;
+                    const wmStyle = document.getElementById('wm-style').value;
+                    const colorVal = document.getElementById('wm-color').value;
+                    let hexColor = '#dc2626';
+                    if (colorVal === 'black') hexColor = '#0f172a';
+                    if (colorVal === 'blue') hexColor = '#2563eb';
+
+                    tCtx.save();
+                    tCtx.translate((tmpCanvas.width / 2) + (wmX * scaleX), (tmpCanvas.height / 2) + (wmY * scaleY));
+                    tCtx.rotate(wmAngle * Math.PI / 180);
+                    tCtx.globalAlpha = wmOpacity;
+                    
+                    tCtx.font = `900 ${wmSize}px sans-serif`;
+                    tCtx.textAlign = 'center';
+                    tCtx.textBaseline = 'middle';
+                    
+                    const boxHeight = wmSize * 2;
+                    if (wmStyle === 'solid') {
+                        tCtx.fillStyle = hexColor;
+                        tCtx.fillRect(-tmpCanvas.width, -boxHeight/2, tmpCanvas.width*2, boxHeight);
+                        tCtx.fillStyle = '#ffffff';
+                        tCtx.fillText(wmText.toUpperCase(), 0, 0);
+                    } else {
+                        tCtx.fillStyle = 'rgba(255,255,255,0.85)';
+                        tCtx.fillRect(-tmpCanvas.width, -boxHeight/2, tmpCanvas.width*2, boxHeight);
+                        tCtx.lineWidth = 6;
+                        tCtx.strokeStyle = hexColor;
+                        tCtx.strokeRect(-tmpCanvas.width, -boxHeight/2, tmpCanvas.width*2, boxHeight);
+                        tCtx.fillStyle = hexColor;
+                        tCtx.fillText(wmText.toUpperCase(), 0, 0);
+                    }
+                    tCtx.restore();
+                }
+            }
+
+            const pageDataUrl = tmpCanvas.toDataURL('image/jpeg', quality);
+            const pageBytes = await fetch(pageDataUrl).then(res => res.arrayBuffer());
+            const embedImg = await outPdf.embedJpg(pageBytes);
+            const outPage = outPdf.addPage([embedImg.width, embedImg.height]);
+            outPage.drawImage(embedImg, { x: 0, y: 0, width: embedImg.width, height: embedImg.height });
+        }
+
+        function shareViaApp(platform) {
+            const text = encodeURIComponent("Jom guna PDFEasy untuk palang IC dan isi borang dengan selamat secara percuma di pelayar!");
+            const url = encodeURIComponent("https://pdf.payedlegacy.my");
+            if (platform === 'whatsapp') {
+                window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
+            } else if (platform === 'telegram') {
+                window.open(`https://t.me/share/url?url=${url}&text=${text}`,'_blank');
+            }
+        }
+
+        function shareAppWeb() {
+            if (navigator.share) {
+                navigator.share({ title: 'PDFEasy', text: 'Alat PDF & Perlindungan IC Percuma', url: 'https://pdf.payedlegacy.my' }).catch(() => {});
+            } else {
+                shareViaApp('whatsapp');
+            }
+        }
+
+        function showLoading(text) {
+            const overlay = document.getElementById('loading-overlay');
+            document.getElementById('loading-text').innerText = text;
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
+        }
+        function hideLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none';
         }
     </script>
 </body>

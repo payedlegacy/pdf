@@ -126,6 +126,31 @@
         }
         .draggable-item.committed .drag-handle { opacity: .35; }
 
+        /* ---------- PEMEGANG SAIZ (kecil/besar kotak teks & tandatangan) ---------- */
+        .resize-handle {
+            position: absolute;
+            right: -9px;
+            bottom: -9px;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #10b981;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 900;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, .35);
+            cursor: nwse-resize;
+            touch-action: none;
+            z-index: 5;
+            opacity: .9;
+        }
+        .draggable-item.committed .resize-handle { opacity: .45; }
+        .draggable-item.committed:hover .resize-handle { opacity: 1; }
+
         /* ---------- STUDIO BATCH GAMBAR + CROP ---------- */
         .thumb { position: relative; flex: none; width: 86px; }
         .thumb img { width: 86px; height: 86px; object-fit: cover; border-radius: 10px; border: 2px solid #fff; box-shadow: 0 1px 5px rgba(15, 23, 42, .18); background: #fff; }
@@ -1006,6 +1031,13 @@
             if (typeof updateDocHint === 'function') updateDocHint();
             if (typeof updateCompressInfo === 'function') updateCompressInfo();
             if (mode === 'passport') requestAnimationFrame(() => renderPassport());
+            // kembali ke mod Isi Borang → pulihkan anotasi yang pernah disimpan (hanya jika lapisan kosong)
+            if (mode === 'fill') requestAnimationFrame(() => {
+                try {
+                    const layer = document.getElementById('annotation-layer');
+                    if (layer && layer.querySelectorAll('.draggable-item').length === 0) restoreAnnotationsForPage();
+                } catch (e) {}
+            });
             if (mode === 'sign' && signSource) requestAnimationFrame(() => renderSignPreview());
             if (mode === 'qr' && document.getElementById('qr-box').children.length === 0) requestAnimationFrame(() => generateQR());
         }
@@ -1309,11 +1341,13 @@
             div.innerHTML = `
                 <span class="drag-handle" title="Tarik sini">⠿</span>
                 <input type="text" value="" autofocus class="anno-input font-bold text-slate-900" style="font-family: ${font}; font-size: ${size}; color: ${color};">
-                <button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
+                <span class="resize-handle" title="Tarik untuk kecil/besar kotak">⤡</span>
+                <button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
             `;
             
             this.appendChild(div);
             setupDraggable(div);
+            setupResizable(div);
             const inputEl = div.querySelector('input');
             if(inputEl) { inputEl.focus(); autoGrowInput(inputEl); }
         });
@@ -2880,12 +2914,14 @@
 
             div.innerHTML = `
                 <span class="drag-handle" title="Tarik sini">⠿</span>
-                <img src="${dataUrl}" class="w-36 h-auto pointer-events-none">
-                <button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
+                <img src="${dataUrl}" style="width:144px;height:auto" class="pointer-events-none">
+                <span class="resize-handle" title="Tarik untuk kecil/besar tandatangan">⤡</span>
+                <button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
             `;
 
             layer.appendChild(div);
             setupDraggable(div);
+            setupResizable(div);
         }
 
         // PEMEGANG SERET: hanya boleh ditarik dari ikon ⠿ (kotak input tidak terganggu)
@@ -2941,9 +2977,71 @@
             handle.ontouchstart = onPointerDown;
         }
 
+        // PEMEGANG SAIZ: tarik penjuru untuk kecil/besar kotak teks (saiz fon) atau tandatangan (lebar)
+        function setupResizable(element) {
+            const rz = element.querySelector('.resize-handle');
+            if (!rz) return;
+            const mulai = (e) => {
+                if (e.target.closest('input,button') && !e.target.closest('.resize-handle')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                suppressClickUntil = Date.now() + 600;
+                const img = element.querySelector('img');
+                const teks = element.querySelector('input') || element.querySelector('.anno-text');
+                const sasaran = img || teks;
+                if (!sasaran) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const lebarAsal = img ? (img.getBoundingClientRect().width || 144) : 0;
+                const saizAsal = teks ? (parseFloat(teks.style.fontSize) || 12) : 0;
+
+                const gerak = (ev) => {
+                    const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+                    const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+                    const d = ((cx - clientX) + (cy - clientY)) / 2;
+                    if (img) {
+                        const w = Math.max(28, Math.min(900, lebarAsal + d * 1.8));
+                        img.style.width = Math.round(w) + 'px';
+                        img.style.height = 'auto';
+                    } else if (teks) {
+                        const size = Math.max(6, Math.min(90, saizAsal + d / 4));
+                        teks.style.fontSize = Math.round(size) + 'px';
+                        if (teks.tagName === 'INPUT') autoGrowInput(teks);
+                    }
+                    suppressClickUntil = Date.now() + 600;
+                    if (ev.cancelable) ev.preventDefault();
+                };
+                const lepas = () => {
+                    document.removeEventListener('mousemove', gerak);
+                    document.removeEventListener('mouseup', lepas);
+                    document.removeEventListener('touchmove', gerak);
+                    document.removeEventListener('touchend', lepas);
+                };
+                document.addEventListener('mousemove', gerak);
+                document.addEventListener('mouseup', lepas);
+                document.addEventListener('touchmove', gerak, { passive: false });
+                document.addEventListener('touchend', lepas);
+            };
+            rz.onmousedown = mulai;
+            rz.ontouchstart = mulai;
+        }
+
+        // buang satu anotasi (dan tandakan supaya stor dikemas kini dengan betul)
+        function hapusAnotasi(btn) {
+            const el = btn && btn.parentElement;
+            const layer = document.getElementById('annotation-layer');
+            if (el) el.remove();
+            if (layer) layer.dataset.touched = '1';
+        }
+
         function saveCurrentAnnotations() {
             const layer = document.getElementById('annotation-layer');
             const items = layer.querySelectorAll('.draggable-item');
+            // KESELAMATAN: jika lapisan kosong tetapi stor ADA data (cth selepas eksport atau
+            // selepas tukar halaman), JANGAN padam data itu — itu punca butir-butir "hilang".
+            if (items.length === 0 && (annotations[currentPageNum] || []).length > 0 && layer.dataset.touched !== '1') {
+                return;
+            }
             const lw = layer.clientWidth || layer.offsetWidth || 1;
             const lh = layer.clientHeight || layer.offsetHeight || 1;
             let pageData = [];
@@ -2975,6 +3073,7 @@
                 }
             });
             annotations[currentPageNum] = pageData;
+            layer.dataset.touched = '';
             layer.innerHTML = '';
         }
 
@@ -2996,15 +3095,15 @@
                 if (item.type === 'text') {
                     // Dipulihkan sebagai teks PADAT (kotak tertutup) — ketuk untuk edit semula
                     div.className = 'draggable-item pointer-events-auto committed flex items-center gap-1';
-                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><span class="anno-text" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};">${escapeHtmlText(item.val)}</span><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><span class="anno-text" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};">${escapeHtmlText(item.val)}</span><span class="resize-handle" title="Tarik untuk kecil/besar">⤡</span><button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
                 } else {
                     const w = item.rw != null ? Math.round(item.rw * lw) : (item.w || 144);
-                    const h = item.rw != null && item.w ? Math.round(w * (item.h / item.w)) : (item.h || 60);
                     div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400 p-1 rounded-lg flex items-start gap-1 shadow-lg';
-                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><img src="${item.val}" style="width:${w}px; height:auto" class="pointer-events-none"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><img src="${item.val}" style="width:${w}px; height:auto" class="pointer-events-none"><span class="resize-handle" title="Tarik untuk kecil/besar tandatangan">⤡</span><button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
                 }
                 layer.appendChild(div);
                 setupDraggable(div);
+                setupResizable(div);
             });
         }
 
@@ -3056,6 +3155,9 @@
             }
 
             const outBytes = await outPdf.save();
+            // PENTING: saveCurrentAnnotations() mengosongkan lapisan tadi →
+            // pulihkan semula paparan supaya butir-butir borang TIDAK nampak "hilang" selepas muat turun
+            if (currentMode === 'fill') { try { restoreAnnotationsForPage(); } catch (e) { console.error(e); } }
             if (currentMode === 'compress' && originalFileSize) {
                 const pct = Math.round(outBytes.length / originalFileSize * 100);
                 const el = document.getElementById('compress-info');
@@ -3135,9 +3237,11 @@
                     const sigImg = new Image();
                     sigImg.src = ann.val;
                     await new Promise(r => { sigImg.onload = r; sigImg.onerror = r; });
-                    const w = (ann.rw != null) ? ann.rw * tmpCanvas.width : ann.w * scaleX;
-                    const h = (ann.w) ? w * (ann.h / ann.w) : ann.h * scaleY;
-                    tCtx.drawImage(sigImg, nx, ny, w, h);
+                    let w = (ann.rw != null && isFinite(ann.rw)) ? ann.rw * tmpCanvas.width : (ann.w ? ann.w * scaleX : 0);
+                    if (!w || !isFinite(w) || w < 8) w = tmpCanvas.width * 0.34;      // jangan biarkan tandatangan halimunan
+                    let h = (ann.w && ann.h) ? w * (ann.h / ann.w) : w * 0.45;
+                    if (!h || !isFinite(h)) h = w * 0.45;
+                    try { tCtx.drawImage(sigImg, nx, ny, w, h); } catch (e) { console.error(e); }
                 }
             }
 

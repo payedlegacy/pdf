@@ -91,6 +91,56 @@
             min-height: 40px;
         }
 
+        /* ---------- ANOTASI TEKS PADAT (mobile-first) ---------- */
+        /* kotak input kecil: hanya selebar teks, tiada ruang besar menutup borang */
+        .anno-input {
+            width: 6ch;
+            min-width: 3ch;
+            max-width: 70vw;
+            padding: 0 2px;
+            border: 0;
+            outline: 0;
+            background: rgba(255, 255, 255, 0.55);
+            border-bottom: 1px dashed #3b82f6;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+        /* teks yang sudah "commit" (kotak tertutup) — padat, boleh diketuk untuk edit semula */
+        .anno-text {
+            display: inline-block;
+            padding: 0 2px;
+            background: rgba(255, 255, 255, 0.45);
+            border-bottom: 1px dashed rgba(59, 130, 246, 0.75);
+            line-height: 1.15;
+            white-space: pre;
+            font-weight: 700;
+            cursor: text;
+        }
+        /* bila sudah commit: buang rangka editor supaya skrin bersih (jimat ruang telefon) */
+        .draggable-item.committed {
+            border-color: transparent !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 1px !important;
+        }
+        .draggable-item.committed .drag-handle { opacity: .35; }
+
+        /* ---------- STUDIO BATCH GAMBAR + CROP ---------- */
+        .thumb { position: relative; flex: none; width: 86px; }
+        .thumb img { width: 86px; height: 86px; object-fit: cover; border-radius: 10px; border: 2px solid #fff; box-shadow: 0 1px 5px rgba(15, 23, 42, .18); background: #fff; }
+        .thumb.sel img { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, .35); }
+        .thumb .num { position: absolute; top: 3px; left: 3px; background: #10b981; color: #fff; font-size: 10px; font-weight: 900; padding: 0 5px; border-radius: 6px; }
+        .thumb-actions { display: flex; gap: 2px; justify-content: center; margin-top: 3px; }
+        .thumb-actions button { font-size: 11px; line-height: 1; padding: 3px 4px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; }
+        .thumb-actions button:active { background: #e2e8f0; }
+        #crop-rect { cursor: move; touch-action: none; }
+        .crop-handle { position: absolute; width: 20px; height: 20px; background: #10b981; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); touch-action: none; }
+        .crop-handle[data-c="nw"] { left: -10px; top: -10px; cursor: nwse-resize; }
+        .crop-handle[data-c="ne"] { right: -10px; top: -10px; cursor: nesw-resize; }
+        .crop-handle[data-c="sw"] { left: -10px; bottom: -10px; cursor: nesw-resize; }
+        .crop-handle[data-c="se"] { right: -10px; bottom: -10px; cursor: nwse-resize; }
+        .crop-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(to right, rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.6) 1px, transparent 1px); background-size: 33.33% 33.33%; }
+
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
@@ -162,7 +212,7 @@
 
             <!-- DROPZONE: guna <label> (pemicu asli, berfungsi di iOS/Android) + seret & lepas + kamera -->
             <label for="file-input" id="dropzone" class="block border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition-all rounded-3xl p-8 sm:p-10 text-center cursor-pointer shadow-sm relative group">
-                <input type="file" id="file-input" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.heic,.heif" class="sr-file" onchange="handleFileSelect(event)">
+                <input type="file" id="file-input" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.heic,.heif" multiple class="sr-file" onchange="handleFileSelect(event)">
                 <div class="w-16 h-16 bg-slate-100 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
                     📁
                 </div>
@@ -276,12 +326,12 @@
 
                         <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-xl border border-blue-300">
                             <label class="font-bold text-slate-600">Saiz:</label>
-                            <select id="font-size" class="font-bold text-slate-800 outline-none bg-transparent">
-                                <option value="6px">6</option>
+                            <select id="font-size" onchange="applyFontToEditing()" class="font-bold text-slate-800 outline-none bg-transparent">
+                                <option value="6px">6 (paling kecil — tanda X)</option>
                                 <option value="8px">8</option>
-                                <option value="10px">10</option>
+                                <option value="10px" selected>10 (padat)</option>
                                 <option value="12px">12</option>
-                                <option value="14px" selected>14</option>
+                                <option value="14px">14</option>
                                 <option value="18px">18</option>
                                 <option value="24px">24</option>
                                 <option value="32px">32</option>
@@ -306,9 +356,51 @@
                     </div>
                 </div>
 
-                <!-- TOOLBAR: CONVERT -->
-                <div id="toolbar-convert" class="hidden bg-purple-50 border-b border-purple-100 p-3 text-xs text-purple-900 font-bold">
-                    ✨ Mod Tukar Gambar ke PDF aktif. Fail imej anda akan disusun dan ditukar ke format PDF berkualiti tinggi.
+                <!-- TOOLBAR: CONVERT (batch gambar + studio crop) -->
+                <div id="toolbar-convert" class="hidden bg-purple-50 border-b border-purple-100 p-3 text-xs text-purple-900 font-bold flex flex-wrap items-center gap-2.5">
+                    <span class="font-extrabold">🖼️ Tukar Gambar ke PDF</span>
+                    <label for="file-batch" class="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">
+                        ➕ Tambah Gambar (pilih banyak)
+                    </label>
+                    <input type="file" id="file-batch" accept="image/*" multiple class="sr-file" onchange="handleBatchFiles(event)">
+                    <button onclick="mergeBatchToPdf()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">
+                        📥 Gabung &amp; Muat Turun PDF
+                    </button>
+                    <button onclick="clearBatch()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-200 hover:bg-purple-100 text-purple-800 text-xs font-bold rounded-xl">
+                        🗑️ Kosongkan
+                    </button>
+                    <span id="batch-count" class="ml-auto px-2.5 py-1 bg-white border border-purple-200 rounded-lg text-purple-800">0 gambar</span>
+                </div>
+
+                <!-- STRIP THUMBNAIL (susun / putar / crop / buang) -->
+                <div id="batch-strip" class="hidden bg-purple-50/70 border-b border-purple-100 p-2">
+                    <div id="batch-strip-inner" class="flex gap-2.5 overflow-x-auto pb-1"></div>
+                    <p class="text-[11px] font-semibold text-purple-700 mt-1">Ketuk gambar untuk buka Studio Crop. Gunakan ⬅➡ untuk susun kedudukan, ↺↻ untuk putar.</p>
+                </div>
+
+                <!-- STUDIO CROP -->
+                <div id="crop-studio" class="hidden bg-slate-100 border-b border-slate-200 p-3">
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-700">
+                        <span>✂️ Studio Crop — gambar <span id="crop-index">1</span>/<span id="crop-total">1</span></span>
+                        <button onclick="rotateCurrent(-90)" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">↺ Putar Kiri</button>
+                        <button onclick="rotateCurrent(90)" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">↻ Putar Kanan</button>
+                        <button onclick="applyCrop()" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">✅ Guna Crop</button>
+                        <button onclick="resetCrop()" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">↺ Reset</button>
+                        <button onclick="closeCropStudio()" class="px-2.5 py-1.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900">✕ Tutup</button>
+                    </div>
+                    <div class="mt-3 flex justify-center">
+                        <div id="crop-wrap" class="relative inline-block shadow-lg bg-white">
+                            <canvas id="crop-canvas" class="block max-w-full"></canvas>
+                            <div id="crop-rect" class="absolute border-2 border-emerald-500 bg-emerald-500/10">
+                                <div class="crop-grid"></div>
+                                <span class="crop-handle" data-c="nw"></span>
+                                <span class="crop-handle" data-c="ne"></span>
+                                <span class="crop-handle" data-c="sw"></span>
+                                <span class="crop-handle" data-c="se"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[11px] font-semibold text-slate-500 mt-2 text-center">Tarik kotak hijau untuk pilih kawasan · tarik bulatan penjuru untuk besarkan/kecilkan · kemudian tekan “Guna Crop”.</p>
                 </div>
 
                 <!-- TOOLBAR: COMPRESS -->
@@ -539,6 +631,7 @@
             imageSrcUrl = null;
             annotations = {};
             wmX = 0; wmY = 0;
+            clearBatch();
             document.getElementById('file-input').value = '';
             document.getElementById('view-workspace').classList.add('hidden');
             document.getElementById('view-workspace').classList.remove('flex');
@@ -546,7 +639,16 @@
         }
 
         async function handleFileSelect(e) {
-            const file = e.target.files[0];
+            const list = Array.from(e.target.files || []);
+            if (!list.length) return;
+
+            // Banyak gambar serentak → Mod Batch (studio crop)
+            const semuaImej = list.every(f => (f.type || '').startsWith('image/'));
+            if (list.length > 1 && semuaImej) {
+                return handleBatchFiles(e);
+            }
+
+            const file = list[0];
             if (!file) return;
 
             showLoading('Memuatkan fail...');
@@ -760,8 +862,15 @@
         // Nota: klik diabaikan jika baru sahaja selesai seret (elak kotak input "tergantung" selepas drag)
         document.getElementById('annotation-layer').addEventListener('click', function(e) {
             if (currentMode !== 'fill') return;
+
+            // Ketuk teks yang sudah commit → buka semula untuk edit (nilai lama dikekalkan)
+            const spanTeks = e.target.closest('.anno-text');
+            if (spanTeks) { startEdit(spanTeks.closest('.draggable-item')); return; }
+
             if (Date.now() < suppressClickUntil) return;
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.draggable-item') || e.target.closest('.drag-handle')) return;
+
+            commitAllOpen();   // kotak terdahulu tertutup & disimpan dahulu (elak berselirat)
 
             const rect = this.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -772,21 +881,456 @@
             const color = document.getElementById('font-color').value;
 
             const div = document.createElement('div');
-            div.className = 'draggable-item pointer-events-auto';
+            div.className = 'draggable-item pointer-events-auto open';
             div.style.left = x + 'px';
             div.style.top = y + 'px';
 
             div.innerHTML = `
                 <span class="drag-handle" title="Tarik sini">⠿</span>
-                <input type="text" value="" autofocus class="bg-transparent border-none outline-none font-bold w-36 px-1 text-slate-900" style="font-family: ${font}; font-size: ${size}; color: ${color};">
+                <input type="text" value="" autofocus class="anno-input font-bold text-slate-900" style="font-family: ${font}; font-size: ${size}; color: ${color};">
                 <button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
             `;
             
             this.appendChild(div);
             setupDraggable(div);
             const inputEl = div.querySelector('input');
-            if(inputEl) inputEl.focus();
+            if(inputEl) { inputEl.focus(); autoGrowInput(inputEl); }
         });
+
+        // ---- AUTO-COMMIT: ketuk di luar kotak atau tekan Enter → kotak tertutup & teks disimpan ----
+        function escapeHtmlText(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function autoGrowInput(input) {
+            const n = Math.max(3, (input.value || '').length + 1);
+            input.style.width = n + 'ch';
+        }
+
+        // tukar input → span (kotak tertutup). Jika kosong, buang elemen supaya skrin bersih.
+        function commitInPlace(el) {
+            if (!el || !el.isConnected) return;
+            const input = el.querySelector('input');
+            if (!input) return;
+            const val = (input.value || '').trim();
+            if (!val) { el.remove(); return; }
+            const span = document.createElement('span');
+            span.className = 'anno-text';
+            span.textContent = input.value;
+            span.style.fontFamily = input.style.fontFamily;
+            span.style.fontSize = input.style.fontSize;
+            span.style.color = input.style.color;
+            input.replaceWith(span);
+            el.classList.remove('open');
+            el.classList.add('committed');
+        }
+
+        function commitAllOpen() {
+            document.querySelectorAll('#annotation-layer .draggable-item.open').forEach(commitInPlace);
+        }
+
+        // ketuk teks yang sudah commit → buka semula untuk edit (nilai lama dikekalkan)
+        function startEdit(el) {
+            if (!el) return;
+            const span = el.querySelector('.anno-text');
+            if (!span) return;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'anno-input font-bold text-slate-900';
+            input.value = span.textContent;
+            input.style.fontFamily = span.style.fontFamily;
+            input.style.fontSize = span.style.fontSize || document.getElementById('font-size').value;
+            input.style.color = span.style.color;
+            input.style.width = Math.max(3, input.value.length + 1) + 'ch';
+            span.replaceWith(input);
+            el.classList.add('open');
+            el.classList.remove('committed');
+            input.focus();
+            input.select();
+        }
+
+        // tukar saiz fon untuk anotasi yang sedang diedit
+        function applyFontToEditing() {
+            const size = document.getElementById('font-size').value;
+            const inp = document.querySelector('#annotation-layer .draggable-item.open input');
+            if (inp) { inp.style.fontSize = size; autoGrowInput(inp); }
+        }
+
+        // ---- Enter = simpan & tutup kotak · ketuk di luar (blur) = simpan & tutup · auto-lebar input ----
+        document.getElementById('annotation-layer').addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' && e.key === 'Enter') {
+                e.preventDefault();
+                commitInPlace(e.target.closest('.draggable-item'));
+            }
+        });
+        document.getElementById('annotation-layer').addEventListener('focusout', function(e) {
+            if (e.target.tagName !== 'INPUT') return;
+            const el = e.target.closest('.draggable-item');
+            // beri masa sekejap supaya ketukan pada teks lain/butang diproses dahulu
+            setTimeout(() => { if (el && el.isConnected && el.querySelector('input')) commitInPlace(el); }, 90);
+        });
+        document.getElementById('annotation-layer').addEventListener('input', function(e) {
+            if (e.target.tagName === 'INPUT' && e.target.closest('.draggable-item')) autoGrowInput(e.target);
+        });
+
+        /* =====================================================================
+           MOD BATCH: muat naik banyak gambar + studio crop → satu PDF
+           ===================================================================== */
+        let batchImages = [];    // {id, src, name, imgEl, w, h, rot, crop}
+        let batchSeq = 0;
+        let cropIndex = -1;
+        let cropRect = { x: 0, y: 0, w: 1, h: 1 };
+
+        function loadImgEl(src) {
+            return new Promise((res, rej) => {
+                const i = new Image();
+                i.onload = () => res(i);
+                i.onerror = () => rej(new Error('imej tidak dapat dibaca'));
+                i.src = src;
+            });
+        }
+
+        async function handleBatchFiles(e) {
+            const files = Array.from((e && e.target && e.target.files) || [])
+                .filter(f => (f.type || '').startsWith('image/') || /\.(jpe?g|png|webp|bmp)$/i.test(f.name || ''));
+            if (!files.length) { document.getElementById('file-input').value = ''; document.getElementById('file-batch').value = ''; return; }
+
+            showLoading('Memuatkan ' + files.length + ' gambar...');
+            try {
+                for (const f of files) {
+                    const src = URL.createObjectURL(f);
+                    let img;
+                    try { img = await loadImgEl(src); } catch (err) { URL.revokeObjectURL(src); continue; }
+                    batchImages.push({ id: ++batchSeq, src, name: f.name, imgEl: img,
+                                       w: img.naturalWidth, h: img.naturalHeight, rot: 0, crop: null });
+                }
+                // tunjuk ruang kerja + mod convert
+                document.getElementById('view-home').classList.add('hidden');
+                const ws = document.getElementById('view-workspace');
+                ws.classList.remove('hidden'); ws.classList.add('flex');
+                setMode('convert');
+                renderBatchStrip();
+                if (batchImages.length) openCropStudio(0);
+                if (!batchImages.length) alert('Tiada gambar yang dapat dibaca. Sila guna JPG/PNG.');
+            } finally {
+                hideLoading();
+                document.getElementById('file-input').value = '';
+                document.getElementById('file-batch').value = '';
+            }
+        }
+
+        // lukis imej (putaran + crop) pada kanvas — saiz penuh
+        function processedCanvas(item) {
+            const rot = ((item.rot % 360) + 360) % 360;
+            const swap = (rot === 90 || rot === 270);
+            const bw = swap ? item.h : item.w;
+            const bh = swap ? item.w : item.h;
+
+            const base = document.createElement('canvas');
+            base.width = bw; base.height = bh;
+            const bc = base.getContext('2d');
+            bc.save();
+            bc.translate(bw / 2, bh / 2);
+            bc.rotate(rot * Math.PI / 180);
+            bc.drawImage(item.imgEl, -item.w / 2, -item.h / 2);
+            bc.restore();
+
+            if (item.crop && (item.crop.w < 0.999 || item.crop.h < 0.999 || item.crop.x > 0.001 || item.crop.y > 0.001)) {
+                const cx = Math.round(item.crop.x * bw);
+                const cy = Math.round(item.crop.y * bh);
+                const cw = Math.max(8, Math.round(item.crop.w * bw));
+                const chh = Math.max(8, Math.round(item.crop.h * bh));
+                const out = document.createElement('canvas');
+                out.width = cw; out.height = chh;
+                out.getContext('2d').drawImage(base, cx, cy, cw, chh, 0, 0, cw, chh);
+                return out;
+            }
+            return base;
+        }
+
+        function previewDataUrl(item, max) {
+            const full = processedCanvas(item);
+            const s = Math.min(1, max / Math.max(full.width, full.height));
+            const cv = document.createElement('canvas');
+            cv.width = Math.max(1, Math.round(full.width * s));
+            cv.height = Math.max(1, Math.round(full.height * s));
+            const c = cv.getContext('2d');
+            c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height);
+            c.drawImage(full, 0, 0, cv.width, cv.height);
+            return cv.toDataURL('image/jpeg', 0.7);
+        }
+
+        function renderBatchStrip() {
+            const strip = document.getElementById('batch-strip');
+            const inner = document.getElementById('batch-strip-inner');
+            document.getElementById('batch-count').textContent = batchImages.length + ' gambar';
+            if (!batchImages.length) { strip.classList.add('hidden'); inner.innerHTML = ''; closeCropStudio(); return; }
+            strip.classList.remove('hidden');
+            inner.innerHTML = '';
+            batchImages.forEach((item, i) => {
+                const d = document.createElement('div');
+                d.className = 'thumb' + (i === cropIndex ? ' sel' : '');
+                d.innerHTML = `
+                    <span class="num">${i + 1}</span>
+                    <img src="${previewDataUrl(item, 200)}" alt="gambar ${i + 1}" onclick="openCropStudio(${i})">
+                    <div class="thumb-actions">
+                        <button title="Ke kiri" onclick="moveBatch(${i},-1)">⬅</button>
+                        <button title="Putar kiri" onclick="rotateBatch(${i},-90)">↺</button>
+                        <button title="Putar kanan" onclick="rotateBatch(${i},90)">↻</button>
+                        <button title="Crop" onclick="openCropStudio(${i})">✂️</button>
+                        <button title="Buang" onclick="deleteBatch(${i})">🗑</button>
+                        <button title="Ke kanan" onclick="moveBatch(${i},1)">➡</button>
+                    </div>`;
+                inner.appendChild(d);
+            });
+            document.getElementById('crop-total').textContent = batchImages.length;
+        }
+
+        function moveBatch(i, dir) {
+            const j = i + dir;
+            if (j < 0 || j >= batchImages.length) return;
+            const t = batchImages[i]; batchImages[i] = batchImages[j]; batchImages[j] = t;
+            if (cropIndex === i) cropIndex = j; else if (cropIndex === j) cropIndex = i;
+            renderBatchStrip(); if (cropIndex >= 0) renderCropStudio();
+        }
+
+        function rotateBatch(i, deg) {
+            const item = batchImages[i]; if (!item) return;
+            item.rot = ((item.rot + deg) % 360 + 360) % 360;
+            item.crop = null;                       // ruang berubah → reset crop
+            if (i === cropIndex) { cropRect = { x: 0, y: 0, w: 1, h: 1 }; renderCropStudio(); }
+            renderBatchStrip();
+        }
+
+        function deleteBatch(i) {
+            const item = batchImages[i]; if (!item) return;
+            try { URL.revokeObjectURL(item.src); } catch (e) {}
+            batchImages.splice(i, 1);
+            if (cropIndex >= batchImages.length) cropIndex = batchImages.length - 1;
+            renderBatchStrip();
+            if (cropIndex >= 0) renderCropStudio(); else closeCropStudio();
+        }
+
+        function clearBatch() {
+            batchImages.forEach(it => { try { URL.revokeObjectURL(it.src); } catch (e) {} });
+            batchImages = []; cropIndex = -1; cropRect = { x: 0, y: 0, w: 1, h: 1 };
+            const strip = document.getElementById('batch-strip');
+            const inner = document.getElementById('batch-strip-inner');
+            if (strip) strip.classList.add('hidden');
+            if (inner) inner.innerHTML = '';
+            const cnt = document.getElementById('batch-count');
+            if (cnt) cnt.textContent = '0 gambar';
+            closeCropStudio();
+        }
+
+        // ---- STUDIO CROP ----
+        function openCropStudio(i) {
+            if (i < 0 || i >= batchImages.length) return;
+            cropIndex = i;
+            cropRect = batchImages[i].crop ? Object.assign({}, batchImages[i].crop) : { x: 0, y: 0, w: 1, h: 1 };
+            document.getElementById('crop-studio').classList.remove('hidden');
+            renderCropStudio();
+            renderBatchStrip();
+        }
+
+        function closeCropStudio() {
+            const st = document.getElementById('crop-studio');
+            if (st) st.classList.add('hidden');
+            cropIndex = -1;
+        }
+
+        function renderCropStudio() {
+            const item = batchImages[cropIndex];
+            const cv = document.getElementById('crop-canvas');
+            if (!item || !cv) return;
+            document.getElementById('crop-index').textContent = cropIndex + 1;
+            document.getElementById('crop-total').textContent = batchImages.length;
+
+            const rot = ((item.rot % 360) + 360) % 360;
+            const swap = (rot === 90 || rot === 270);
+            const bw = swap ? item.h : item.w;
+            const bh = swap ? item.w : item.h;
+
+            const maxW = Math.min(560, Math.max(240, window.innerWidth - 60));
+            const scale = Math.min(1, maxW / bw);
+            cv.width = Math.round(bw * scale);
+            cv.height = Math.round(bh * scale);
+            const c = cv.getContext('2d');
+            c.save();
+            c.translate(cv.width / 2, cv.height / 2);
+            c.rotate(rot * Math.PI / 180);
+            c.drawImage(item.imgEl, -(item.w * scale) / 2, -(item.h * scale) / 2, item.w * scale, item.h * scale);
+            c.restore();
+
+            positionCropRect();
+        }
+
+        function positionCropRect() {
+            const rect = document.getElementById('crop-rect');
+            const cv = document.getElementById('crop-canvas');
+            if (!rect || !cv) return;
+            rect.style.display = 'block';
+            rect.style.left = (cropRect.x * cv.width) + 'px';
+            rect.style.top = (cropRect.y * cv.height) + 'px';
+            rect.style.width = (cropRect.w * cv.width) + 'px';
+            rect.style.height = (cropRect.h * cv.height) + 'px';
+        }
+
+        function applyCrop() {
+            const item = batchImages[cropIndex]; if (!item) return;
+            item.crop = Object.assign({}, cropRect);
+            renderBatchStrip();
+            alert('Crop disimpan untuk gambar ' + (cropIndex + 1) + '.');
+        }
+
+        function resetCrop() {
+            cropRect = { x: 0, y: 0, w: 1, h: 1 };
+            const item = batchImages[cropIndex];
+            if (item) item.crop = null;
+            positionCropRect();
+            renderBatchStrip();
+        }
+
+        function rotateCurrent(deg) { if (cropIndex >= 0) rotateBatch(cropIndex, deg); }
+
+        // seret kotak crop + tarik penjuru
+        (function initCropInteractions() {
+            const wrap = () => document.getElementById('crop-wrap');
+            const rectEl = () => document.getElementById('crop-rect');
+            const cv = () => document.getElementById('crop-canvas');
+            let mode = null, startX = 0, startY = 0, start = null;
+
+            const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+            const down = (e, m) => {
+                const r = rectEl(); const c = cv();
+                if (!r || !c || cropIndex < 0) return;
+                mode = m;
+                e.preventDefault();
+                const p = e.touches ? e.touches[0] : e;
+                startX = p.clientX; startY = p.clientY;
+                start = Object.assign({}, cropRect);
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', up);
+                document.addEventListener('touchmove', move, { passive: false });
+                document.addEventListener('touchend', up);
+            };
+            const move = (e) => {
+                if (!mode) return;
+                const c = cv(); if (!c) return;
+                const p = e.touches ? e.touches[0] : e;
+                const dx = (p.clientX - startX) / c.clientWidth;
+                const dy = (p.clientY - startY) / c.clientHeight;
+                let nr = { x: start.x, y: start.y, w: start.w, h: start.h };
+                const MIN = 0.08;
+                if (mode === 'move') {
+                    nr.x = clamp01(Math.min(1 - start.w, Math.max(0, start.x + dx)));
+                    nr.y = clamp01(Math.min(1 - start.h, Math.max(0, start.y + dy)));
+                } else {
+                    if (mode.includes('w')) { const nx = Math.min(start.x + start.w - MIN, Math.max(0, start.x + dx)); nr.w = start.x + start.w - nx; nr.x = nx; }
+                    if (mode.includes('e')) { nr.w = Math.min(1 - start.x, Math.max(MIN, start.w + dx)); }
+                    if (mode.includes('n')) { const ny = Math.min(start.y + start.h - MIN, Math.max(0, start.y + dy)); nr.h = start.y + start.h - ny; nr.y = ny; }
+                    if (mode.includes('s')) { nr.h = Math.min(1 - start.y, Math.max(MIN, start.h + dy)); }
+                }
+                cropRect = nr;
+                positionCropRect();
+                if (e.cancelable) e.preventDefault();
+            };
+            const up = () => {
+                mode = null;
+                document.removeEventListener('mousemove', move);
+                document.removeEventListener('mouseup', up);
+                document.removeEventListener('touchmove', move);
+                document.removeEventListener('touchend', up);
+            };
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const r = document.getElementById('crop-rect');
+                if (!r) return;
+                r.querySelectorAll('.crop-handle').forEach(h => {
+                    const m = h.getAttribute('data-c');
+                    h.addEventListener('mousedown', e => down(e, m));
+                    h.addEventListener('touchstart', e => down(e, m), { passive: false });
+                });
+                r.addEventListener('mousedown', e => { if (e.target.classList.contains('crop-handle')) return; down(e, 'move'); });
+                r.addEventListener('touchstart', e => { if (e.target.classList.contains('crop-handle')) return; down(e, 'move'); }, { passive: false });
+            });
+        })();
+
+        // ---- GABUNG SEMUA GAMBAR → SATU PDF ----
+        async function mergeBatchToPdf() {
+            if (!batchImages.length) { alert('Tiada gambar. Sila tambah gambar dahulu.'); return; }
+            showLoading('Menggabungkan ' + batchImages.length + ' gambar ke PDF...');
+            try {
+                const { PDFDocument } = PDFLib;
+                const out = await PDFDocument.create();
+                for (const item of batchImages) {
+                    const cv = processedCanvas(item);
+                    bakeWatermarkOnCanvas(cv);
+                    const jpg = cv.toDataURL('image/jpeg', 0.92);
+                    const emb = await out.embedJpg(jpg);
+                    const pw = Math.min(595, (cv.width * 72 / 150) * 1.6);
+                    const ph = pw * (cv.height / cv.width);
+                    const page = out.addPage([pw, ph]);
+                    page.drawImage(emb, { x: 0, y: 0, width: pw, height: ph });
+                }
+                const bytes = await out.save();
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `PDFEasy_GABUNG_${batchImages.length}_gambar_${Date.now()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 20000);
+            } catch (err) {
+                console.error(err);
+                alert('Ralat menggabungkan gambar: ' + (err && err.message ? err.message : err));
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // bak watermark pada kanvas (untuk batch gambar)
+        function bakeWatermarkOnCanvas(cv) {
+            const elText = document.getElementById('wm-text');
+            const txt = elText ? (elText.value || '').trim() : '';
+            if (!txt) return;
+            const W = cv.width, H = cv.height;
+            const c = cv.getContext('2d');
+            const size = parseInt(document.getElementById('wm-size').value) * (H / 700) * 1.2;
+            const angle = parseInt(document.getElementById('wm-angle').value);
+            const opacity = parseInt(document.getElementById('wm-opacity').value) / 100;
+            const style = document.getElementById('wm-style').value;
+            const colorVal = document.getElementById('wm-color').value;
+            let hex = '#dc2626';
+            if (colorVal === 'black') hex = '#0f172a';
+            if (colorVal === 'blue') hex = '#2563eb';
+
+            c.save();
+            c.translate(W / 2 + (wmX * W / 800), H / 2 + (wmY * H / 1000));
+            c.rotate(angle * Math.PI / 180);
+            c.globalAlpha = opacity;
+            c.font = '900 ' + size + 'px sans-serif';
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            const boxH = size * 2;
+            if (style === 'solid') {
+                c.fillStyle = hex;
+                c.fillRect(-W, -boxH / 2, W * 2, boxH);
+                c.fillStyle = '#ffffff';
+                c.fillText(txt.toUpperCase(), 0, 0);
+            } else {
+                c.fillStyle = 'rgba(255,255,255,0.85)';
+                c.fillRect(-W, -boxH / 2, W * 2, boxH);
+                c.lineWidth = Math.max(2, size * 0.12);
+                c.strokeStyle = hex;
+                c.strokeRect(-W, -boxH / 2, W * 2, boxH);
+                c.fillStyle = hex;
+                c.fillText(txt.toUpperCase(), 0, 0);
+            }
+            c.restore();
+        }
 
         function openSignatureModal() {
             document.getElementById('modal-sig').classList.remove('hidden');
@@ -915,19 +1459,22 @@
                 const x = parseFloat(el.style.left) || 0;
                 const y = parseFloat(el.style.top) || 0;
                 const input = el.querySelector('input');
+                const span = el.querySelector('.anno-text');
                 const img = el.querySelector('img');
+                const styleSrc = input || span;
+                const val = input ? input.value : (span ? span.textContent : '');
                 
-                if (input && input.value.trim() !== '') {
+                if (styleSrc && val && val.trim() !== '') {
                     pageData.push({ 
                         type: 'text', 
                         x, 
                         y, 
                         rx: x / lw,
                         ry: y / lh,
-                        val: input.value, 
-                        font: input.style.fontFamily, 
-                        fontSize: input.style.fontSize || '14px',
-                        color: input.style.color || '#0f172a'
+                        val: val, 
+                        font: styleSrc.style.fontFamily, 
+                        fontSize: styleSrc.style.fontSize || '10px',
+                        color: styleSrc.style.color || '#0f172a'
                     });
                 } else if (img) {
                     pageData.push({ type: 'sig', x, y, rx: x / lw, ry: y / lh, val: img.src,
@@ -954,8 +1501,9 @@
                 div.style.top = py + 'px';
                 
                 if (item.type === 'text') {
-                    div.className = 'draggable-item pointer-events-auto bg-white/90 border border-blue-400 p-1.5 rounded-lg text-slate-900 flex items-center gap-1 shadow-lg';
-                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><input type="text" value="${item.val}" class="bg-transparent border-none outline-none font-bold w-36 px-1" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                    // Dipulihkan sebagai teks PADAT (kotak tertutup) — ketuk untuk edit semula
+                    div.className = 'draggable-item pointer-events-auto committed flex items-center gap-1';
+                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><span class="anno-text" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};">${escapeHtmlText(item.val)}</span><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
                 } else {
                     const w = item.rw != null ? Math.round(item.rw * lw) : (item.w || 144);
                     const h = item.rw != null && item.w ? Math.round(w * (item.h / item.w)) : (item.h || 60);

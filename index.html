@@ -146,20 +146,12 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 
-    <!-- GOOGLE AMP AUTO ADS (dipasang mengikut arahan pemilik) -->
-    <script async custom-element="amp-auto-ads"
-            src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js">
-    </script>
-    <!-- Google AdSense: skrip penerbit (Auto Ads + unit yang dipasang) -->
+    <!-- GOOGLE ADSENSE — Auto Ads (cara rasmi untuk halaman HTML biasa) -->
+    <meta name="google-adsense-account" content="ca-pub-9978987699948390">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9978987699948390"
             crossorigin="anonymous"></script>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
-
-    <!-- Google AMP Auto Ads (diletakkan betul-betul selepas tag <body>) -->
-    <amp-auto-ads type="adsense"
-            data-ad-client="ca-pub-9978987699948390">
-    </amp-auto-ads>
 
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -639,97 +631,72 @@
 
                 <!-- ================= PANEL: STUDIO PASPORT ================= -->
                 <div id="panel-passport" class="hidden flex-1 overflow-auto bg-slate-100 p-4">
-                    <div class="max-w-3xl mx-auto space-y-3">
-                        <div class="bg-white rounded-2xl border border-slate-200 p-4">
-                            <h3 class="font-black text-slate-900 text-base mb-1">🪪 Studio Pasport Pro (35mm × 50mm)</h3>
-                            <p class="text-xs font-semibold text-slate-500 mb-3">Gambar pasport rasmi + tukar latar automatik + eksport templat A4 (8 keping).</p>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <input type="file" id="pp-camera" accept="image/*" capture="user" class="sr-file" onchange="handlePassportImage(event)">
-                                <label for="pp-camera" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Selfie (Kamera)</label>
-                                <input type="file" id="pp-file" accept="image/*" class="sr-file" onchange="handlePassportImage(event)">
-                                <label for="pp-file" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Muat Naik Foto</label>
-                                <span id="pp-status" class="text-[11px] font-bold text-slate-500">Tiada gambar.</span>
-                            </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 max-w-3xl mx-auto">
+                        <div class="text-center mb-4">
+                            <h3 class="font-black text-slate-900 text-base sm:text-lg">📸 Studio Pasport Pro (35mm × 50mm)</h3>
+                            <p class="text-xs font-semibold text-slate-500 mt-1">Ambil gambar atau muat naik → laras kecerahan &amp; kontras supaya nampak bersih → jana templat A4 (8 keping) sedia cetak.</p>
                         </div>
 
-                        <div class="bg-white rounded-2xl border border-slate-200 p-4 grid sm:grid-cols-[auto_1fr] gap-5">
+                        <!-- SUMBER GAMBAR -->
+                        <div class="flex flex-wrap items-center justify-center gap-2 mb-4">
+                            <input type="file" id="pp-camera" accept="image/*" capture="user" class="sr-file" onchange="handlePassportImage(event)">
+                            <label for="pp-camera" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Selfie (Kamera)</label>
+                            <input type="file" id="pp-file" accept="image/*" class="sr-file" onchange="handlePassportImage(event)">
+                            <label for="pp-file" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Muat Naik Gambar</label>
+                            <span id="pp-status" class="w-full text-center text-[11px] font-bold text-slate-500">Tiada gambar lagi.</span>
+                        </div>
+
+                        <!-- RUANG KERJA -->
+                        <div id="pp-editor" class="hidden flex-col items-center gap-4">
                             <div class="flex justify-center">
-                                <div class="relative">
-                                    <canvas id="pp-canvas" width="350" height="500" class="block rounded-lg border-2 border-slate-300 shadow-inner touch-none"></canvas>
-                                    <div class="absolute inset-0 border border-dashed border-emerald-500/70 pointer-events-none"></div>
+                                <div class="relative shadow-xl rounded-xl overflow-hidden border-4 border-white bg-white">
+                                    <canvas id="pp-canvas" width="350" height="500" class="block w-[210px] h-[300px] touch-none"></canvas>
                                 </div>
                             </div>
-                            <div class="space-y-3">
-                                <!-- LANGKAH 2: AUTO (berjalan sendiri semasa muat naik) -->
-                                <div class="text-xs font-bold text-slate-700 border-b border-slate-200 pb-3">
-                                    <p class="font-black text-slate-800 mb-2">⚡ Langkah 2: Auto</p>
-                                    <label class="flex items-center gap-2 mb-2 cursor-pointer">
-                                        <input type="checkbox" id="pp-enhance" class="w-4 h-4 accent-emerald-600" checked onchange="ppInvalidate(false)">
-                                        <span>✨ Auto Cantik — kontras, warna &amp; ketajaman</span>
-                                    </label>
-                                    <div class="flex flex-wrap gap-2">
-                                        <button onclick="ppAutoAll()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-extrabold shadow-sm">⚡ Siapkan Semua (Auto)</button>
-                                        <button onclick="ppAutoFrame()" class="px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[11px] font-bold">🪄 Auto Laras Bingkai</button>
-                                        <button onclick="ppAutoRedo()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-xl text-[11px] font-bold">🔄 Auto Semula Latar</button>
+                            <p class="text-[11px] font-semibold text-slate-500 text-center">Nisbah rasmi pasport Malaysia (35mm × 50mm) · seret gambar untuk laraskan kedudukan muka</p>
+
+                            <!-- PELARAS CANTIK & LARAS -->
+                            <div class="w-full max-w-md space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+                                <div>
+                                    <div class="flex justify-between font-bold text-slate-700 mb-1">
+                                        <span>☀️ Kecerahan</span><span id="pp-bright-val" class="text-emerald-700">100%</span>
                                     </div>
+                                    <input type="range" id="pp-bright" min="50" max="150" value="100" class="w-full accent-emerald-600"
+                                           oninput="document.getElementById('pp-bright-val').textContent=this.value+'%'; renderPassport()">
                                 </div>
-
-                                <!-- LANGKAH 3: WARNA LATAR (satu ketukan) -->
-                                <div class="text-xs font-bold text-slate-700">
-                                    <p class="font-black text-slate-800 mb-1">🖌️ Langkah 3: Warna Latar Belakang</p>
-                                    <div class="flex flex-wrap gap-2">
-                                        <button onclick="changePassportBg('#ffffff', this)" class="pp-swatch px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-[11px] font-extrabold">⚪ Putih</button>
-                                        <button onclick="changePassportBg('#003366', this)" class="pp-swatch px-3 py-2.5 rounded-xl border-2 border-emerald-500 text-white text-[11px] font-extrabold" style="background:#003366">🔵 Biru Rasmi</button>
-                                        <button onclick="changePassportBg('#cc0000', this)" class="pp-swatch px-3 py-2.5 rounded-xl border-2 border-slate-200 text-white text-[11px] font-extrabold" style="background:#cc0000">🔴 Merah</button>
+                                <div>
+                                    <div class="flex justify-between font-bold text-slate-700 mb-1">
+                                        <span>🌓 Kontras</span><span id="pp-contrast-val" class="text-emerald-700">100%</span>
                                     </div>
+                                    <input type="range" id="pp-contrast" min="50" max="150" value="100" class="w-full accent-emerald-600"
+                                           oninput="document.getElementById('pp-contrast-val').textContent=this.value+'%'; renderPassport()">
                                 </div>
-
-                                <!-- PELARAS KECERAHAN & KONTRAK + PANDUAN KEPALA -->
-                                <div class="text-xs font-bold text-slate-700 border-t border-slate-200 pt-3 space-y-2">
-                                    <label class="block">Kecerahan: <span id="pp-bright-val" class="text-emerald-700">0</span></label>
-                                    <input type="range" id="pp-bright" min="-40" max="40" value="0" class="w-full accent-emerald-600" oninput="document.getElementById('pp-bright-val').textContent=this.value; ppInvalidate(false)">
-                                    <label class="block">Kontras / Ketajaman: <span id="pp-contrast-val" class="text-emerald-700">100%</span></label>
-                                    <input type="range" id="pp-contrast" min="60" max="180" value="100" class="w-full accent-emerald-600" oninput="document.getElementById('pp-contrast-val').textContent=this.value+'%'; ppInvalidate(false)">
-                                    <label class="flex items-center gap-2 cursor-pointer pt-1">
-                                        <input type="checkbox" id="pp-guide" class="w-4 h-4 accent-emerald-600" checked onchange="renderPassport()">
-                                        <span>👤 Tunjuk panduan kepala (garis mata &amp; dagu)</span>
-                                    </label>
-                                </div>
-                                <!-- LANGKAH 4: LARAS MANUAL (pilihan) -->
-                                <div class="text-xs font-bold text-slate-700 border-t border-slate-200 pt-3">
-                                    <p class="font-black text-slate-800 mb-1">🎚️ Langkah 4: Laras Manual (kalau perlu)</p>
-                                </div>
-                                <div class="text-xs font-bold text-slate-700">
-                                    <label class="block mb-1">Zoom: <span id="pp-zoom-val" class="text-emerald-700">100%</span></label>
-                                    <input type="range" id="pp-zoom" min="100" max="300" value="100" class="w-full accent-emerald-600" oninput="ppZoom=+this.value/100; document.getElementById('pp-zoom-val').textContent=this.value+'%'; renderPassport()">
-                                </div>
-                                <div class="text-xs font-bold text-slate-700">
-                                    <label class="block mb-1">Kekuatan Buang Latar: <span id="pp-tol-val" class="text-emerald-700">60</span></label>
-                                    <input type="range" id="pp-tol" min="15" max="150" value="60" class="w-full accent-emerald-600" oninput="document.getElementById('pp-tol-val').textContent=this.value; ppInvalidate(true)">
-                                </div>
-
-                                <!-- BERUS MANUAL: buang baki latar / pulihkan bahagian terpotong -->
-                                <div class="text-xs font-bold text-slate-700 border-t border-slate-200 pt-3">
-                                    <label class="block mb-1">Berus Manual <span class="font-semibold text-slate-500">(baiki baki latar atau pulih muka/rambut)</span>:</label>
-                                    <div class="flex flex-wrap gap-2 mb-2">
-                                        <button id="pp-brush-pan" onclick="setPpBrush('pan',this)" class="px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-[11px] font-bold">🖐️ Gerak/Gerak Zoom</button>
-                                        <button id="pp-brush-erase" onclick="setPpBrush('erase',this)" class="px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[11px] font-bold">🖌️ Buang Latar</button>
-                                        <button id="pp-brush-restore" onclick="setPpBrush('restore',this)" class="px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[11px] font-bold">🧽 Pulih (muka/rambut)</button>
+                                <div>
+                                    <div class="flex justify-between font-bold text-slate-700 mb-1">
+                                        <span>🔍 Saiz / Zoom</span><span id="pp-zoom-val" class="text-emerald-700">100%</span>
                                     </div>
-                                    <label class="block mb-1">Saiz berus: <span id="pp-brush-val" class="text-emerald-700">40px</span></label>
-                                    <input type="range" id="pp-brush" min="12" max="120" value="40" class="w-full accent-emerald-600" oninput="ppBrushSize=+this.value; document.getElementById('pp-brush-val').textContent=this.value+'px'">
+                                    <input type="range" id="pp-zoom" min="100" max="250" value="100" class="w-full accent-emerald-600">
                                 </div>
-
-                                <p class="text-[11px] font-semibold text-slate-500">Auto buang latar berjalan sendiri. Kalau ada baki latar → pilih 🖌️ Buang Latar dan sapu. Kalau muka/rambut terkena → 🧽 Pulih.</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <button onclick="ppDownloadA4Jpg()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-sm">📥 Jana &amp; Muat Turun Templat A4 (JPG 150 DPI)</button>
-                                    <button onclick="ppDownloadSheet()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm">📄 Jana Templat A4 (PDF)</button>
-                                    <button onclick="ppReset()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">↺ Reset</button>
-                                </div>
-                                <p class="text-[11px] font-semibold text-slate-500">Templat A4 mengandungi <b>8 keping</b> gambar pasport (4 lajur × 2 baris) + garisan potong halus — sedia untuk dicetak &amp; digunting.</p>
+                                <label class="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+                                    <input type="checkbox" id="pp-guide" class="w-4 h-4 accent-emerald-600" checked onchange="renderPassport()">
+                                    <span>👤 Panduan kepala (garis mata &amp; dagu)</span>
+                                </label>
                             </div>
+
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <button onclick="ppDownloadA4Jpg()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md">📥 Jana &amp; Muat Turun Templat A4 (JPG 150 DPI)</button>
+                                <button onclick="ppDownloadSheet()" class="px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl shadow-sm">📄 PDF</button>
+                                <button onclick="ppReset()" class="px-4 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl">↺ Reset</button>
+                            </div>
+                            <p class="text-[11px] font-semibold text-slate-500 text-center">Templat A4 = <b>8 keping</b> (4 lajur × 2 baris) + garisan potong halus · gambar asal tidak diubah, tidak ada pemotongan latar automatik.</p>
+                        </div>
+
+                        <!-- PLACEHOLDER -->
+                        <div id="pp-placeholder" class="flex flex-col items-center justify-center p-8 bg-slate-100 rounded-2xl border border-dashed border-slate-300 text-slate-400 text-xs font-bold text-center">
+                            Sila ambil gambar atau muat naik foto untuk mula melaras.
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
 
@@ -2284,366 +2251,58 @@
         }
 
         /* =====================================================================
-           TOOL #8 — STUDIO PASPORT PRO (35mm × 50mm, tukar latar, A4 8-up)
+           TOOL #8 — STUDIO PASPORT PRO (Edisi Cantik & Susun A4)
+           35mm × 50mm: laras kecerahan & kontras (gambar asal TIDAK diubah,
+           tiada pemotongan latar automatik) + templat A4 150 DPI (8 keping).
            ===================================================================== */
-        const PP_FRAME_W = 350, PP_FRAME_H = 500;      // nisbah 35:50
-        let passportImg = null;
-        let ppSrcCanvas = null;        // sumber (diperkecil) — rujukan tetap
-        let ppMask = null;             // Uint8Array: 1 = subjek (kekal), 0 = latar (dibuang)
-        let ppComposite = null;        // hasil: subjek di atas warna latar pilihan
-        let ppDirty = true;            // perlu bina semula komposit
-        let ppZoom = 1, ppOffX = 0, ppOffY = 0, ppTarget = '#003366';   // default: Biru Rasmi
-        let ppBrush = 'pan';           // 'pan' | 'erase' | 'restore'
-        let ppBrushSize = 40;          // px pada kanvas bingkai
+        const PP_FRAME_W = 350, PP_FRAME_H = 500;      // nisbah rasmi 35:50
+        let passportImg = null;                        // imej asal (tidak disentuh)
+        let ppZoom = 100;                              // 100% – 250%
+        let ppOffX = 0, ppOffY = 0;                    // anjakan seret (bingkai px)
+        let ppA4Cache = null;                          // kanvas A4 terakhir (untuk PDF)
+
+        function ppBrightness() { const el = document.getElementById('pp-bright'); return el ? (+el.value) : 100; }
+        function ppContrast() { const el = document.getElementById('pp-contrast'); return el ? (+el.value) : 100; }
+        function ppFilter() { return 'brightness(' + ppBrightness() + '%) contrast(' + ppContrast() + '%)'; }
 
         async function handlePassportFile(e) {
             const f = (e.target.files || [])[0];
             if (!f) return;
-            if (!((f.type || '').startsWith('image/'))) { alert('Sila pilih fail gambar.'); return; }
+            if (!((f.type || '').startsWith('image/'))) { alert('Sila pilih fail gambar (JPG/PNG).'); return; }
             showLoading('Memuatkan gambar...');
             try {
                 passportImg = await loadImgEl(URL.createObjectURL(f));
-                ppSrcCanvas = null; ppMask = null; ppComposite = null; ppDirty = true;
-                ppZoom = 1; ppOffX = 0; ppOffY = 0;
-                const z = document.getElementById('pp-zoom'); if (z) { z.value = 100; }
+                ppZoom = 100; ppOffX = 0; ppOffY = 0; ppA4Cache = null;
+                const z = document.getElementById('pp-zoom'); if (z) z.value = 100;
                 const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
-                document.getElementById('pp-status').textContent = f.name + ' · ' + passportImg.naturalWidth + '×' + passportImg.naturalHeight + ' · ✨ auto diproses';
-                ppAutoAll();                        // buang latar + laras bingkai + cantikkan (automatik)
+                ['pp-bright', 'pp-contrast'].forEach(id => { const el = document.getElementById(id); if (el) el.value = 100; });
+                ['pp-bright-val', 'pp-contrast-val'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '100%'; });
+                const st = document.getElementById('pp-status');
+                if (st) st.textContent = f.name + ' · ' + passportImg.naturalWidth + '×' + passportImg.naturalHeight + ' · sedia dilaras';
+                const ph = document.getElementById('pp-placeholder'); if (ph) ph.classList.add('hidden');
+                const ea = document.getElementById('pp-editor');
+                if (ea) { ea.classList.remove('hidden'); ea.classList.add('flex'); }
+                renderPassport();
             } catch (err) {
                 alert('Gagal membaca gambar: ' + (err && err.message ? err.message : err));
             } finally {
                 hideLoading();
-                document.getElementById('pp-file').value = '';
-                document.getElementById('pp-camera').value = '';
+                const inp = document.getElementById('pp-file'); if (inp) inp.value = '';
+                const cam = document.getElementById('pp-camera'); if (cam) cam.value = '';
             }
         }
 
-        function setPpBrush(mode, btn) {
-            ppBrush = mode;
-            ['pan', 'erase', 'restore'].forEach(m => {
-                const b = document.getElementById('pp-brush-' + m);
-                if (!b) return;
-                if (m === mode) { b.classList.add('border-emerald-500', 'bg-emerald-50'); b.classList.remove('border-slate-200', 'bg-white'); }
-                else { b.classList.remove('border-emerald-500', 'bg-emerald-50'); b.classList.add('border-slate-200', 'bg-white'); }
-            });
-        }
-
-        function ppInvalidate(rebuildMask) {
-            if (rebuildMask) ppMask = null;
-            ppDirty = true;
-            renderPassport();
-        }
-
-        function ppAutoRedo() {
-            ppMask = null; ppDirty = true;
-            renderPassport();
-        }
-
-        // 🪄 Auto laras bingkai: kesan kepala/bahu dari mask → zoom & pusat supaya
-        //    kepala memenuhi ~70% tinggi bingkai dan bahagian atas kepala ~6% dari tepi
-        function ppAutoFrame() {
-            const src = ppSource();
-            if (!src) return;
-            if (!ppMask) computePassportMask();
-            if (!ppMask) return;
-            const w = src.width, h = src.height;
-            const rowW = new Int32Array(h);
-            let top = h, bottom = -1, left = w, right = -1, sumX = 0, cnt = 0;
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    if (!ppMask[y * w + x]) continue;
-                    rowW[y]++;
-                    if (y < top) top = y;
-                    if (y > bottom) bottom = y;
-                    if (x < left) left = x;
-                    if (x > right) right = x;
-                    sumX += x; cnt++;
-                }
-            }
-            if (bottom <= top || !cnt) return;
-
-            // lebar kepala purata (bahagian atas 50% subjek)
-            const halfY = top + Math.round((bottom - top) * 0.5);
-            let headW = 0, hn = 0;
-            for (let y = top; y <= halfY; y++) { if (rowW[y] > 0) { headW += rowW[y]; hn++; } }
-            headW = hn ? headW / hn : (right - left);
-
-            // cari bahu: baris pertama yang jauh lebih lebar daripada kepala
-            let shoulderY = bottom;
-            for (let y = top; y <= bottom; y++) {
-                if (rowW[y] > headW * 1.9) { shoulderY = y; break; }
-            }
-            const headH = Math.max(12, (shoulderY - top) * 1.35);   // anggaran tinggi kepala (termasuk dagu)
-
-            const base = Math.max(PP_FRAME_W / w, PP_FRAME_H / h);
-            const sasaranZoom = (0.70 * PP_FRAME_H) / headH / base;
-            ppZoom = Math.max(1, Math.min(3, sasaranZoom));
-
-            const s = base * ppZoom;
-            const drawW = w * s, drawH = h * s;
-            const cxSrc = cnt ? sumX / cnt : w / 2;
-            ppOffX = (PP_FRAME_W / 2 - cxSrc * s) - (PP_FRAME_W - drawW) / 2;
-            ppOffY = (0.06 * PP_FRAME_H - top * s) - (PP_FRAME_H - drawH) / 2;
-
-            const z = document.getElementById('pp-zoom');
-            if (z) z.value = Math.round(ppZoom * 100);
-            const zv = document.getElementById('pp-zoom-val');
-            if (zv) zv.textContent = Math.round(ppZoom * 100) + '%';
-            ppDirty = true;
-            renderPassport();
-        }
-
-        // ⚡ Siapkan semua: buang latar + auto laras bingkai + auto cantik
-        function ppAutoAll() {
-            if (!passportImg) { alert('Muat naik atau ambil gambar dahulu.'); return; }
-            const en = document.getElementById('pp-enhance');
-            if (en) en.checked = true;
-            ppMask = null;
-            ppDirty = true;
-            computePassportMask();
-            buildPassportComposite();
-            ppAutoFrame();
-            renderPassport();
-        }
-
-        function setPpTarget(col, btn) {
-            ppTarget = col;
-            ppDirty = true;                    // warna latar berubah → bina semula komposit (mask kekal)
-            document.querySelectorAll('.pp-swatch').forEach(b => b.classList.remove('border-emerald-500'));
-            if (btn) btn.classList.add('border-emerald-500');
-            renderPassport();
-        }
-
-        function hexToRgbObj(hex) {
+        // kedudukan lukisan: skala "cover" (penuhkan bingkai) + zoom + anjakan seret
+        function ppDrawRect(cw, ch) {
+            if (!passportImg) return { x: 0, y: 0, w: cw, h: ch };
+            const iw = passportImg.naturalWidth, ih = passportImg.naturalHeight;
+            const k = Math.max(cw / iw, ch / ih) * (ppZoom / 100);
+            const w = iw * k, h = ih * k;
             return {
-                r: parseInt(hex.slice(1, 3), 16),
-                g: parseInt(hex.slice(3, 5), 16),
-                b: parseInt(hex.slice(5, 7), 16)
+                x: (cw - w) / 2 + ppOffX * (cw / PP_FRAME_W),
+                y: (ch - h) / 2 + ppOffY * (ch / PP_FRAME_H),
+                w: w, h: h, k: k
             };
-        }
-
-        // sumber diperkecil (maks 1100px) — kekal untuk semua operasi
-        function ppSource() {
-            if (!passportImg) return null;
-            const maxDim = 1100;
-            const s = Math.min(1, maxDim / Math.max(passportImg.naturalWidth, passportImg.naturalHeight));
-            const w = Math.max(1, Math.round(passportImg.naturalWidth * s));
-            const h = Math.max(1, Math.round(passportImg.naturalHeight * s));
-            if (ppSrcCanvas && ppSrcCanvas.width === w && ppSrcCanvas.height === h) return ppSrcCanvas;
-            const cv = document.createElement('canvas');
-            cv.width = w; cv.height = h;
-            cv.getContext('2d').drawImage(passportImg, 0, 0, w, h);
-            ppSrcCanvas = cv;
-            return cv;
-        }
-
-        /* =====================================================================
-           BUANG LATAR (versi mantap):
-           1) palet warna latar dari bingkai tepi (bukan satu purata) → tahan
-              gradien/cahaya tidak sekata
-           2) flood fill dari sempadan sahaja (kawasan dalam subjek tidak tersentuh)
-           3) penjaga gelap: rambut/baju gelap tidak dikira latar
-           4) zon lindung elips muka/subjek di tengah → muka TIDAK akan dipadam
-           ===================================================================== */
-        function computePassportMask() {
-            const src = ppSource();
-            if (!src) return null;
-            const w = src.width, h = src.height;
-            const d = src.getContext('2d').getImageData(0, 0, w, h).data;
-            const tolEl = document.getElementById('pp-tol');
-            const tol = tolEl ? +tolEl.value : 60;
-            const tol2 = tol * tol;                                   // jejari Euclidean (unit RGB) = tol
-
-            // (1) palet latar dari bingkai tepi (kuantisasi 4-bit/channel)
-            const ring = Math.max(2, Math.round(Math.min(w, h) * 0.025));
-            const bins = new Map();
-            for (let y = 0; y < h; y += 2) {
-                for (let x = 0; x < w; x += 2) {
-                    if (!(x < ring || x >= w - ring || y < ring || y >= h - ring)) continue;
-                    const i = (y * w + x) * 4;
-                    const key = ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4);
-                    const e = bins.get(key) || [0, 0, 0, 0];
-                    e[0] += d[i]; e[1] += d[i + 1]; e[2] += d[i + 2]; e[3]++;
-                    bins.set(key, e);
-                }
-            }
-            const palette = [];
-            let bgAcc = 0, bgW = 0;
-            bins.forEach(e => {
-                if (e[3] < 5) return;
-                const r = e[0] / e[3], g = e[1] / e[3], b = e[2] / e[3];
-                palette.push([r, g, b]);
-                bgAcc += (0.299 * r + 0.587 * g + 0.114 * b) * e[3];
-                bgW += e[3];
-            });
-            const bgLum = bgW ? bgAcc / bgW : 200;      // purata berwajaran kawasan tepi
-            const darkGuard = Math.max(35, tol * 1.1);  // rambut/baju gelap sentiasa dilindungi
-
-            // (4) zon lindung: di dalam elips muka/subjek, padanan warna perlu LEBIH KETAT
-            //     (halo latar di sekeliling kepala masih dibuang, tetapi kulit muka dilindungi)
-            const pcx = w * 0.5, pcy = h * 0.40, prx = w * 0.32, pry = h * 0.36;
-            const tolLindung2 = (tol * 0.45) * (tol * 0.45);   // padanan jauh lebih ketat dalam zon muka
-            const dalamLindung = (x, y) => {
-                const dx = (x - pcx) / prx, dy = (y - pcy) / pry;
-                return (dx * dx + dy * dy) <= 1;
-            };
-
-            const nearBg = (i, x, y, dilindungi) => {
-                const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                if (lum < bgLum - darkGuard) return false;      // (3) rambut/baju gelap
-                const had = dilindungi ? tolLindung2 : tol2;
-                for (let k = 0; k < palette.length; k++) {
-                    const p = palette[k];
-                    const dr = d[i] - p[0], dg = d[i + 1] - p[1], db = d[i + 2] - p[2];
-                    if (dr * dr + dg * dg + db * db <= had) return true;
-                }
-                return false;
-            };
-
-            const mask = new Uint8Array(w * h);
-            mask.fill(1);                                   // 1 = subjek
-            const visited = new Uint8Array(w * h);
-            const stack = [];
-            const push = (x, y) => {
-                const p = y * w + x;
-                if (visited[p]) return;
-                const dl = dalamLindung(x, y);
-                if (!nearBg(p * 4, x, y, dl)) return;
-                visited[p] = 1;
-                stack.push(p);
-            };
-            for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
-            for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
-            while (stack.length) {
-                const p = stack.pop();
-                mask[p] = 0;
-                const x = p % w, y = (p - x) / w;
-                if (x > 0) push(x - 1, y);
-                if (x < w - 1) push(x + 1, y);
-                if (y > 0) push(x, y - 1);
-                if (y < h - 1) push(x, y + 1);
-            }
-            ppMask = mask;
-            return mask;
-        }
-
-        // bina komposit: subjek (dengan tepi lembut) di atas warna latar pilihan
-        function buildPassportComposite() {
-            const src = ppSource();
-            if (!src) return null;
-            if (!ppMask) computePassportMask();
-            if (!ppMask) return null;
-            const w = src.width, h = src.height;
-            const sd = src.getContext('2d').getImageData(0, 0, w, h).data;
-
-            // tepi lembut: box blur 2px (separable) pada mask
-            const R = 2;
-            const tmp = new Float32Array(w * h);
-            for (let y = 0; y < h; y++) {
-                let acc = 0;
-                for (let k = -R; k <= R; k++) acc += ppMask[y * w + Math.min(w - 1, Math.max(0, k))];
-                for (let x = 0; x < w; x++) {
-                    tmp[y * w + x] = acc / (2 * R + 1);
-                    acc += ppMask[y * w + Math.min(w - 1, x + R + 1)] - ppMask[y * w + Math.max(0, x - R)];
-                }
-            }
-            const alpha = new Float32Array(w * h);
-            for (let x = 0; x < w; x++) {
-                let acc = 0;
-                for (let k = -R; k <= R; k++) acc += tmp[Math.min(h - 1, Math.max(0, k)) * w + x];
-                for (let y = 0; y < h; y++) {
-                    alpha[y * w + x] = acc / (2 * R + 1);
-                    acc += tmp[Math.min(h - 1, y + R + 1) * w + x] - tmp[Math.max(0, y - R) * w + x];
-                }
-            }
-
-            const cv = document.createElement('canvas');
-            cv.width = w; cv.height = h;
-            const ctx = cv.getContext('2d');
-            const im = ctx.createImageData(w, h);
-            const od = im.data;
-            const tgt = hexToRgbObj(ppTarget);
-
-            // pelaras manual: kecerahan (-40..40) & kontras (0.6..1.8)
-            const brEl = document.getElementById('pp-bright');
-            const ctEl = document.getElementById('pp-contrast');
-            const bright = brEl ? +brEl.value : 0;
-            const contrast = ctEl ? (+ctEl.value / 100) : 1;
-
-            // ---- Auto Cantik: ketajaman + auto-levels + kontras + warna (subjek sahaja) ----
-            const enhEl = document.getElementById('pp-enhance');
-            const enhanceOn = !!(enhEl && enhEl.checked);
-            let gain = 1, offsetL = 0, blurData = null;
-            if (enhanceOn) {
-                const hist = new Int32Array(256);
-                let n = 0;
-                for (let p = 0; p < w * h; p++) {
-                    if (alpha[p] < 0.5) continue;
-                    const i = p * 4;
-                    const lum = Math.round(0.299 * sd[i] + 0.587 * sd[i + 1] + 0.114 * sd[i + 2]);
-                    hist[lum < 0 ? 0 : (lum > 255 ? 255 : lum)]++;
-                    n++;
-                }
-                if (n > 200) {
-                    const cut = n * 0.02;
-                    let acc = 0, lo = 0, hi = 255;
-                    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= cut) { lo = v; break; } }
-                    acc = 0;
-                    for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= cut) { hi = v; break; } }
-                    if (hi - lo > 40) { gain = 255 / (hi - lo); offsetL = -lo * gain; }
-                }
-                const bc = document.createElement('canvas');
-                bc.width = w; bc.height = h;
-                const bx = bc.getContext('2d');
-                try { bx.filter = 'blur(1.2px)'; } catch (e) {}
-                bx.drawImage(src, 0, 0);
-                if (bx.filter && bx.filter.indexOf('blur') === 0) {
-                    blurData = bx.getImageData(0, 0, w, h).data;
-                }
-            }
-
-            for (let p = 0; p < w * h; p++) {
-                const a = alpha[p];
-                const i = p * 4;
-                let r = sd[i], g = sd[i + 1], b = sd[i + 2];
-                if (enhanceOn) {
-                    if (blurData) {                       // unsharp mask (tajamkan)
-                        const amt = 0.55;
-                        r = r + amt * (r - blurData[i]);
-                        g = g + amt * (g - blurData[i + 1]);
-                        b = b + amt * (b - blurData[i + 2]);
-                    }
-                    r = (r + offsetL) * gain;             // auto-levels
-                    g = (g + offsetL) * gain;
-                    b = (b + offsetL) * gain;
-                    const l = 0.299 * r + 0.587 * g + 0.114 * b;
-                    r = l + (r - l) * 1.08;               // warna sedikit lebih hidup
-                    g = l + (g - l) * 1.08;
-                    b = l + (b - l) * 1.08;
-                }
-                if (contrast !== 1 || bright !== 0) {     // pelaras manual pengguna
-                    r = (r - 128) * contrast + 128 + bright;
-                    g = (g - 128) * contrast + 128 + bright;
-                    b = (b - 128) * contrast + 128 + bright;
-                }
-                r = r < 0 ? 0 : (r > 255 ? 255 : r);
-                g = g < 0 ? 0 : (g > 255 ? 255 : g);
-                b = b < 0 ? 0 : (b > 255 ? 255 : b);
-                od[i] = Math.round(r * a + tgt.r * (1 - a));
-                od[i + 1] = Math.round(g * a + tgt.g * (1 - a));
-                od[i + 2] = Math.round(b * a + tgt.b * (1 - a));
-                od[i + 3] = 255;
-            }
-            ctx.putImageData(im, 0, 0);
-            ppComposite = cv;
-            return cv;
-        }
-
-        // transformasi: kedudukan sumber di dalam bingkai (untuk lukis + berus)
-        function ppTransform(src) {
-            const s = Math.max(PP_FRAME_W / src.width, PP_FRAME_H / src.height) * ppZoom;
-            const w = src.width * s, h = src.height * s;
-            return { s: s, w: w, h: h, x: (PP_FRAME_W - w) / 2 + ppOffX, y: (PP_FRAME_H - h) / 2 + ppOffY };
         }
 
         function renderPassport() {
@@ -2651,39 +2310,32 @@
             if (!cv) return;
             const c = cv.getContext('2d');
             cv.width = PP_FRAME_W; cv.height = PP_FRAME_H;
-            c.fillStyle = ppTarget;
+            c.fillStyle = '#ffffff';
             c.fillRect(0, 0, PP_FRAME_W, PP_FRAME_H);
             if (passportImg) {
-                if (ppDirty || !ppComposite) { buildPassportComposite(); ppDirty = false; }
-                if (ppComposite) {
-                    const t = ppTransform(ppComposite);
-                    c.drawImage(ppComposite, t.x, t.y, t.w, t.h);
-                }
+                const r = ppDrawRect(PP_FRAME_W, PP_FRAME_H);
+                c.save();
+                c.filter = ppFilter();                       // ☀️ kecerahan & 🌓 kontras
+                c.drawImage(passportImg, r.x, r.y, r.w, r.h);
+                c.restore();
             } else {
-                c.fillStyle = 'rgba(100,116,139,0.85)';
+                c.fillStyle = '#94a3b8';
                 c.font = '700 14px sans-serif';
                 c.textAlign = 'center';
                 c.fillText('Muat naik / ambil gambar', PP_FRAME_W / 2, PP_FRAME_H / 2 - 8);
                 c.font = '700 11px sans-serif';
-                c.fillText('📷 Ambil Selfie atau 📁 Muat Naik Foto', PP_FRAME_W / 2, PP_FRAME_H / 2 + 14);
+                c.fillText('📷 Ambil Selfie atau 📁 Muat Naik Gambar', PP_FRAME_W / 2, PP_FRAME_H / 2 + 14);
             }
-            // 👤 PANDUAN KEPALA: garis mata & dagu (35mm x 50mm)
+            // 👤 panduan kepala: garis mata 45% & garis dagu 78%
             const gd = document.getElementById('pp-guide');
             if (gd && gd.checked) {
                 const eyeY = 0.45 * PP_FRAME_H, chinY = 0.78 * PP_FRAME_H;
                 c.save();
-                c.setLineDash([6, 5]);
-                c.lineWidth = 1.4;
-                c.strokeStyle = 'rgba(16,185,129,0.95)';
+                c.setLineDash([6, 5]); c.lineWidth = 1.4; c.strokeStyle = 'rgba(16,185,129,0.95)';
                 c.beginPath(); c.moveTo(0, eyeY); c.lineTo(PP_FRAME_W, eyeY); c.stroke();
                 c.beginPath(); c.moveTo(0, chinY); c.lineTo(PP_FRAME_W, chinY); c.stroke();
-                const hw = 0.31 * PP_FRAME_W;
-                c.beginPath(); c.moveTo(PP_FRAME_W / 2 - hw, 0.04 * PP_FRAME_H); c.lineTo(PP_FRAME_W / 2 - hw, chinY); c.stroke();
-                c.beginPath(); c.moveTo(PP_FRAME_W / 2 + hw, 0.04 * PP_FRAME_H); c.lineTo(PP_FRAME_W / 2 + hw, chinY); c.stroke();
                 c.setLineDash([]);
-                c.fillStyle = 'rgba(5,120,85,0.95)';
-                c.font = '700 9px sans-serif';
-                c.textAlign = 'left';
+                c.fillStyle = 'rgba(5,120,85,0.95)'; c.font = '700 9px sans-serif'; c.textAlign = 'left';
                 c.fillText('GARIS MATA', 4, eyeY - 4);
                 c.fillText('GARIS DAGU', 4, chinY + 12);
                 c.restore();
@@ -2691,194 +2343,124 @@
         }
 
         function ppReset() {
-            ppZoom = 1; ppOffX = 0; ppOffY = 0;
-            ppMask = null; ppDirty = true;
+            ppZoom = 100; ppOffX = 0; ppOffY = 0; ppA4Cache = null;
             const z = document.getElementById('pp-zoom'); if (z) z.value = 100;
             const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
-            setPpBrush('pan', null);
+            ['pp-bright', 'pp-contrast'].forEach(id => { const el = document.getElementById(id); if (el) el.value = 100; });
+            ['pp-bright-val', 'pp-contrast-val'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '100%'; });
             renderPassport();
         }
 
-        // lukis berus pada mask (map kanvas bingkai → koordinat sumber)
-        let ppLastPaint = 0;
-        function ppPaintAt(clientX, clientY) {
-            const cv = document.getElementById('pp-canvas');
-            const src = ppSource();
-            if (!cv || !src || !ppMask) return;
-            const r = cv.getBoundingClientRect();
-            const fx = (clientX - r.left) * (cv.width / r.width);
-            const fy = (clientY - r.top) * (cv.height / r.height);
-            const t = ppTransform(src);
-            const sx = (fx - t.x) / t.s;
-            const sy = (fy - t.y) / t.s;
-            const rad = Math.max(2, (ppBrushSize / 2) / t.s);
-            const val = (ppBrush === 'erase') ? 0 : 1;
-            const w = src.width, h = src.height;
-            const x0 = Math.max(0, Math.floor(sx - rad)), x1 = Math.min(w - 1, Math.ceil(sx + rad));
-            const y0 = Math.max(0, Math.floor(sy - rad)), y1 = Math.min(h - 1, Math.ceil(sy + rad));
-            const rad2 = rad * rad;
-            for (let y = y0; y <= y1; y++) {
-                for (let x = x0; x <= x1; x++) {
-                    const dx = x - sx, dy = y - sy;
-                    if (dx * dx + dy * dy <= rad2) ppMask[y * w + x] = val;
-                }
-            }
-            ppDirty = true;
-            const now = Date.now();
-            if (now - ppLastPaint > 90) { ppLastPaint = now; renderPassport(); }
-        }
-
-        // eksport templat A4 dengan 8 keping gambar pasport + garisan potong
-        async function buildPassportPdf() {
-            if (!passportImg) return null;
-            if (ppDirty || !ppComposite) { buildPassportComposite(); ppDirty = false; }
-            const src = ppComposite;
-            if (!src) return null;
-            const { PDFDocument, rgb } = PDFLib;
-
-            // 35mm x 50mm @ 300dpi = 413 x 591 px
-            const tile = ppRenderTile(413, 591);
-            if (!tile) return null;
-            const jpg = tile.toDataURL('image/jpeg', 0.95);
-
-            const out = await PDFDocument.create();
-            const A4 = [595.28, 841.89];
-            const page = out.addPage(A4);
-            const emb = await out.embedJpg(jpg);
-            const phW = 99.21, phH = 141.73;          // 35mm x 50mm dalam pt
-            const gap = 8, cols = 2, rows = 4;
-            const totalW = cols * phW + (cols - 1) * gap;
-            const totalH = rows * phH + (rows - 1) * gap;
-            const startX = (A4[0] - totalW) / 2;
-            const startY = (A4[1] - totalH) / 2;
-            for (let r = 0; r < rows; r++) {
-                for (let cc = 0; cc < cols; cc++) {
-                    const px = startX + cc * (phW + gap);
-                    const py = startY + (rows - 1 - r) * (phH + gap);
-                    page.drawImage(emb, { x: px, y: py, width: phW, height: phH });
-                    page.drawRectangle({ x: px, y: py, width: phW, height: phH, borderColor: rgb(0.55, 0.55, 0.55), borderWidth: 0.5 });
-                }
-            }
-            page.drawText('PDFEasy - Templat Pasport 35mm x 50mm (8 keping) - pdf.payedlegacy.my', { x: 40, y: 24, size: 7, color: rgb(0.45, 0.45, 0.45) });
-            return await out.save();
-        }
-
-        // lukis satu keping gambar pasport pada saiz piksel tertentu (nisbah 35:50)
+        // satu keping gambar pasport pada saiz px tertentu (nisbah 35:50) + pelarasan warna
         function ppRenderTile(px, py) {
-            if (ppDirty || !ppComposite) { buildPassportComposite(); ppDirty = false; }
-            const src = ppComposite;
-            if (!src) return null;
+            if (!passportImg) return null;
             const cv = document.createElement('canvas');
             cv.width = px; cv.height = py;
             const c = cv.getContext('2d');
-            c.fillStyle = ppTarget;
+            c.fillStyle = '#ffffff';
             c.fillRect(0, 0, px, py);
-            const k = px / PP_FRAME_W;
-            const t = ppTransform(src);
-            c.drawImage(src, t.x * k, t.y * k, t.w * k, t.h * k);
+            const r = ppDrawRect(px, py);
+            c.save();
+            c.filter = ppFilter();
+            c.drawImage(passportImg, r.x, r.y, r.w, r.h);
+            c.restore();
             return cv;
         }
 
-        /* =====================================================================
-           TEMPLAT A4 150 DPI — 8 keping gambar pasport (4 lajur × 2 baris)
-           + garisan potong halus, terus muat turun sebagai JPG
-           ===================================================================== */
+        /* ---- TEMPLAT A4 150 DPI: 8 keping (4 lajur × 2 baris) + garisan potong ---- */
+        function ppBuildA4Canvas(simpanCache) {
+            const tile = ppRenderTile(Math.round(35 / 25.4 * 150), Math.round(50 / 25.4 * 150));   // 207 × 295 px
+            if (!tile) return null;
+            const A4W = Math.round(8.27 * 150), A4H = Math.round(11.69 * 150);                      // 1241 × 1754
+            const a4 = document.createElement('canvas');
+            a4.width = A4W; a4.height = A4H;
+            const ctx = a4.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, A4W, A4H);
+            const cols = 4, rows = 2, gapX = 85, gapY = 110;
+            const bw = cols * tile.width + (cols - 1) * gapX;
+            const bh = rows * tile.height + (rows - 1) * gapY;
+            const startX = Math.round((A4W - bw) / 2), startY = Math.round((A4H - bh) / 2) - 20;
+            for (let r = 0; r < rows; r++) {
+                for (let col = 0; col < cols; col++) {
+                    const x = startX + col * (tile.width + gapX);
+                    const y = startY + r * (tile.height + gapY);
+                    ctx.drawImage(tile, x, y);
+                    ctx.strokeStyle = '#94a3b8';                       // garisan sempadan pemotong
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x + 0.5, y + 0.5, tile.width, tile.height);
+                }
+            }
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.setLineDash([8, 6]);
+            ctx.strokeRect(startX - 14.5, startY - 14.5, bw + 28, bh + 28);
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '700 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('PDFEasy — Templat Pasport 35mm × 50mm (8 keping) · pdf.payedlegacy.my', A4W / 2, startY + bh + 52);
+            if (simpanCache) ppA4Cache = a4;
+            return a4;
+        }
+
         async function ppDownloadA4Jpg() {
-            if (!passportImg) { alert('Ambil selfie atau muat naik foto dahulu.'); return; }
+            if (!passportImg) { alert('Ambil selfie atau muat naik gambar dahulu.'); return; }
             showLoading('Menjana templat A4 (150 DPI)...');
             try {
-                const DPI = 150;
-                const A4W = Math.round(8.27 * DPI);      // 1240 px
-                const A4H = Math.round(11.69 * DPI);     // 1753 px
-                const a4 = document.createElement('canvas');
-                a4.width = A4W; a4.height = A4H;
-                const ctx = a4.getContext('2d');
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, A4W, A4H);
-
-                // 35mm × 50mm @150 DPI ≈ 207 × 295 px
-                const tile = ppRenderTile(Math.round(35 / 25.4 * DPI), Math.round(50 / 25.4 * DPI));
-                if (!tile) { alert('Gagal menjana gambar pasport.'); return; }
-
-                const cols = 4, rows = 2;                 // 8 keping
-                const gapX = 85, gapY = 110;
-                const bw = cols * tile.width + (cols - 1) * gapX;
-                const bh = rows * tile.height + (rows - 1) * gapY;
-                const startX = Math.round((A4W - bw) / 2);
-                const startY = Math.round((A4H - bh) / 2) - 24;
-
-                for (let r = 0; r < rows; r++) {
-                    for (let col = 0; col < cols; col++) {
-                        const x = startX + col * (tile.width + gapX);
-                        const y = startY + r * (tile.height + gapY);
-                        ctx.drawImage(tile, x, y);
-                        // garisan sempadan pemotong
-                        ctx.strokeStyle = '#94a3b8';
-                        ctx.lineWidth = 1;
-                        ctx.strokeRect(x + 0.5, y + 0.5, tile.width, tile.height);
-                    }
-                }
-                // bingkai panduan gunting
-                ctx.strokeStyle = '#cbd5e1';
-                ctx.setLineDash([8, 6]);
-                ctx.strokeRect(startX - 14.5, startY - 14.5, bw + 28, bh + 28);
-                ctx.setLineDash([]);
-                // kapsyen
-                ctx.fillStyle = '#64748b';
-                ctx.font = '700 14px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('PDFEasy — Templat Pasport 35mm × 50mm (8 keping) · pdf.payedlegacy.my', A4W / 2, startY + bh + 52);
-
+                const a4 = ppBuildA4Canvas(true);
+                if (!a4) { alert('Gagal menjana templat.'); return; }
                 const a = document.createElement('a');
                 a.href = a4.toDataURL('image/jpeg', 0.95);
                 a.download = 'PDFEasy_Pasport_A4_8keping_' + stamp() + '.jpg';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
+                document.body.appendChild(a); a.click(); a.remove();
             } catch (err) {
-                console.error(err);
                 alert('Ralat menjana templat A4: ' + (err && err.message ? err.message : err));
             } finally { hideLoading(); }
         }
 
-        // nama fungsi sepadan dengan spesifikasi (untuk rujukan luar / kod yang disalin)
-        function handlePassportImage(e) { return handlePassportFile(e); }
-        function changePassportBg(hex, btn) { return setPpTarget(hex, btn); }
-        function downloadPassportA4() { return ppDownloadA4Jpg(); }
-
+        // versi PDF (satu halaman A4) — cetakan lebih tajam
         async function ppDownloadSheet() {
-            if (!passportImg) { alert('Muat naik / ambil gambar pasport dahulu.'); return; }
-            showLoading('Menjana templat A4 (8 keping)...');
+            if (!passportImg) { alert('Ambil selfie atau muat naik gambar dahulu.'); return; }
+            showLoading('Menjana PDF A4...');
             try {
-                const bytes = await buildPassportPdf();
-                if (!bytes) { alert('Gagal menjana fail.'); return; }
-                triggerDownload(new Blob([bytes], { type: 'application/pdf' }), 'PDFEasy_PASPOR_8UP_' + stamp() + '.pdf');
+                const a4 = ppA4Cache || ppBuildA4Canvas(true);
+                if (!a4) { alert('Gagal menjana templat.'); return; }
+                const { PDFDocument } = PDFLib;
+                const out = await PDFDocument.create();
+                const page = out.addPage([595.28, 841.89]);            // A4 dalam point
+                const emb = await out.embedJpg(a4.toDataURL('image/jpeg', 0.95));
+                page.drawImage(emb, { x: 0, y: 0, width: 595.28, height: 841.89 });
+                const bytes = await out.save();
+                triggerDownload(new Blob([bytes], { type: 'application/pdf' }), 'PDFEasy_Pasport_A4_' + stamp() + '.pdf');
             } catch (err) {
-                console.error(err);
-                alert('Ralat menjana templat pasport: ' + (err && err.message ? err.message : err));
+                alert('Ralat menjana PDF: ' + (err && err.message ? err.message : err));
             } finally { hideLoading(); }
         }
 
-        // seret gambar dalam bingkai pasport (pan) ATAU sapu berus (buang/pulih)
+        /* ---- alias sepadan dengan kod spesifikasi pemilik ---- */
+        function handlePassportImage(e) { return handlePassportFile(e); }
+        function loadPassportPhoto(e) { return handlePassportFile(e); }
+        function updatePassportFilters() { return renderPassport(); }
+        function downloadPassportA4Sheet() { return ppDownloadA4Jpg(); }
+        function downloadPassportA4() { return ppDownloadA4Jpg(); }
+        function ppInvalidate() { return renderPassport(); }
+
+        // seret gambar dalam bingkai untuk laras kedudukan muka (mesra jari) + slider zoom
         (function initPassportPan() {
             document.addEventListener('DOMContentLoaded', () => {
                 const cv = document.getElementById('pp-canvas');
                 if (!cv) return;
-                let dragging = false, painting = false, sx = 0, sy = 0, ox = 0, oy = 0;
+                let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
                 const move = (e) => {
                     if (!dragging) return;
                     const p = e.touches ? e.touches[0] : e;
-                    if (painting) { ppPaintAt(p.clientX, p.clientY); }
-                    else {
-                        ppOffX = ox + (p.clientX - sx);
-                        ppOffY = oy + (p.clientY - sy);
-                        renderPassport();
-                    }
+                    ppOffX = ox + (p.clientX - sx);
+                    ppOffY = oy + (p.clientY - sy);
+                    renderPassport();
                     if (e.cancelable) e.preventDefault();
                 };
                 const up = () => {
-                    if (painting) renderPassport();
-                    dragging = false; painting = false;
+                    dragging = false;
                     document.removeEventListener('mousemove', move);
                     document.removeEventListener('mouseup', up);
                     document.removeEventListener('touchmove', move);
@@ -2887,15 +2469,8 @@
                 const down = (e) => {
                     if (!passportImg) return;
                     dragging = true;
-                    painting = (ppBrush === 'erase' || ppBrush === 'restore');
                     const p = e.touches ? e.touches[0] : e;
-                    sx = p.clientX; sy = p.clientY;
-                    ox = ppOffX; oy = ppOffY;
-                    if (painting) {
-                        if (!ppMask) computePassportMask();
-                        if (!ppComposite) { ppDirty = true; renderPassport(); }
-                        ppPaintAt(p.clientX, p.clientY);
-                    }
+                    sx = p.clientX; sy = p.clientY; ox = ppOffX; oy = ppOffY;
                     document.addEventListener('mousemove', move);
                     document.addEventListener('mouseup', up);
                     document.addEventListener('touchmove', move, { passive: false });
@@ -2904,6 +2479,13 @@
                 };
                 cv.addEventListener('mousedown', down);
                 cv.addEventListener('touchstart', down, { passive: false });
+                const z = document.getElementById('pp-zoom');
+                if (z) z.addEventListener('input', () => {
+                    ppZoom = +z.value;
+                    const zv = document.getElementById('pp-zoom-val');
+                    if (zv) zv.textContent = z.value + '%';
+                    renderPassport();
+                });
             });
         })();
 

@@ -85,6 +85,7 @@
             touch-action: manipulation;
         }
 
+        /* ---------- ANOTASI GAYA FREEFORM: kotak kecil & kemas, alat muncul bila dipilih ---------- */
         .draggable-item {
             position: absolute;
             cursor: default;
@@ -92,28 +93,75 @@
             user-select: none;
             -webkit-user-select: none;
             z-index: 40;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1.5px dashed #3b82f6;
-            border-radius: 6px;
-            padding: 2px 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            background: transparent;
+            border: 1px dashed rgba(148, 163, 184, 0.5);
+            border-radius: 4px;
+            padding: 0 1px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 1px;
+            max-width: 94%;
         }
+        .draggable-item.selected {
+            background: rgba(255, 255, 255, 0.97);
+            border-color: #2563eb;
+            box-shadow: 0 3px 12px rgba(15, 23, 42, 0.18);
+            padding: 1px 3px;
+            z-index: 60;
+        }
+        /* alat (seret / saiz / padam) SENYAP bila kotak tidak dipilih → kotak nampak kecil */
+        .draggable-item .drag-handle,
+        .draggable-item .resize-handle,
+        .draggable-item .anno-del {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            padding: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .draggable-item.selected .drag-handle {
+            opacity: 1; width: auto; height: auto; padding: 1px 4px; pointer-events: auto;
+        }
+        .draggable-item.selected .resize-handle {
+            opacity: 1; width: 15px; height: 15px; pointer-events: auto;
+        }
+        .draggable-item.selected .anno-del {
+            opacity: 1; width: auto; height: auto; padding: 0 3px; pointer-events: auto;
+        }
+        /* kotak kecil: jangan guna min-height 40px pada butang anotasi */
+        .draggable-item button { min-height: 0; }
+
         .draggable-item:hover {
             border-color: #10b981;
         }
+
+        /* teks anotasi: ikut panjang tulisan, tanpa kotak besar */
+        .anno-input, .anno-text {
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 0 1px;
+            margin: 0;
+            min-width: 24px;
+            max-width:  92%;
+            line-height: 1.25;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .anno-del { color: #dc2626; font-weight: 900; font-size: 11px; line-height: 1; }
+        .sig-item img { display: block; }
+        .sig-item.selected { background: #ffffff; }
 
         /* PEMEGANG SERET (drag handle) — tarik HANYA dari sini supaya kotak input tidak terganggu */
         .drag-handle {
             cursor: grab;
             background: #e2e8f0;
             color: #334155;
-            border-radius: 5px;
-            padding: 2px 6px;
+            border-radius: 4px;
+            padding: 1px 4px;
             font-weight: 900;
-            font-size: 12px;
+            font-size: 10px;
             line-height: 1.1;
             touch-action: none;
             user-select: none;
@@ -659,6 +707,21 @@
                     <span id="compress-info" class="w-full text-[11px] font-bold text-amber-800"></span>
                 </div>
 
+                <!-- 💡 CADANGAN ISIAN (dari memori) + PULIH BORANG LEPAS -->
+                <div id="cadangan-bar" class="hidden border-b border-amber-100 bg-amber-50 px-3 py-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[10px] font-extrabold text-amber-900">💡 Cadangan (isian lepas):</span>
+                        <div id="cadangan-senarai" class="flex items-center gap-1.5 flex-wrap"></div>
+                    </div>
+                </div>
+                <div id="borang-restore" class="hidden border-b border-emerald-100 bg-emerald-50 px-3 py-2.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="borang-restore-info" class="text-[11px] font-bold text-emerald-900"></span>
+                        <button onclick="pulihBorangLepas()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold rounded-lg">✔ Ya, isi semula</button>
+                        <button onclick="tutupPulihBorang()" class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-800 text-[11px] font-bold rounded-lg">Isi kosong</button>
+                    </div>
+                </div>
+
                 <div id="doc-area" class="flex-1 overflow-auto bg-slate-200 p-4 flex justify-center items-start relative">
                     <div id="doc-hint" class="hidden absolute inset-0 items-center justify-center p-4 overflow-auto">
                         <div class="w-full max-w-xl text-center my-auto">
@@ -948,7 +1011,8 @@
                 <h3 class="font-black text-slate-900 text-base">👁️ Pratonton — semak dulu sebelum simpan</h3>
                 <button onclick="tutupPratonton()" class="text-slate-400 hover:text-slate-700 font-bold text-xl px-2">✕</button>
             </div>
-            <p id="preview-info" class="text-[11px] font-bold text-slate-500 mb-2 break-all"></p>
+            <p id="preview-info" class="text-[11px] font-bold text-slate-500 mb-1"></p>
+            <p id="preview-note" class="text-[11px] font-extrabold text-emerald-700 mb-2"></p>
             <div class="flex-1 overflow-auto bg-slate-200 rounded-2xl p-3 flex items-start justify-center min-h-[180px]">
                 <canvas id="preview-canvas" class="block shadow-lg bg-white max-w-full"></canvas>
                 <img id="preview-img" class="hidden max-w-full rounded-lg shadow-lg" alt="Pratonton">
@@ -1179,6 +1243,7 @@
             // Jika disimpan ketika lapisan tersembunyi, saiznya 0 → nisbah kedudukan rosak.
             if (currentMode === 'fill' && mode !== 'fill') {
                 try { saveCurrentAnnotations(); } catch (e) { console.error(e); }
+                try { simpanBorangSemasa(); } catch (e) { console.error(e); }
             }
             currentMode = mode;
             ALL_MODES.forEach(m => {
@@ -1319,11 +1384,16 @@
                         document.getElementById('page-controls').classList.add('flex');
                     }
                     await renderPDFPage();
+                    // 📋 memori borang: tawarkan isi semula jika borang ini pernah diisi
+                    borangFp = capJariBorang(file.name, file.size, totalPagesNum);
+                    setTimeout(() => { try { tawarkanPulihBorang(borangFp); } catch (e) {} }, 500);
                 } else if (jenis === 'imej' || jenis === 'heic') {
                     imageSrcUrl = URL.createObjectURL(file);
                     totalPagesNum = 1; currentPageNum = 1;
                     if(currentMode !== 'protect') setMode('convert');
                     await renderImage();
+                    borangFp = capJariBorang(file.name, file.size, 1);
+                    setTimeout(() => { try { tawarkanPulihBorang(borangFp); } catch (e) {} }, 500);
                 } else {
                     alert("Format tidak disokong. Sila guna PDF, PNG atau JPG.");
                     resetToHome();
@@ -1530,12 +1600,13 @@
                 <span class="drag-handle" title="Tarik sini">⠿</span>
                 <input type="text" value="" autofocus class="anno-input font-bold text-slate-900" style="font-family: ${font}; font-size: ${size}; color: ${color};">
                 <span class="resize-handle" title="Tarik untuk kecil/besar kotak">⤡</span>
-                <button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
+                <button onclick="hapusAnotasi(this)" class="anno-del" title="Buang">✕</button>
             `;
             
             this.appendChild(div);
             setupDraggable(div);
             setupResizable(div);
+            pilihAnotasi(div);        // kotak baharu terus dipilih (alat kelihatan)
             const inputEl = div.querySelector('input');
             if(inputEl) { inputEl.focus(); autoGrowInput(inputEl); }
         });
@@ -1557,6 +1628,7 @@
             if (!input) return;
             const val = (input.value || '').trim();
             if (!val) { el.remove(); return; }
+            ingatMedan(val);          // simpan dalam memori → jadi cadangan pada isian berikutnya
             const span = document.createElement('span');
             span.className = 'anno-text';
             span.textContent = input.value;
@@ -2382,6 +2454,16 @@
                 try { boleh = !!(navigator.canShare) && navigator.canShare({ files: [new File([blob], name, { type: jenis })] }); } catch (e) { boleh = false; }
                 sb.classList.toggle('hidden', !boleh);
             }
+            // tunjuk muka mana ada isian (teks/tandatangan) supaya pengguna tidak tercari-cari
+            const nota = document.getElementById('preview-note');
+            const mukaAda = Object.keys(annotations || {})
+                .filter(k => (annotations[k] || []).length > 0)
+                .map(k => Number(k)).sort((a, b) => a - b);
+            if (nota) {
+                nota.textContent = mukaAda.length
+                    ? '📝 Ada isian (teks/tandatangan) pada muka: ' + mukaAda.join(', ') + ' — belek dengan ◀ ▶'
+                    : '';
+            }
 
             if (previewState.pdfMime && typeof pdfjsLib !== 'undefined') {
                 if (img) { img.classList.add('hidden'); img.src = ''; }
@@ -2390,7 +2472,9 @@
                     const buf = await blob.arrayBuffer();
                     previewState.pdf = await pdfjsLib.getDocument({ data: buf }).promise;
                     previewState.jumlah = previewState.pdf.numPages;
-                    await pratontonLukis(1);
+                    // buka terus pada muka pertama yang ada isian (jika ada)
+                    const mula = mukaAda.length ? Math.min(previewState.jumlah, mukaAda[0]) : 1;
+                    await pratontonLukis(mula);
                 } catch (err) {
                     console.error(err);
                     if (cv) cv.classList.add('hidden');
@@ -3528,7 +3612,7 @@
             if (!layer || !wrapper) { alert('Ruang kerja tidak sedia.'); return; }
 
             const div = document.createElement('div');
-            div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400';
+            div.className = 'draggable-item sig-item pointer-events-auto';
             // letak di tengah-bawah (tempat biasa tandatangan pada borang) — guna saiz sebenar
             // jika ruang kerja belum dilukis supaya tidak tersangkut di sudut kiri
             const lebarAda = wrapper.offsetWidth || 320;
@@ -3538,18 +3622,146 @@
 
             div.innerHTML = `
                 <span class="drag-handle" title="Tarik sini">⠿</span>
-                <img src="${dataUrl}" style="width:144px;height:auto" class="pointer-events-none">
+                <img src="${dataUrl}" style="width:110px;height:auto" class="pointer-events-none">
                 <span class="resize-handle" title="Tarik untuk kecil/besar tandatangan">⤡</span>
-                <button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
+                <button onclick="hapusAnotasi(this)" class="anno-del" title="Buang">✕</button>
             `;
 
             layer.appendChild(div);
             setupDraggable(div);
             setupResizable(div);
+            pilihAnotasi(div);
         }
 
         // PEMEGANG SERET: hanya boleh ditarik dari ikon ⠿ (kotak input tidak terganggu)
         let suppressClickUntil = 0;
+
+        /* =====================================================================
+           KEMUDAHAN GAYA FREEFORM + MEMORI ISIAN
+           1) kotak kecil: alat (seret/saiz/padam) muncul hanya bila kotak dipilih
+           2) memori: cadangan nilai yang pernah ditaip (chip di atas dokumen)
+           3) borang yang sama: tawarkan isi semula entri kali lepas
+           ===================================================================== */
+        function pilihAnotasi(el) {
+            document.querySelectorAll('.draggable-item.selected').forEach(x => { if (x !== el) x.classList.remove('selected'); });
+            if (el && el.classList) el.classList.add('selected');
+            if (el && el.querySelector && el.querySelector('input')) tunjukCadangan(el);
+            else sembunyiCadangan();
+        }
+        function nyahpilihAnotasi() {
+            document.querySelectorAll('.draggable-item.selected').forEach(x => x.classList.remove('selected'));
+            sembunyiCadangan();
+        }
+
+        // ---------- MEMORI NILAI YANG PERNAH DITAIP ----------
+        const KUNCI_MEMORI = 'pdfeasy_memori_medan';
+        function bacaMemoriMedan() {
+            try { return JSON.parse(localStorage.getItem(KUNCI_MEMORI) || '{}'); } catch (e) { return {}; }
+        }
+        function ingatMedan(val) {
+            const v = String(val || '').trim();
+            if (v.length < 2 || v.length > 120) return;
+            const m = bacaMemoriMedan();
+            m[v] = (m[v] || 0) + 1;
+            const senarai = Object.keys(m).map(k => [k, m[k]]).sort((a, b) => b[1] - a[1]).slice(0, 60);
+            const baharu = {};
+            senarai.forEach(p => { baharu[p[0]] = p[1]; });
+            try { localStorage.setItem(KUNCI_MEMORI, JSON.stringify(baharu)); } catch (e) {}
+        }
+        function cadanganMedan(prefix, maks) {
+            const m = bacaMemoriMedan();
+            const p = String(prefix || '').toLowerCase();
+            return Object.keys(m)
+                .filter(k => !p || k.toLowerCase().indexOf(p) >= 0)
+                .sort((a, b) => m[b] - m[a])
+                .slice(0, maks || 8);
+        }
+        function tunjukCadangan(el) {
+            const bar = document.getElementById('cadangan-bar');
+            const senarai = document.getElementById('cadangan-senarai');
+            if (!bar || !senarai) return;
+            const inp = el && el.querySelector ? el.querySelector('input') : null;
+            if (!inp) { sembunyiCadangan(); return; }
+            const nilai = cadanganMedan(inp.value || '', 8);
+            if (!nilai.length) { sembunyiCadangan(); return; }
+            senarai.innerHTML = '';
+            nilai.forEach(v => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'px-2 py-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-[11px] font-extrabold rounded-lg';
+                b.textContent = v.length > 24 ? v.slice(0, 22) + '…' : v;
+                b.onclick = (ev) => {
+                    ev.preventDefault(); ev.stopPropagation();
+                    inp.value = v;
+                    autoGrowInput(inp);
+                    inp.focus();
+                    pilihAnotasi(el);
+                };
+                senarai.appendChild(b);
+            });
+            bar.classList.remove('hidden');
+        }
+        function sembunyiCadangan() {
+            const bar = document.getElementById('cadangan-bar');
+            if (bar) bar.classList.add('hidden');
+        }
+
+        // ---------- MEMORI BORANG (borang yang sama → tawarkan isi semula) ----------
+        let borangFp = null;
+        const KUNCI_BORANG = 'pdfeasy_borang_v1';
+        function capJariBorang(nama, saiz, halaman) {
+            return String(nama || 'dokumen') + '|' + String(saiz || 0) + '|' + String(halaman || 1);
+        }
+        function bacaBorangSemua() {
+            try { return JSON.parse(localStorage.getItem(KUNCI_BORANG) || '{}'); } catch (e) { return {}; }
+        }
+        function simpanBorangSemasa() {
+            if (currentMode !== 'fill' || !borangFp) return;
+            try {
+                const ada = Object.keys(annotations || {}).some(k => (annotations[k] || []).length > 0);
+                if (!ada) return;
+                const semua = bacaBorangSemua();
+                semua[borangFp] = { tarikh: Date.now(), annot: annotations };
+                const susun = Object.keys(semua).map(k => [k, (semua[k] || {}).tarikh || 0]).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                const baharu = {};
+                susun.forEach(p => { baharu[p[0]] = semua[p[0]]; });
+                const teks = JSON.stringify(baharu);
+                if (teks.length < 900000) localStorage.setItem(KUNCI_BORANG, teks);
+            } catch (e) { console.warn('simpan borang gagal:', e); }
+        }
+        function tawarkanPulihBorang(fp) {
+            borangFp = fp;
+            const bekas = document.getElementById('borang-restore');
+            if (!bekas) return;
+            const rekod = bacaBorangSemua()[fp];
+            if (rekod && rekod.annot) {
+                const bil = Object.keys(rekod.annot).reduce((a, k) => a + (rekod.annot[k] || []).length, 0);
+                if (bil > 0) {
+                    const info = document.getElementById('borang-restore-info');
+                    if (info) info.textContent = '📋 Borang ini pernah diisi (' + bil + ' entri). Isi semula seperti kali lepas?';
+                    bekas.classList.remove('hidden');
+                    return;
+                }
+            }
+            bekas.classList.add('hidden');
+        }
+        function pulihBorangLepas() {
+            const rekod = bacaBorangSemua()[borangFp];
+            const bekas = document.getElementById('borang-restore');
+            if (rekod && rekod.annot) {
+                annotations = JSON.parse(JSON.stringify(rekod.annot));
+                currentPageNum = 1;
+                const layer = document.getElementById('annotation-layer');
+                if (layer) layer.innerHTML = '';          // elak simpanan menimpa data yang dipulihkan
+                if (pdfDocObj && typeof changePage === 'function') changePage(0);
+                else restoreAnnotationsForPage();
+            }
+            if (bekas) bekas.classList.add('hidden');
+        }
+        function tutupPulihBorang() {
+            const bekas = document.getElementById('borang-restore');
+            if (bekas) bekas.classList.add('hidden');
+        }
 
         function setupDraggable(element) {
             const handle = element.querySelector('.drag-handle') || element;
@@ -3599,6 +3811,19 @@
 
             handle.onmousedown = onPointerDown;
             handle.ontouchstart = onPointerDown;
+
+            // GAYA FREEFORM: ketuk kotak → pilih (alat kecil muncul); taip → cadangan muncul
+            element.addEventListener('click', (e) => {
+                if (Date.now() < suppressClickUntil) return;
+                pilihAnotasi(element);
+            });
+            element.addEventListener('focusin', () => pilihAnotasi(element));
+            const inp = element.querySelector('input');
+            if (inp) {
+                inp.addEventListener('focus', () => { pilihAnotasi(element); tunjukCadangan(element); });
+                inp.addEventListener('input', () => { autoGrowInput(inp); tunjukCadangan(element); });
+                inp.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== inp) sembunyiCadangan(); }, 250));
+            }
         }
 
         // PEMEGANG SAIZ: tarik penjuru untuk kecil/besar kotak teks (saiz fon) atau tandatangan (lebar)
@@ -3745,11 +3970,11 @@
                 if (item.type === 'text') {
                     // Dipulihkan sebagai teks PADAT (kotak tertutup) — ketuk untuk edit semula
                     div.className = 'draggable-item pointer-events-auto committed flex items-center gap-1';
-                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><span class="anno-text" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};">${escapeHtmlText(item.val)}</span><span class="resize-handle" title="Tarik untuk kecil/besar">⤡</span><button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><span class="anno-text" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};">${escapeHtmlText(item.val)}</span><span class="resize-handle" title="Tarik untuk kecil/besar">⤡</span><button onclick="hapusAnotasi(this)" class="anno-del" title="Buang">✕</button>`;
                 } else {
                     const w = item.rw != null ? Math.round(item.rw * lw) : (item.w || 144);
-                    div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400 p-1 rounded-lg flex items-start gap-1 shadow-lg';
-                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><img src="${item.val}" style="width:${w}px; height:auto" class="pointer-events-none"><span class="resize-handle" title="Tarik untuk kecil/besar tandatangan">⤡</span><button onclick="hapusAnotasi(this)" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                    div.className = 'draggable-item sig-item pointer-events-auto';
+                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><img src="${item.val}" style="width:${w}px; height:auto" class="pointer-events-none"><span class="resize-handle" title="Tarik untuk kecil/besar tandatangan">⤡</span><button onclick="hapusAnotasi(this)" class="anno-del" title="Buang">✕</button>`;
                 }
                 layer.appendChild(div);
                 setupDraggable(div);
@@ -3796,10 +4021,22 @@
                 } else if (imageSrcUrl) {
                     const img = new Image();
                     img.src = imageSrcUrl;
-                    await new Promise(r => img.onload = r);
-                    tmpCanvas.width = img.width; 
-                    tmpCanvas.height = img.height;
-                    tCtx.drawImage(img, 0, 0);
+                    await new Promise(r => { img.onload = r; img.onerror = r; });
+                    const iw = img.naturalWidth || img.width || 1;
+                    const ih = img.naturalHeight || img.height || 1;
+                    // HAD SELAMAT KANVAS (PENTING UNTUK TELEFON): iOS/Android gagal senyap
+                    // bila kanvas terlalu besar (had ~16.7 juta piksel). Foto kamera 48MP
+                    // (8000×6000) akan menyebabkan anotasi "hilang" / tersasar kerana
+                    // kanvas tidak dapat dilukis sepenuhnya. Kecilkan supaya selamat —
+                    // nisbah asal dikekalkan supaya kedudukan anotasi tetap tepat.
+                    const LUAS_MAKS = 16000000;
+                    const DIM_MAKS = 4096;
+                    let k = 1;
+                    if (iw * ih > LUAS_MAKS) k = Math.sqrt(LUAS_MAKS / (iw * ih));
+                    if (Math.max(iw, ih) * k > DIM_MAKS) k = Math.min(k, DIM_MAKS / Math.max(iw, ih));
+                    tmpCanvas.width = Math.max(1, Math.round(iw * k));
+                    tmpCanvas.height = Math.max(1, Math.round(ih * k));
+                    tCtx.drawImage(img, 0, 0, tmpCanvas.width, tmpCanvas.height);
                 }
                 await embedCanvasToPdf(tmpCanvas, outPdf, p, quality);
             }
@@ -3808,6 +4045,7 @@
             // PENTING: saveCurrentAnnotations() mengosongkan lapisan tadi →
             // pulihkan semula paparan supaya butir-butir borang TIDAK nampak "hilang" selepas muat turun
             if (currentMode === 'fill') { try { restoreAnnotationsForPage(); } catch (e) { console.error(e); } }
+            try { simpanBorangSemasa(); } catch (e) { console.error(e); }
             if (currentMode === 'compress' && originalFileSize) {
                 const pct = Math.round(outBytes.length / originalFileSize * 100);
                 const el = document.getElementById('compress-info');

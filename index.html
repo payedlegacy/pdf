@@ -253,6 +253,15 @@
                 <input type="file" id="file-camera" accept="image/*" capture="environment" class="sr-file" onchange="handleFileSelect(event)">
                 <span class="text-[11px] font-semibold text-slate-500">Seret & lepas fail dari komputer juga boleh.</span>
             </div>
+
+            <!-- RUANG IKLAN (halaman utama) — muncul hanya bila ID AdSense dikonfigurasi -->
+            <div id="ad-home" class="hidden">
+                <div class="relative bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+                    <span class="absolute top-1.5 left-3 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Iklan</span>
+                    <button onclick="dismissAds()" title="Tutup iklan" class="absolute top-1 right-2 w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 text-xs font-black">✕</button>
+                    <ins class="adsbygoogle" style="display:block;min-height:90px" data-ad-client="" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                </div>
+            </div>
         </div>
 
         <!-- VIEW: WORKSPACE -->
@@ -269,6 +278,16 @@
                             <h3 id="ws-filename" class="font-extrabold text-slate-900 text-sm max-w-[200px] sm:max-w-xs truncate">dokumen.pdf</h3>
                             <p id="ws-filemeta" class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Sedia Disunting</p>
                         </div>
+                    </div>
+
+                    <!-- MUAT NAIK SENTIASA BOLEH DIAKSES (mod dokumen: Palang IC, Isi Borang, Gambar, Mampat) -->
+                    <div id="ws-upload-bar" class="hidden items-center gap-2 flex-wrap">
+                        <label for="file-input" class="px-3 py-2 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 text-emerald-800 text-xs font-extrabold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            📁 <span id="ws-upload-label">Muat Naik Fail</span>
+                        </label>
+                        <label for="file-camera" class="px-3 py-2 bg-sky-50 border border-sky-300 hover:bg-sky-100 text-sky-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            📷 Kamera
+                        </label>
                     </div>
 
                     <!-- ACTION BUTTONS UNIVERSAL (berfungsi untuk SEMUA alat) -->
@@ -473,10 +492,18 @@
                 </div>
 
                 <div id="doc-area" class="flex-1 overflow-auto bg-slate-200 p-4 flex justify-center items-start relative">
-                    <div id="doc-hint" class="hidden absolute inset-0 items-center justify-center text-center p-6">
-                        <div class="bg-white/95 border border-slate-300 rounded-2xl p-6 shadow-lg max-w-sm">
-                            <p class="font-black text-slate-800 text-base">📄 Muat naik fail dahulu</p>
-                            <p class="text-xs font-semibold text-slate-500 mt-1">Tekan <b>⬅️ Kembali</b>, kemudian pilih fail PDF atau gambar untuk alat ini.</p>
+                    <div id="doc-hint" class="hidden absolute inset-0 items-center justify-center p-4 overflow-auto">
+                        <div class="w-full max-w-xl text-center my-auto">
+                            <label for="file-input" id="dropzone-ws" class="block border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition-all rounded-3xl p-6 sm:p-8 cursor-pointer shadow-lg">
+                                <div class="text-4xl mb-2">📁</div>
+                                <p id="doc-hint-title" class="font-black text-slate-800 text-base sm:text-lg">Muat naik salinan IC / dokumen</p>
+                                <p id="doc-hint-sub" class="text-xs font-semibold text-slate-500 mt-1">Klik di sini, atau seret &amp; lepas fail ke dalam kotak ini</p>
+                                <span class="mt-3 inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-xs font-extrabold rounded-xl shadow-sm">📂 Pilih Fail (PDF / Gambar)</span>
+                                <p class="text-[11px] text-slate-500 mt-3">Diproses 100% dalam peranti anda — fail tidak dimuat naik ke pelayan.</p>
+                            </label>
+                            <div class="mt-3 flex flex-wrap items-center justify-center gap-3">
+                                <label for="file-camera" class="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Gambar (Kamera)</label>
+                            </div>
                         </div>
                     </div>
                     <div id="document-wrapper" class="relative shadow-2xl bg-white border border-slate-300">
@@ -620,13 +647,32 @@
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <div class="text-xs font-bold text-slate-700">
-                                    <label class="block mb-1">Warna Latar Rasmi:</label>
+                                <!-- LANGKAH 2: AUTO (berjalan sendiri semasa muat naik) -->
+                                <div class="text-xs font-bold text-slate-700 border-b border-slate-200 pb-3">
+                                    <p class="font-black text-slate-800 mb-2">⚡ Langkah 2: Auto</p>
+                                    <label class="flex items-center gap-2 mb-2 cursor-pointer">
+                                        <input type="checkbox" id="pp-enhance" class="w-4 h-4 accent-emerald-600" checked onchange="ppInvalidate(false)">
+                                        <span>✨ Auto Cantik — kontras, warna &amp; ketajaman</span>
+                                    </label>
                                     <div class="flex flex-wrap gap-2">
-                                        <button onclick="setPpTarget('#ffffff',this)" class="pp-swatch px-3 py-2 rounded-xl border-2 border-emerald-500 bg-white text-[11px] font-bold">Putih Bersih</button>
-                                        <button onclick="setPpTarget('#0284c7',this)" class="pp-swatch px-3 py-2 rounded-xl border-2 border-slate-200 text-white text-[11px] font-bold" style="background:#0284c7">Biru Rasmi</button>
-                                        <button onclick="setPpTarget('#dc2626',this)" class="pp-swatch px-3 py-2 rounded-xl border-2 border-slate-200 text-white text-[11px] font-bold" style="background:#dc2626">Merah Rasmi</button>
+                                        <button onclick="ppAutoAll()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-extrabold shadow-sm">⚡ Siapkan Semua (Auto)</button>
+                                        <button onclick="ppAutoFrame()" class="px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[11px] font-bold">🪄 Auto Laras Bingkai</button>
+                                        <button onclick="ppAutoRedo()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-xl text-[11px] font-bold">🔄 Auto Semula Latar</button>
                                     </div>
+                                </div>
+
+                                <!-- LANGKAH 3: WARNA LATAR (satu ketukan) -->
+                                <div class="text-xs font-bold text-slate-700">
+                                    <p class="font-black text-slate-800 mb-1">🖌️ Langkah 3: Warna Latar</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button onclick="setPpTarget('#ffffff',this)" class="pp-swatch px-3 py-2.5 rounded-xl border-2 border-emerald-500 bg-white text-[11px] font-extrabold">⚪ Putih Bersih</button>
+                                        <button onclick="setPpTarget('#0284c7',this)" class="pp-swatch px-3 py-2.5 rounded-xl border-2 border-slate-200 text-white text-[11px] font-extrabold" style="background:#0284c7">🔵 Biru Rasmi</button>
+                                        <button onclick="setPpTarget('#dc2626',this)" class="pp-swatch px-3 py-2.5 rounded-xl border-2 border-slate-200 text-white text-[11px] font-extrabold" style="background:#dc2626">🔴 Merah Rasmi</button>
+                                    </div>
+                                </div>
+                                <!-- LANGKAH 4: LARAS MANUAL (pilihan) -->
+                                <div class="text-xs font-bold text-slate-700 border-t border-slate-200 pt-3">
+                                    <p class="font-black text-slate-800 mb-1">🎚️ Langkah 4: Laras Manual (kalau perlu)</p>
                                 </div>
                                 <div class="text-xs font-bold text-slate-700">
                                     <label class="block mb-1">Zoom: <span id="pp-zoom-val" class="text-emerald-700">100%</span></label>
@@ -660,8 +706,26 @@
                     </div>
                 </div>
             </div>
+
+            <!-- RUANG IKLAN (dalam alat) — muncul hanya bila ID AdSense dikonfigurasi -->
+            <div id="ad-workspace" class="hidden">
+                <div class="relative bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+                    <span class="absolute top-1.5 left-3 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Iklan</span>
+                    <button onclick="dismissAds()" title="Tutup iklan" class="absolute top-1 right-2 w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 text-xs font-black">✕</button>
+                    <ins class="adsbygoogle" style="display:block;min-height:90px" data-ad-client="" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                </div>
+            </div>
         </div>
     </main>
+
+    <!-- RUANG IKLAN (bawah halaman) — muncul hanya bila ID AdSense dikonfigurasi -->
+    <div id="ad-footer" class="hidden max-w-5xl mx-auto px-4 py-3">
+        <div class="relative bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+            <span class="absolute top-1.5 left-3 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Iklan</span>
+            <button onclick="dismissAds()" title="Tutup iklan" class="absolute top-1 right-2 w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 text-xs font-black">✕</button>
+            <ins class="adsbygoogle" style="display:block;min-height:90px" data-ad-client="" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+        </div>
+    </div>
 
     <!-- FOOTER WITH ORGANIZED AFFILIATES & ECOSYSTEM -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center">
@@ -917,7 +981,7 @@
             if (mode === 'qr' && document.getElementById('qr-box').children.length === 0) requestAnimationFrame(() => generateQR());
         }
 
-        // tunjuk pesanan "muat naik fail dahulu" bila alat dokumen kosong
+        // tunjuk pesanan + kotak muat naik bila alat dokumen kosong
         function updateDocHint() {
             const hint = document.getElementById('doc-hint');
             if (!hint) return;
@@ -926,6 +990,25 @@
             const show = isDoc && !ada;
             hint.classList.toggle('hidden', !show);
             if (show) hint.classList.add('flex'); else hint.classList.remove('flex');
+
+            // teks mengikut alat
+            const t = document.getElementById('doc-hint-title');
+            const s = document.getElementById('doc-hint-sub');
+            if (t && s) {
+                if (currentMode === 'protect') { t.textContent = 'Muat naik salinan IC / dokumen'; s.textContent = 'Klik kotak ini atau seret & lepas fail — kemudian letak palang keselamatan.'; }
+                else if (currentMode === 'fill') { t.textContent = 'Muat naik borang PDF'; s.textContent = 'Klik kotak ini atau seret & lepas fail borang — kemudian taip & tandatangan terus pada borang.'; }
+                else if (currentMode === 'convert') { t.textContent = 'Muat naik gambar (boleh banyak sekaligus)'; s.textContent = 'Pilih beberapa gambar untuk susun, putar & crop sebelum digabung jadi PDF.'; }
+                else { t.textContent = 'Muat naik PDF untuk dimampatkan'; s.textContent = 'Klik kotak ini atau seret & lepas fail PDF — kemudian pilih tahap mampatan.'; }
+            }
+
+            // butang muat naik dalam ruang kerja (sentiasa boleh diakses)
+            const bar = document.getElementById('ws-upload-bar');
+            if (bar) {
+                bar.classList.toggle('hidden', !isDoc);
+                if (isDoc) bar.classList.add('flex'); else bar.classList.remove('flex');
+            }
+            const lbl = document.getElementById('ws-upload-label');
+            if (lbl) lbl.textContent = ada ? 'Ganti / Tambah Fail' : 'Muat Naik Fail';
         }
 
         function setWatermarkPreset(text) {
@@ -2198,8 +2281,8 @@
                 ppZoom = 1; ppOffX = 0; ppOffY = 0;
                 const z = document.getElementById('pp-zoom'); if (z) { z.value = 100; }
                 const zv = document.getElementById('pp-zoom-val'); if (zv) zv.textContent = '100%';
-                document.getElementById('pp-status').textContent = f.name + ' · ' + passportImg.naturalWidth + '×' + passportImg.naturalHeight;
-                renderPassport();
+                document.getElementById('pp-status').textContent = f.name + ' · ' + passportImg.naturalWidth + '×' + passportImg.naturalHeight + ' · ✨ auto diproses';
+                ppAutoAll();                        // buang latar + laras bingkai + cantikkan (automatik)
             } catch (err) {
                 alert('Gagal membaca gambar: ' + (err && err.message ? err.message : err));
             } finally {
@@ -2227,6 +2310,73 @@
 
         function ppAutoRedo() {
             ppMask = null; ppDirty = true;
+            renderPassport();
+        }
+
+        // 🪄 Auto laras bingkai: kesan kepala/bahu dari mask → zoom & pusat supaya
+        //    kepala memenuhi ~70% tinggi bingkai dan bahagian atas kepala ~6% dari tepi
+        function ppAutoFrame() {
+            const src = ppSource();
+            if (!src) return;
+            if (!ppMask) computePassportMask();
+            if (!ppMask) return;
+            const w = src.width, h = src.height;
+            const rowW = new Int32Array(h);
+            let top = h, bottom = -1, left = w, right = -1, sumX = 0, cnt = 0;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    if (!ppMask[y * w + x]) continue;
+                    rowW[y]++;
+                    if (y < top) top = y;
+                    if (y > bottom) bottom = y;
+                    if (x < left) left = x;
+                    if (x > right) right = x;
+                    sumX += x; cnt++;
+                }
+            }
+            if (bottom <= top || !cnt) return;
+
+            // lebar kepala purata (bahagian atas 50% subjek)
+            const halfY = top + Math.round((bottom - top) * 0.5);
+            let headW = 0, hn = 0;
+            for (let y = top; y <= halfY; y++) { if (rowW[y] > 0) { headW += rowW[y]; hn++; } }
+            headW = hn ? headW / hn : (right - left);
+
+            // cari bahu: baris pertama yang jauh lebih lebar daripada kepala
+            let shoulderY = bottom;
+            for (let y = top; y <= bottom; y++) {
+                if (rowW[y] > headW * 1.9) { shoulderY = y; break; }
+            }
+            const headH = Math.max(12, (shoulderY - top) * 1.35);   // anggaran tinggi kepala (termasuk dagu)
+
+            const base = Math.max(PP_FRAME_W / w, PP_FRAME_H / h);
+            const sasaranZoom = (0.70 * PP_FRAME_H) / headH / base;
+            ppZoom = Math.max(1, Math.min(3, sasaranZoom));
+
+            const s = base * ppZoom;
+            const drawW = w * s, drawH = h * s;
+            const cxSrc = cnt ? sumX / cnt : w / 2;
+            ppOffX = (PP_FRAME_W / 2 - cxSrc * s) - (PP_FRAME_W - drawW) / 2;
+            ppOffY = (0.06 * PP_FRAME_H - top * s) - (PP_FRAME_H - drawH) / 2;
+
+            const z = document.getElementById('pp-zoom');
+            if (z) z.value = Math.round(ppZoom * 100);
+            const zv = document.getElementById('pp-zoom-val');
+            if (zv) zv.textContent = Math.round(ppZoom * 100) + '%';
+            ppDirty = true;
+            renderPassport();
+        }
+
+        // ⚡ Siapkan semua: buang latar + auto laras bingkai + auto cantik
+        function ppAutoAll() {
+            if (!passportImg) { alert('Muat naik atau ambil gambar dahulu.'); return; }
+            const en = document.getElementById('pp-enhance');
+            if (en) en.checked = true;
+            ppMask = null;
+            ppDirty = true;
+            computePassportMask();
+            buildPassportComposite();
+            ppAutoFrame();
             renderPassport();
         }
 
@@ -2387,12 +2537,67 @@
             const im = ctx.createImageData(w, h);
             const od = im.data;
             const tgt = hexToRgbObj(ppTarget);
+
+            // ---- Auto Cantik: ketajaman + auto-levels + kontras + warna (subjek sahaja) ----
+            const enhEl = document.getElementById('pp-enhance');
+            const enhanceOn = !!(enhEl && enhEl.checked);
+            let gain = 1, offsetL = 0, blurData = null;
+            if (enhanceOn) {
+                const hist = new Int32Array(256);
+                let n = 0;
+                for (let p = 0; p < w * h; p++) {
+                    if (alpha[p] < 0.5) continue;
+                    const i = p * 4;
+                    const lum = Math.round(0.299 * sd[i] + 0.587 * sd[i + 1] + 0.114 * sd[i + 2]);
+                    hist[lum < 0 ? 0 : (lum > 255 ? 255 : lum)]++;
+                    n++;
+                }
+                if (n > 200) {
+                    const cut = n * 0.02;
+                    let acc = 0, lo = 0, hi = 255;
+                    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= cut) { lo = v; break; } }
+                    acc = 0;
+                    for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= cut) { hi = v; break; } }
+                    if (hi - lo > 40) { gain = 255 / (hi - lo); offsetL = -lo * gain; }
+                }
+                const bc = document.createElement('canvas');
+                bc.width = w; bc.height = h;
+                const bx = bc.getContext('2d');
+                try { bx.filter = 'blur(1.2px)'; } catch (e) {}
+                bx.drawImage(src, 0, 0);
+                if (bx.filter && bx.filter.indexOf('blur') === 0) {
+                    blurData = bx.getImageData(0, 0, w, h).data;
+                }
+            }
+
             for (let p = 0; p < w * h; p++) {
                 const a = alpha[p];
                 const i = p * 4;
-                od[i] = Math.round(sd[i] * a + tgt.r * (1 - a));
-                od[i + 1] = Math.round(sd[i + 1] * a + tgt.g * (1 - a));
-                od[i + 2] = Math.round(sd[i + 2] * a + tgt.b * (1 - a));
+                let r = sd[i], g = sd[i + 1], b = sd[i + 2];
+                if (enhanceOn) {
+                    if (blurData) {                       // unsharp mask (tajamkan)
+                        const amt = 0.55;
+                        r = r + amt * (r - blurData[i]);
+                        g = g + amt * (g - blurData[i + 1]);
+                        b = b + amt * (b - blurData[i + 2]);
+                    }
+                    r = (r + offsetL) * gain;             // auto-levels
+                    g = (g + offsetL) * gain;
+                    b = (b + offsetL) * gain;
+                    const l = 0.299 * r + 0.587 * g + 0.114 * b;
+                    r = l + (r - l) * 1.08;               // warna sedikit lebih hidup
+                    g = l + (g - l) * 1.08;
+                    b = l + (b - l) * 1.08;
+                    r = 128 + (r - 128) * 1.06;           // kontras lembut
+                    g = 128 + (g - 128) * 1.06;
+                    b = 128 + (b - 128) * 1.06;
+                    r = r < 0 ? 0 : (r > 255 ? 255 : r);
+                    g = g < 0 ? 0 : (g > 255 ? 255 : g);
+                    b = b < 0 ? 0 : (b > 255 ? 255 : b);
+                }
+                od[i] = Math.round(r * a + tgt.r * (1 - a));
+                od[i + 1] = Math.round(g * a + tgt.g * (1 - a));
+                od[i + 2] = Math.round(b * a + tgt.b * (1 - a));
                 od[i + 3] = 255;
             }
             ctx.putImageData(im, 0, 0);
@@ -3004,8 +3209,10 @@
 
         // ---- Seret & lepas fail, tampal (paste), dan PWA ----
         document.addEventListener('DOMContentLoaded', () => {
-            const dz = document.getElementById('dropzone');
-            if (dz) {
+            // seret & lepas: berfungsi pada dropzone halaman utama DAN dropzone dalam alat
+            ['dropzone', 'dropzone-ws'].forEach(id => {
+                const dz = document.getElementById(id);
+                if (!dz) return;
                 ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => {
                     e.preventDefault();
                     dz.classList.add('border-emerald-500', 'bg-emerald-50');
@@ -3015,19 +3222,68 @@
                     dz.classList.remove('border-emerald-500', 'bg-emerald-50');
                 }));
                 dz.addEventListener('drop', e => {
-                    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-                    if (f) handleFileSelect({ target: { files: [f] } });
+                    const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+                    if (files.length) handleFileSelect({ target: { files: files } });
                 });
-            }
+            });
             document.addEventListener('paste', e => {
                 const items = e.clipboardData && e.clipboardData.files;
-                if (items && items[0]) handleFileSelect({ target: { files: [items[0]] } });
+                if (items && items[0]) handleFileSelect({ target: { files: Array.from(items) } });
             });
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             }
             updateBatchWmHint();
+            initAds();
         });
+
+        /* =====================================================================
+           RUANG IKLAN (Google AdSense) — tidak mengganggu pengguna
+           Isi ADSENSE_CLIENT + slot ID di bawah untuk mengaktifkan.
+           ===================================================================== */
+        const ADSENSE_CLIENT = '';                                   // cth: 'ca-pub-1234567890123456'
+        const ADSENSE_SLOTS = { home: '', workspace: '', footer: '' };  // cth: '1234567890'
+
+        function initAds() {
+            const boxes = ['ad-home', 'ad-workspace', 'ad-footer'];
+            if (!ADSENSE_CLIENT) {
+                // belum dikonfigurasi → kekal tersembunyi (tiada gangguan, tiada ruang kosong)
+                boxes.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+                return;
+            }
+            if (localStorage.getItem('pdfeasy_ad_dismiss') === '1') {
+                boxes.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+                return;
+            }
+            if (!window.__adsScriptLoaded) {
+                const s = document.createElement('script');
+                s.async = true;
+                s.crossOrigin = 'anonymous';
+                s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
+                document.head.appendChild(s);
+                window.__adsScriptLoaded = true;
+            }
+            boxes.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const ins = el.querySelector('ins.adsbygoogle');
+                if (ins) {
+                    ins.setAttribute('data-ad-client', ADSENSE_CLIENT);
+                    const key = id.replace('ad-', '');
+                    if (ADSENSE_SLOTS[key]) ins.setAttribute('data-ad-slot', ADSENSE_SLOTS[key]);
+                }
+                el.classList.remove('hidden');
+                try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+            });
+        }
+
+        function dismissAds() {
+            try { localStorage.setItem('pdfeasy_ad_dismiss', '1'); } catch (e) {}
+            ['ad-home', 'ad-workspace', 'ad-footer'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,10 @@
+# ads.txt — PDFEasy (pdf.payedlegacy.my)
+#
+# CARA GUNA:
+# 1. Buka Google AdSense > Sites > ads.txt, salin baris yang diberi (bentuknya seperti di bawah).
+# 2. Buang tanda '#' di hadapan baris google.com itu, dan ganti pub-XXXXXXXXXXXXXXXX
+#    dengan ID penerbit anda (contoh: pub-1234567890123456).
+# 3. Namakan semula fail ini menjadi  ads.txt  (buang '.example') dan letak di root repo,
+#    kemudian commit + push — Vercel akan menerbitkannya di https://pdf.payedlegacy.my/ads.txt
+#
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

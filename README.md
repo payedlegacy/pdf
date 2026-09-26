@@ -1,6 +1,21 @@
 # PDFEasy — pdf.payedlegacy.my
 
-Alat PDF 100% **client-side** (fail tidak pernah dimuat naik ke pelayan):
+## Ruang Iklan (Google AdSense) — sudah sedia, cuma perlu ID
+Tiga slot iklan **tidak mengganggu** sudah dipasang (halaman utama, dalam alat, bawah halaman).
+Selagi ID belum diisi, slot **tersembunyi sepenuhnya** (tiada ruang kosong, tiada gangguan).
+
+Cara aktifkan:
+1. Buka `index.html`, cari `ADSENSE_CLIENT` (di bahagian bawah skrip) dan isi:
+   ```js
+   const ADSENSE_CLIENT = 'ca-pub-XXXXXXXXXXXXXXXX';
+   const ADSENSE_SLOTS = { home: '1234567890', workspace: '1234567891', footer: '1234567892' };
+   ```
+2. Salin `ads.txt.example` → `ads.txt` dan isi ID penerbit (AdSense wajib fail ini).
+3. `git add . && git commit -m "Aktifkan AdSense" && git push`
+
+Pengguna boleh tutup iklan (butang ✕) — pilihan itu diingati dalam peranti mereka (`localStorage.pdfeasy_ad_dismiss`).
+
+## Alat PDF 100% client-side (fail tidak dimuat naik ke pelayan):
 
 1. **Palang ID / IC** — letak palang merah + teks tujuan pada salinan MyKad, IC, lesen, pasport (cth `FOR CUCKOO ONLY`), boleh berulang penuh halaman.
 2. **Isi Borang & Tanda Tangan** — tambah teks (seret), tandatangan lukis atau muat naik imej tandatangan.

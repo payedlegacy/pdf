@@ -2,10 +2,19 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <title>PDFEasy — Palang ID/IC, Isi Borang, Tandatangan & Mampatkan PDF (100% Dalam Pelayar)</title>
     <meta name="description" content="Alat PDF percuma & privasi: letak palang/watermark pada salinan MyKad, IC, lesen atau pasport, isi borang PDF, tandatangan digital, dan mampatkan saiz PDF. Semua diproses 100% dalam pelayar anda.">
     <meta name="theme-color" content="#10b981">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+    <meta property="og:title" content="PDFEasy — Palang ID/IC, Isi Borang & Mampat PDF">
+    <meta property="og:description" content="Lindungi salinan MyKad/IC dengan palang + teks tujuan (cth FOR CUCKOO ONLY). 100% dalam pelayar — tiada muat naik ke pelayan.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pdf.payedlegacy.my/">
+    <meta property="og:image" content="https://pdf.payedlegacy.my/icons/icon-512.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -22,7 +31,7 @@
 
         .draggable-item {
             position: absolute;
-            cursor: move;
+            cursor: default;
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
@@ -38,6 +47,36 @@
         }
         .draggable-item:hover {
             border-color: #10b981;
+        }
+
+        /* PEMEGANG SERET (drag handle) — tarik HANYA dari sini supaya kotak input tidak terganggu */
+        .drag-handle {
+            cursor: grab;
+            background: #e2e8f0;
+            color: #334155;
+            border-radius: 5px;
+            padding: 2px 6px;
+            font-weight: 900;
+            font-size: 12px;
+            line-height: 1.1;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            flex: none;
+        }
+        .drag-handle:active { cursor: grabbing; background: #cbd5e1; }
+
+        /* input fail tersembunyi cara selamat untuk iOS/Android (BUKAN display:none) */
+        .sr-file {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+            border: 0;
         }
 
         #sig-canvas {
@@ -121,14 +160,23 @@
                 </button>
             </div>
 
-            <!-- DROPZONE -->
-            <div id="dropzone" class="border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition-all rounded-3xl p-10 text-center cursor-pointer shadow-sm relative group" onclick="document.getElementById('file-input').click()">
-                <input type="file" id="file-input" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg" class="hidden" onchange="handleFileSelect(event)">
+            <!-- DROPZONE: guna <label> (pemicu asli, berfungsi di iOS/Android) + seret & lepas + kamera -->
+            <label for="file-input" id="dropzone" class="block border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition-all rounded-3xl p-8 sm:p-10 text-center cursor-pointer shadow-sm relative group">
+                <input type="file" id="file-input" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.heic,.heif" class="sr-file" onchange="handleFileSelect(event)">
                 <div class="w-16 h-16 bg-slate-100 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
                     📁
                 </div>
                 <h3 class="font-black text-slate-800 text-lg sm:text-xl mb-1" data-i18n="drop_title">Klik atau Seret Fail ke Sini</h3>
                 <p class="text-xs font-semibold text-slate-500" data-i18n="drop_sub">Menyokong .PDF, .PNG, .JPG (Max 50MB)</p>
+                <span class="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-xs font-extrabold rounded-xl shadow-sm">📂 Pilih Fail</span>
+            </label>
+
+            <div class="mt-3 flex flex-wrap items-center justify-center gap-3">
+                <label for="file-camera" class="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">
+                    📷 Ambil Gambar (Kamera)
+                </label>
+                <input type="file" id="file-camera" accept="image/*" capture="environment" class="sr-file" onchange="handleFileSelect(event)">
+                <span class="text-[11px] font-semibold text-slate-500">Seret & lepas fail dari komputer juga boleh.</span>
             </div>
         </div>
 
@@ -148,16 +196,19 @@
                         </div>
                     </div>
 
-                    <!-- ACTION BUTTONS: CETAK, WHATSAPP, TELEGRAM, MUAT TURUN -->
+                    <!-- ACTION BUTTONS: KONGSI (FAIL), CETAK, WHATSAPP, TELEGRAM, MUAT TURUN -->
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button onclick="printGeneratedPDF()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
-                            🖨️ <span data-i18n="btn_print">Cetak</span>
+                        <button onclick="shareDocument('native')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
+                            📤 <span data-i18n="btn_share_doc">Kongsi Dokumen</span>
                         </button>
-                        <button onclick="shareViaApp('whatsapp')" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <button onclick="shareDocument('whatsapp')" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
                             💬 WhatsApp
                         </button>
-                        <button onclick="shareViaApp('telegram')" class="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <button onclick="shareDocument('telegram')" class="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
                             ✈️ Telegram
+                        </button>
+                        <button onclick="printGeneratedPDF()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                            🖨️ <span data-i18n="btn_print">Cetak</span>
                         </button>
                         <button onclick="processAndExport()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
                             📥 <span data-i18n="btn_download">Muat Turun PDF</span>
@@ -385,6 +436,7 @@
                 sig_cancel: "Batal",
                 sig_use: "Guna",
                 btn_share_app: "Kongsi Web Ini",
+                btn_share_doc: "Kongsi Dokumen",
                 fill_instruction: "✍️ Klik terus pada borang untuk menaip:"
             },
             en: {
@@ -415,6 +467,7 @@
                 sig_cancel: "Cancel",
                 sig_use: "Use",
                 btn_share_app: "Share Web App",
+                btn_share_doc: "Share Document",
                 fill_instruction: "✍️ Click directly on form to type:"
             },
             zh: {
@@ -445,6 +498,7 @@
                 sig_cancel: "取消",
                 sig_use: "使用",
                 btn_share_app: "分享应用",
+                btn_share_doc: "分享文档",
                 fill_instruction: "✍️ 点击表单直接输入文字："
             }
         };
@@ -534,7 +588,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert("Ralat membaca fail.");
+                alert("Ralat membaca fail: " + (err && err.message ? err.message : err));
                 resetToHome();
             } finally {
                 hideLoading();
@@ -543,7 +597,6 @@
 
         async function renderPDFPage() {
             if (!pdfDocObj) return;
-            saveCurrentAnnotations();
             
             document.getElementById('lbl-cur-page').innerText = currentPageNum;
             const page = await pdfDocObj.getPage(currentPageNum);
@@ -569,7 +622,7 @@
             const ctx = canvas.getContext('2d');
             const img = new Image();
             
-            await new Promise(r => {
+            await new Promise((resolve, reject) => {
                 img.onload = () => {
                     const maxW = 800;
                     const scale = img.width > maxW ? maxW / img.width : 1;
@@ -581,19 +634,33 @@
                     wrapper.style.height = `${canvas.height}px`;
 
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    r();
+                    resolve();
                 };
+                // HEIC (foto iPhone) atau fail rosak → jangan biar skrin loading tergantung
+                img.onerror = () => reject(new Error('Imej tidak dapat dibaca (mungkin format HEIC). Sila guna JPG/PNG atau butang kamera.'));
                 img.src = imageSrcUrl;
             });
             renderWatermark();
         }
 
-        function changePage(delta) {
-            if (!pdfDocObj) return;
+        // Tukar halaman: simpan anotasi halaman semasa → kosongkan → render → pulih halaman baharu.
+        // Dikunci (pageChanging) supaya ketukan pantas berturut-turut tidak menyalin anotasi antara halaman.
+        let pageChanging = false;
+
+        async function changePage(delta) {
+            if (!pdfDocObj || pageChanging) return;
             const target = currentPageNum + delta;
-            if (target >= 1 && target <= totalPagesNum) {
+            if (target < 1 || target > totalPagesNum) return;
+            pageChanging = true;
+            try {
+                saveCurrentAnnotations();                                   // simpan halaman semasa
+                document.getElementById('annotation-layer').innerHTML = '';  // kosongkan SEGERA
                 currentPageNum = target;
-                renderPDFPage();
+                await renderPDFPage();                                       // render + pulih halaman baharu
+            } catch (err) {
+                console.error(err);
+            } finally {
+                pageChanging = false;
             }
         }
 
@@ -690,9 +757,11 @@
         }
 
         // INSTANT CLICK-TO-TYPE ON WORKSPACE (EMPTY INPUT, NO PLACEHOLDER TEXT)
+        // Nota: klik diabaikan jika baru sahaja selesai seret (elak kotak input "tergantung" selepas drag)
         document.getElementById('annotation-layer').addEventListener('click', function(e) {
             if (currentMode !== 'fill') return;
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.draggable-item')) return;
+            if (Date.now() < suppressClickUntil) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.draggable-item') || e.target.closest('.drag-handle')) return;
 
             const rect = this.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -708,6 +777,7 @@
             div.style.top = y + 'px';
 
             div.innerHTML = `
+                <span class="drag-handle" title="Tarik sini">⠿</span>
                 <input type="text" value="" autofocus class="bg-transparent border-none outline-none font-bold w-36 px-1 text-slate-900" style="font-family: ${font}; font-size: ${size}; color: ${color};">
                 <button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
             `;
@@ -771,6 +841,7 @@
             div.style.top = '180px';
 
             div.innerHTML = `
+                <span class="drag-handle" title="Tarik sini">⠿</span>
                 <img src="${dataUrl}" class="w-36 h-auto pointer-events-none">
                 <button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>
             `;
@@ -780,16 +851,23 @@
             closeSignatureModal();
         }
 
+        // PEMEGANG SERET: hanya boleh ditarik dari ikon ⠿ (kotak input tidak terganggu)
+        let suppressClickUntil = 0;
+
         function setupDraggable(element) {
-            let startX = 0, startY = 0, initialX = 0, initialY = 0;
+            const handle = element.querySelector('.drag-handle') || element;
+            let startX = 0, startY = 0, initialX = 0, initialY = 0, dragging = false;
 
             const onPointerDown = (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
-                e.preventDefault();
+                // hanya mula seret dari pemegang; klik pada input/butang dibiarkan biasa
+                if (e.target.closest('input,button,select')) return;
+                dragging = true;
+                suppressClickUntil = Date.now() + 400;
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 startX = clientX; startY = clientY;
                 initialX = element.offsetLeft; initialY = element.offsetTop;
+                if (!e.touches && e.cancelable) e.preventDefault();
 
                 document.addEventListener('mousemove', onPointerMove);
                 document.addEventListener('mouseup', onPointerUp);
@@ -798,31 +876,39 @@
             };
 
             const onPointerMove = (e) => {
+                if (!dragging) return;
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const layer = document.getElementById('annotation-layer');
                 let newX = initialX + (clientX - startX);
                 let newY = initialY + (clientY - startY);
-                if(newX < 0) newX = 0;
-                if(newY < 0) newY = 0;
+                if (newX < 0) newX = 0;
+                if (newY < 0) newY = 0;
+                if (newX > layer.clientWidth - 24) newX = layer.clientWidth - 24;
+                if (newY > layer.clientHeight - 18) newY = layer.clientHeight - 18;
                 element.style.left = newX + 'px';
                 element.style.top = newY + 'px';
-                if(e.cancelable) e.preventDefault();
+                suppressClickUntil = Date.now() + 400;
+                if (e.cancelable) e.preventDefault();
             };
 
             const onPointerUp = () => {
+                dragging = false;
                 document.removeEventListener('mousemove', onPointerMove);
                 document.removeEventListener('mouseup', onPointerUp);
                 document.removeEventListener('touchmove', onPointerMove);
                 document.removeEventListener('touchend', onPointerUp);
             };
 
-            element.onmousedown = onPointerDown;
-            element.ontouchstart = onPointerDown;
+            handle.onmousedown = onPointerDown;
+            handle.ontouchstart = onPointerDown;
         }
 
         function saveCurrentAnnotations() {
             const layer = document.getElementById('annotation-layer');
             const items = layer.querySelectorAll('.draggable-item');
+            const lw = layer.clientWidth || layer.offsetWidth || 1;
+            const lh = layer.clientHeight || layer.offsetHeight || 1;
             let pageData = [];
             
             items.forEach(el => {
@@ -836,35 +922,45 @@
                         type: 'text', 
                         x, 
                         y, 
+                        rx: x / lw,
+                        ry: y / lh,
                         val: input.value, 
                         font: input.style.fontFamily, 
                         fontSize: input.style.fontSize || '14px',
                         color: input.style.color || '#0f172a'
                     });
                 } else if (img) {
-                    pageData.push({ type: 'sig', x, y, val: img.src, w: img.width, h: img.height });
+                    pageData.push({ type: 'sig', x, y, rx: x / lw, ry: y / lh, val: img.src,
+                                    w: img.width, h: img.height, rw: img.width / lw });
                 }
             });
             annotations[currentPageNum] = pageData;
             layer.innerHTML = '';
         }
 
+        // Anotasi dipulihkan HANYA untuk halaman semasa → tidak terikut ke halaman lain
         function restoreAnnotationsForPage() {
             const pageData = annotations[currentPageNum] || [];
             const layer = document.getElementById('annotation-layer');
             layer.innerHTML = '';
+            const lw = layer.clientWidth || layer.offsetWidth || 1;
+            const lh = layer.clientHeight || layer.offsetHeight || 1;
             
             pageData.forEach(item => {
+                const px = (item.rx != null) ? item.rx * lw : item.x;
+                const py = (item.ry != null) ? item.ry * lh : item.y;
                 const div = document.createElement('div');
-                div.style.left = item.x + 'px';
-                div.style.top = item.y + 'px';
+                div.style.left = px + 'px';
+                div.style.top = py + 'px';
                 
                 if (item.type === 'text') {
                     div.className = 'draggable-item pointer-events-auto bg-white/90 border border-blue-400 p-1.5 rounded-lg text-slate-900 flex items-center gap-1 shadow-lg';
-                    div.innerHTML = `<input type="text" value="${item.val}" class="bg-transparent border-none outline-none font-bold w-36 px-1" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><input type="text" value="${item.val}" class="bg-transparent border-none outline-none font-bold w-36 px-1" style="font-family: ${item.font}; font-size: ${item.fontSize}; color: ${item.color};"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
                 } else {
+                    const w = item.rw != null ? Math.round(item.rw * lw) : (item.w || 144);
+                    const h = item.rw != null && item.w ? Math.round(w * (item.h / item.w)) : (item.h || 60);
                     div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400 p-1 rounded-lg flex items-start gap-1 shadow-lg';
-                    div.innerHTML = `<img src="${item.val}" style="width:${item.w}px; height:${item.h}px" class="pointer-events-none"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
+                    div.innerHTML = `<span class="drag-handle" title="Tarik sini">⠿</span><img src="${item.val}" style="width:${w}px; height:auto" class="pointer-events-none"><button onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-50 p-1 rounded font-black text-xs">✕</button>`;
                 }
                 layer.appendChild(div);
                 setupDraggable(div);
@@ -876,10 +972,11 @@
             const { PDFDocument } = PDFLib;
             const outPdf = await PDFDocument.create();
             
-            let quality = 0.50;
+            // Kualiti tinggi secara lalai (0.92). Hanya mod 'compress' guna slider mampatan.
+            let quality = 0.92;
             if(currentMode === 'compress') {
                 const slider = document.getElementById('compress-quality');
-                if(slider) quality = parseFloat(slider.value) / 100;
+                if(slider) quality = Math.max(0.25, Math.min(0.92, parseFloat(slider.value) / 100));
             }
 
             const tmpCanvas = document.createElement('canvas');
@@ -932,10 +1029,19 @@
                 
                 const printWindow = window.open(blobUrl, '_blank');
                 if (printWindow) {
-                    printWindow.onload = () => {
-                        printWindow.print();
-                    };
+                    // beri masa pelayar memuatkan PDF sebelum cetak
+                    const doPrint = () => { try { printWindow.focus(); printWindow.print(); } catch (e) { console.error(e); } };
+                    setTimeout(doPrint, 900);
+                } else {
+                    // window.open disekat (biasa pada telefon) → muat turun & beritahu pengguna
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = `PDFEasy_Cetak_${Date.now()}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    alert('Cetakan disekat oleh pelayar. Fail PDF telah dimuat turun — sila cetak dari fail tersebut.');
                 }
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
             } catch(err) {
                 console.error(err);
                 alert("Ralat menjana cetakan.");
@@ -950,19 +1056,24 @@
             const scaleX = tmpCanvas.width / screenWrapper.offsetWidth;
             const scaleY = tmpCanvas.height / screenWrapper.offsetHeight;
 
-            // 1. Bake Text & Signatures for this page
+            // 1. Bake Text & Signatures untuk halaman INI sahaja
             const pageAnns = annotations[pageNum] || [];
             for (const ann of pageAnns) {
+                const nx = (ann.rx != null) ? ann.rx * tmpCanvas.width : ann.x * scaleX;
+                const ny = (ann.ry != null) ? ann.ry * tmpCanvas.height : ann.y * scaleY;
                 if (ann.type === 'text') {
-                    const parsedSize = parseInt(ann.fontSize || '14px') * scaleY * 1.1;
+                    const parsedSize = parseInt(ann.fontSize || '14px') * (tmpCanvas.height / screenWrapper.offsetHeight) * 1.1;
                     tCtx.font = `bold ${parsedSize}px ${ann.font}`;
                     tCtx.fillStyle = ann.color || '#0f172a';
-                    tCtx.fillText(ann.val, (ann.x * scaleX) + (6 * scaleX), (ann.y * scaleY) + (20 * scaleY));
+                    tCtx.textBaseline = 'top';
+                    tCtx.fillText(ann.val, nx, ny);
                 } else if (ann.type === 'sig') {
                     const sigImg = new Image();
                     sigImg.src = ann.val;
-                    await new Promise(r => sigImg.onload = r);
-                    tCtx.drawImage(sigImg, ann.x * scaleX, ann.y * scaleY, ann.w * scaleX, ann.h * scaleY);
+                    await new Promise(r => { sigImg.onload = r; sigImg.onerror = r; });
+                    const w = (ann.rw != null) ? ann.rw * tmpCanvas.width : ann.w * scaleX;
+                    const h = (ann.w) ? w * (ann.h / ann.w) : ann.h * scaleY;
+                    tCtx.drawImage(sigImg, nx, ny, w, h);
                 }
             }
 
@@ -1014,6 +1125,40 @@
             outPage.drawImage(embedImg, { x: 0, y: 0, width: embedImg.width, height: embedImg.height });
         }
 
+        // KONGSI DOKUMEN: guna Web Share API (fail sebenar). Fallback: muat turun + buka WhatsApp/Telegram.
+        async function shareDocument(platform) {
+            showLoading('Menyediakan fail untuk dikongsi...');
+            const shareText = 'Jom guna PDFEasy untuk palang IC dan isi borang dengan selamat secara percuma di pelayar!';
+            const appUrl = 'https://pdf.payedlegacy.my';
+            try {
+                const bytes = await generateFinalPDFBytes();
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                const name = `PALANG-PDFEasy_${Date.now()}.pdf`;
+                const file = new File([blob], name, { type: 'application/pdf' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: 'PDFEasy — Dokumen Berpalang', text: `${shareText} ${appUrl}` });
+                } else {
+                    // Fallback: muat turun fail, kemudian buka WhatsApp/Telegram dengan teks promosi
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = name;
+                    document.body.appendChild(link);
+                    link.click();
+                    setTimeout(() => URL.revokeObjectURL(link.href), 20000);
+                    shareViaApp(platform === 'telegram' ? 'telegram' : 'whatsapp');
+                    alert('Fail telah dimuat turun. Sila lampirkan (attach) fail itu dalam WhatsApp/Telegram yang dibuka.');
+                }
+            } catch (err) {
+                if (err && err.name === 'AbortError') { hideLoading(); return; }
+                console.error(err);
+                alert('Gagal berkongsi. Fail akan dimuat turun sebagai ganti.');
+                try { await processAndExport(); } catch (e) { console.error(e); }
+            } finally {
+                hideLoading();
+            }
+        }
+
         function shareViaApp(platform) {
             const text = encodeURIComponent("Jom guna PDFEasy untuk palang IC dan isi borang dengan selamat secara percuma di pelayar!");
             const url = encodeURIComponent("https://pdf.payedlegacy.my");
@@ -1043,6 +1188,32 @@
             overlay.classList.add('hidden');
             overlay.style.display = 'none';
         }
+
+        // ---- Seret & lepas fail, tampal (paste), dan PWA ----
+        document.addEventListener('DOMContentLoaded', () => {
+            const dz = document.getElementById('dropzone');
+            if (dz) {
+                ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => {
+                    e.preventDefault();
+                    dz.classList.add('border-emerald-500', 'bg-emerald-50');
+                }));
+                ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
+                    e.preventDefault();
+                    dz.classList.remove('border-emerald-500', 'bg-emerald-50');
+                }));
+                dz.addEventListener('drop', e => {
+                    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                    if (f) handleFileSelect({ target: { files: [f] } });
+                });
+            }
+            document.addEventListener('paste', e => {
+                const items = e.clipboardData && e.clipboardData.files;
+                if (items && items[0]) handleFileSelect({ target: { files: [items[0]] } });
+            });
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            }
+        });
     </script>
 </body>
 </html>

@@ -4537,7 +4537,11 @@
         const ADSENSE_CLIENT = 'ca-pub-9978987699948390';   // ID penerbit pemilik (aktif)
         // Slot unit iklan tetap (pilihan). Biarkan kosong jika mahu Auto Ads sahaja —
         // kotak iklan tetap hanya muncul apabila slot ID diisi.
-        const ADSENSE_SLOTS = { home: '', workspace: '', footer: '' };
+        // Slot unit iklan tetap. Halaman utama diaktifkan dengan slot daripada pemilik.
+        // (Biarkan kosong untuk Auto Ads sahaja — kotak tetap hanya muncul bila slot diisi.)
+        // NOTA: satu slot = satu penempatan. Untuk kotak di ruang kerja & bawah,
+        // buat unit iklan BAHARU di AdSense dan isi nombornya di sini.
+        const ADSENSE_SLOTS = { home: '2793138078', workspace: '', footer: '' };
 
         function initAds() {
             const boxes = ['ad-home', 'ad-workspace', 'ad-footer'];
@@ -4552,8 +4556,11 @@
                 if (!boleh) { el.classList.remove('flex'); return; }
                 const ins = el.querySelector('ins.adsbygoogle');
                 if (ins) {
+                    // elak push berulang (punca ralat "all ins elements already have ads")
+                    if (ins.dataset.dipush === '1') { el.classList.add('flex'); return; }
                     ins.setAttribute('data-ad-client', ADSENSE_CLIENT);
                     ins.setAttribute('data-ad-slot', ADSENSE_SLOTS[key]);
+                    ins.dataset.dipush = '1';
                 }
                 el.classList.add('flex');
                 try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}

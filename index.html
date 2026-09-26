@@ -149,7 +149,9 @@
       <div class="field-row">
         <label class="check"><input type="checkbox" id="wm-tile"> <span data-i18n="wmTile">Palang berulang (penuh halaman)</span></label>
         <label class="check"><input type="checkbox" id="wm-all-pages" checked> <span data-i18n="applyAllPages">Guna pada semua halaman</span></label>
+        <button type="button" class="btn btn-ghost" id="btn-wm-reset">↺ <span data-i18n="wmReset">Tengah semula palang</span></button>
       </div>
+      <p class="hint js-wm-hint">Tarik palang pada dokumen untuk pindah kedudukan.</p>
     </div>
 
     <!-- PANEL: FILL -->
@@ -227,9 +229,12 @@
 
     <div class="ws-actions">
       <div class="save-opts">
-        <button class="btn btn-primary btn-lg" id="btn-save-pdf">📥 <span data-i18n="savePdf">Simpan PDF (watermark + tandatangan)</span></button>
+        <button class="btn btn-primary btn-lg" id="btn-save-pdf">📥 <span data-i18n="savePdf">Muat Turun PDF</span></button>
+        <button class="btn btn-share btn-lg" id="btn-share-doc">📤 <span data-i18n="shareDoc">Kongsi Dokumen</span></button>
         <button class="btn btn-outline" id="btn-save-compressed">🗜️ <span data-i18n="saveCompressed">Simpan versi mampat</span></button>
         <button class="btn btn-outline" id="btn-print">🖨️ <span data-i18n="print">Cetak</span></button>
+        <button class="btn btn-ghost" id="btn-share-app">🔗 <span data-i18n="shareApp">Kongsi Web App</span></button>
+        <button class="btn btn-ghost" id="btn-share-telegram">✈️ <span data-i18n="telegram">Telegram</span></button>
       </div>
       <p class="muted small" id="out-info"></p>
     </div>

@@ -154,7 +154,13 @@
         .sig-item.selected { background: #ffffff; }
 
         /* PEMEGANG SERET (drag handle) — tarik HANYA dari sini supaya kotak input tidak terganggu */
+        /* alat diletakkan TERAPUNG di luar kotak supaya kandungan TIDAK BERGERAK
+           (bila dipilih, pemegang muncul tetapi tulisan/gambar kekal di tempatnya) */
         .drag-handle {
+            position: absolute;
+            left: -19px;
+            top: 50%;
+            transform: translateY(-50%);
             cursor: grab;
             background: #e2e8f0;
             color: #334155;
@@ -166,9 +172,10 @@
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
-            flex: none;
+            z-index: 2;
         }
         .drag-handle:active { cursor: grabbing; background: #cbd5e1; }
+        .anno-del { position: absolute; right: -24px; top: -12px; z-index: 2; background: #fff; border-radius: 4px; }
 
         /* input fail tersembunyi cara selamat untuk iOS/Android (BUKAN display:none) */
         .sr-file {
@@ -4042,6 +4049,31 @@
             const r = cv.getBoundingClientRect();
             const lebar = Math.round(r.width), tinggi = Math.round(r.height);
             if (lebar < 20 || tinggi < 20) return;
+            // Jika saiz ruang BERUBAH (cth buka pratonton / putar skrin), skala kedudukan anotasi
+            // supaya kekal pada tempat yang sama RELATIF dengan dokumen (elak "lari").
+            const layer = document.getElementById('annotation-layer');
+            const lamaW = layer ? layer.clientWidth : 0;
+            const lamaH = layer ? layer.clientHeight : 0;
+            if (layer && lamaW > 20 && lamaH > 20) {
+                const kx = lebar / lamaW, ky = tinggi / lamaH;
+                if (Math.abs(kx - 1) > 0.003 || Math.abs(ky - 1) > 0.003) {
+                    layer.querySelectorAll('.draggable-item').forEach(el => {
+                        const L = parseFloat(el.style.left) || 0, T = parseFloat(el.style.top) || 0;
+                        el.style.left = Math.round(L * kx) + 'px';
+                        el.style.top = Math.round(T * ky) + 'px';
+                        const im = el.querySelector('img');
+                        if (im && im.style.width) {
+                            const ww = parseFloat(im.style.width) || 0;
+                            if (ww) im.style.width = Math.round(ww * kx) + 'px';
+                        }
+                        const tx = el.querySelector('input') || el.querySelector('.anno-text');
+                        if (tx && tx.style.fontSize) {
+                            const ff = parseFloat(tx.style.fontSize) || 0;
+                            if (ff) tx.style.fontSize = Math.max(6, Math.round(ff * ky)) + 'px';
+                        }
+                    });
+                }
+            }
             w.style.width = lebar + 'px';
             w.style.height = tinggi + 'px';
             ['annotation-layer', 'watermark-layer', 'doc-hint'].forEach(id => {
@@ -4204,7 +4236,7 @@
                 if (nx > tmpCanvas.width - 12) nx = Math.max(6, tmpCanvas.width * 0.92);
                 if (ny > tmpCanvas.height - 12) ny = Math.max(6, tmpCanvas.height - 40);
                 if (ann.type === 'text') {
-                    const parsedSize = parseInt(ann.fontSize || '14px') * (tmpCanvas.height / (acuan.tinggi || 1)) * 1.1;
+                    const parsedSize = parseInt(ann.fontSize || '14px') * (tmpCanvas.height / (acuan.tinggi || 1));
                     tCtx.font = `bold ${parsedSize}px ${ann.font}`;
                     tCtx.fillStyle = ann.color || '#0f172a';
                     tCtx.textBaseline = 'top';

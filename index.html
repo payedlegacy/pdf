@@ -145,8 +145,21 @@
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
+
+    <!-- GOOGLE AMP AUTO ADS (dipasang mengikut arahan pemilik) -->
+    <script async custom-element="amp-auto-ads"
+            src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js">
+    </script>
+    <!-- Google AdSense: skrip penerbit (Auto Ads + unit yang dipasang) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9978987699948390"
+            crossorigin="anonymous"></script>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+
+    <!-- Google AMP Auto Ads (diletakkan betul-betul selepas tag <body>) -->
+    <amp-auto-ads type="adsense"
+            data-ad-client="ca-pub-9978987699948390">
+    </amp-auto-ads>
 
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -3362,38 +3375,28 @@
            RUANG IKLAN (Google AdSense) — tidak mengganggu pengguna
            Isi ADSENSE_CLIENT + slot ID di bawah untuk mengaktifkan.
            ===================================================================== */
-        const ADSENSE_CLIENT = '';                                   // cth: 'ca-pub-1234567890123456'
-        const ADSENSE_SLOTS = { home: '', workspace: '', footer: '' };  // cth: '1234567890'
+        const ADSENSE_CLIENT = 'ca-pub-9978987699948390';   // ID penerbit pemilik (aktif)
+        // Slot unit iklan tetap (pilihan). Biarkan kosong jika mahu Auto Ads sahaja —
+        // kotak iklan tetap hanya muncul apabila slot ID diisi.
+        const ADSENSE_SLOTS = { home: '', workspace: '', footer: '' };
 
         function initAds() {
             const boxes = ['ad-home', 'ad-workspace', 'ad-footer'];
-            if (!ADSENSE_CLIENT) {
-                // belum dikonfigurasi → kekal tersembunyi (tiada gangguan, tiada ruang kosong)
-                boxes.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
-                return;
-            }
-            if (localStorage.getItem('pdfeasy_ad_dismiss') === '1') {
-                boxes.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
-                return;
-            }
-            if (!window.__adsScriptLoaded) {
-                const s = document.createElement('script');
-                s.async = true;
-                s.crossOrigin = 'anonymous';
-                s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
-                document.head.appendChild(s);
-                window.__adsScriptLoaded = true;
-            }
+            const allowed = !ADSENSE_CLIENT ? false : (localStorage.getItem('pdfeasy_ad_dismiss') !== '1');
             boxes.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
+                const key = id.replace('ad-', '');
+                // tunjuk kotak tetap HANYA jika ada slot ID yang sah
+                const boleh = allowed && !!ADSENSE_SLOTS[key];
+                el.classList.toggle('hidden', !boleh);
+                if (!boleh) { el.classList.remove('flex'); return; }
                 const ins = el.querySelector('ins.adsbygoogle');
                 if (ins) {
                     ins.setAttribute('data-ad-client', ADSENSE_CLIENT);
-                    const key = id.replace('ad-', '');
-                    if (ADSENSE_SLOTS[key]) ins.setAttribute('data-ad-slot', ADSENSE_SLOTS[key]);
+                    ins.setAttribute('data-ad-slot', ADSENSE_SLOTS[key]);
                 }
-                el.classList.remove('hidden');
+                el.classList.add('flex');
                 try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
             });
         }

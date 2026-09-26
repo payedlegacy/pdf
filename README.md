@@ -1,19 +1,17 @@
 # PDFEasy — pdf.payedlegacy.my
 
-## Ruang Iklan (Google AdSense) — sudah sedia, cuma perlu ID
-Tiga slot iklan **tidak mengganggu** sudah dipasang (halaman utama, dalam alat, bawah halaman).
-Selagi ID belum diisi, slot **tersembunyi sepenuhnya** (tiada ruang kosong, tiada gangguan).
+## Ruang Iklan (Google AdSense) — AKTIF
+- **ID penerbit**: `ca-pub-9978987699948390` (sudah diisi dalam `index.html` → `ADSENSE_CLIENT`).
+- **Kod AMP Auto Ads** dipasang mengikut arahan pemilik: skrip `amp-auto-ads` di `<head>` + `<amp-auto-ads type="adsense" data-ad-client="ca-pub-...">` betul-betul selepas `<body>`.
+- **Skrip AdSense penerbit** (`adsbygoogle.js?client=ca-pub-9978987699948390`) turut dipasang untuk **Auto Ads** pada halaman HTML biasa.
+- **3 kotak iklan tetap** (halaman utama, dalam alat, bawah halaman) sedia ada tetapi **tersembunyi** selagi `ADSENSE_SLOTS` kosong — jadi tiada ruang kosong/iklan mengganggu. Isi slot ID dari AdSense (Ads > By ad unit > Display) untuk mengaktifkan kedudukan tetap:
+  ```js
+  const ADSENSE_SLOTS = { home: '1234567890', workspace: '1234567891', footer: '1234567892' };
+  ```
+- `ads.txt` sudah disediakan untuk ID penerbit ini.
+- Pengguna boleh tutup iklan tetap (butang ✕) — pilihan diingati dalam peranti (`localStorage.pdfeasy_ad_dismiss`).
 
-Cara aktifkan:
-1. Buka `index.html`, cari `ADSENSE_CLIENT` (di bahagian bawah skrip) dan isi:
-   ```js
-   const ADSENSE_CLIENT = 'ca-pub-XXXXXXXXXXXXXXXX';
-   const ADSENSE_SLOTS = { home: '1234567890', workspace: '1234567891', footer: '1234567892' };
-   ```
-2. Salin `ads.txt.example` → `ads.txt` dan isi ID penerbit (AdSense wajib fail ini).
-3. `git add . && git commit -m "Aktifkan AdSense" && git push`
-
-Pengguna boleh tutup iklan (butang ✕) — pilihan itu diingati dalam peranti mereka (`localStorage.pdfeasy_ad_dismiss`).
+> Nota teknikal: `amp-auto-ads` hanya dihidupkan oleh runtime AMP. Laman ini HTML biasa, jadi iklan sebenar datang dari skrip Auto Ads AdSense di atas; kod AMP disimpan seperti diminta dan tidak mengganggu paparan.
 
 ## Alat PDF 100% client-side (fail tidak dimuat naik ke pelayan):
 

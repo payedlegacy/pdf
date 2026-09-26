@@ -320,17 +320,12 @@
                         </label>
                     </div>
 
-                    <!-- ACTION BUTTONS UNIVERSAL (berfungsi untuk SEMUA alat) -->
+                    <!-- ACTION BUTTONS UNIVERSAL (semua melalui PRATONTON dahulu) -->
                     <div class="flex items-center gap-2 flex-wrap">
                         <button onclick="shareCurrent('native')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5">
                             📤 <span data-i18n="btn_share_doc">Kongsi</span>
                         </button>
-                        <button onclick="shareCurrent('whatsapp')" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
-                            💬 WhatsApp
-                        </button>
-                        <button onclick="shareCurrent('telegram')" class="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
-                            ✈️ Telegram
-                        </button>
+                        <span class="text-[10px] font-bold text-slate-500 max-w-[150px] leading-tight">Kongsi · Cetak · Muat Turun — semua akan tunjuk <b>pratonton</b> dahulu</span>
                         <button onclick="printCurrent()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
                             🖨️ <span data-i18n="btn_print">Cetak</span>
                         </button>
@@ -824,6 +819,39 @@
             </a>
         </div>
     </footer>
+
+    <!-- PRATONTON SEBELUM SIMPAN / CETAK -->
+    <div id="modal-preview" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[95] hidden items-center justify-center p-3">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-4 shadow-2xl flex flex-col max-h-[96vh]">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-black text-slate-900 text-base">👁️ Pratonton — semak dulu sebelum simpan</h3>
+                <button onclick="tutupPratonton()" class="text-slate-400 hover:text-slate-700 font-bold text-xl px-2">✕</button>
+            </div>
+            <p id="preview-info" class="text-[11px] font-bold text-slate-500 mb-2 break-all"></p>
+            <div class="flex-1 overflow-auto bg-slate-200 rounded-2xl p-3 flex items-start justify-center min-h-[180px]">
+                <canvas id="preview-canvas" class="block shadow-lg bg-white max-w-full"></canvas>
+                <img id="preview-img" class="hidden max-w-full rounded-lg shadow-lg" alt="Pratonton">
+            </div>
+            <div class="flex items-center justify-between gap-2 mt-2">
+                <div id="preview-nav" class="flex items-center gap-1.5 text-xs font-extrabold text-slate-700">
+                    <button onclick="pratontonHalaman(-1)" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg">◀</button>
+                    <span>Muka <span id="preview-page">1</span> / <span id="preview-total">1</span></span>
+                    <button onclick="pratontonHalaman(1)" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg">▶</button>
+                </div>
+                <div class="flex items-center gap-1.5 text-xs font-extrabold text-slate-700">
+                    <button onclick="pratontonZum(-1)" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg">🔍−</button>
+                    <button onclick="pratontonZum(1)" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg">🔍+</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+                <button onclick="pratontonMuatTurun()" class="px-3 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md">📥 Muat Turun</button>
+                <button id="preview-share" onclick="pratontonKongsi()" class="hidden px-3 py-3 bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold rounded-xl">📤 Kongsi</button>
+                <button onclick="pratontonCetak()" class="px-3 py-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl">🖨️ Cetak</button>
+                <button onclick="tutupPratonton()" class="px-3 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-extrabold rounded-xl">✏️ Kembali Edit</button>
+            </div>
+            <p class="text-[11px] font-semibold text-slate-500 mt-2">Betul? Tekan <b>📥 Muat Turun</b>. Nak ubah? Tekan <b>✏️ Kembali Edit</b> — fail <b>belum</b> disimpan.</p>
+        </div>
+    </div>
 
     <!-- SIMPAN / KONGSI (berfungsi dalam pelayar telefon & dalam-aplikasi) -->
     <div id="modal-save" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[90] hidden items-center justify-center p-4">
@@ -2069,8 +2097,17 @@
            ===================================================================== */
         let saveState = null;
 
+        /* ---- PRATONTON SEBELUM SIMPAN/CETAK (semak dulu, tak salah) ---- */
+        let previewState = null;
+
+        // semua butang Muat Turun/Cetak/Kongsi melalui pratonton dahulu
         function triggerDownload(blob, name, senyap) {
-            // 1) cuba muat turun automatik (jangan buang <a> serta-merta → boleh batalkan muat turun)
+            if (senyap) { muatTurunTerus(blob, name, true); return; }
+            tunjukPratonton(blob, name);
+        }
+
+        // muat turun SEBENAR (dipanggil dari panel pratonton atau secara senyap)
+        function muatTurunTerus(blob, name, senyap) {
             try {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -2081,9 +2118,143 @@
                 document.body.appendChild(a);
                 a.click();
                 setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60000);
-            } catch (e) { /* pelayar sekat → panel di bawah jadi jaring keselamatan */ }
-            // 2) tunjuk panel simpan/kongsi (jalan keluar untuk telefon)
+            } catch (e) { /* pelayar sekat → panel simpan jadi jaring keselamatan */ }
             if (!senyap) showSavePanel(blob, name);
+        }
+
+        async function tunjukPratonton(blob, name) {
+            const modal = document.getElementById('modal-preview');
+            if (!modal) { muatTurunTerus(blob, name); return; }
+            if (previewState && previewState.url) { try { URL.revokeObjectURL(previewState.url); } catch (e) {} }
+            const url = URL.createObjectURL(blob);
+            const jenis = blob.type || 'application/pdf';
+            previewState = { blob: blob, name: name, url: url, jenis: jenis, halaman: 1, jumlah: 1, pdf: null, zum: 1, pdfMime: jenis.indexOf('pdf') >= 0 };
+
+            const info = document.getElementById('preview-info');
+            const cv = document.getElementById('preview-canvas');
+            const img = document.getElementById('preview-img');
+            const nav = document.getElementById('preview-nav');
+            const sb = document.getElementById('preview-share');
+            if (info) info.textContent = name;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            if (nav) nav.style.visibility = 'hidden';
+            if (sb) {
+                let boleh = false;
+                try { boleh = !!(navigator.canShare) && navigator.canShare({ files: [new File([blob], name, { type: jenis })] }); } catch (e) { boleh = false; }
+                sb.classList.toggle('hidden', !boleh);
+            }
+
+            if (previewState.pdfMime && typeof pdfjsLib !== 'undefined') {
+                if (img) { img.classList.add('hidden'); img.src = ''; }
+                if (cv) cv.classList.remove('hidden');
+                try {
+                    const buf = await blob.arrayBuffer();
+                    previewState.pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+                    previewState.jumlah = previewState.pdf.numPages;
+                    await pratontonLukis(1);
+                } catch (err) {
+                    console.error(err);
+                    if (cv) cv.classList.add('hidden');
+                    if (img) { img.src = url; img.classList.remove('hidden'); }
+                }
+            } else {
+                if (cv) cv.classList.add('hidden');
+                if (img) { img.src = url; img.classList.remove('hidden'); }
+                previewState.jumlah = 1;
+            }
+            if (nav && previewState.jumlah > 1) nav.style.visibility = 'visible';
+        }
+
+        async function pratontonLukis(n) {
+            if (!previewState || !previewState.pdf) return;
+            if (n < 1) n = 1;
+            if (n > previewState.jumlah) n = previewState.jumlah;
+            previewState.halaman = n;
+            const page = await previewState.pdf.getPage(n);
+            const asas = page.getViewport({ scale: 1 });
+            const lebarMaks = Math.min((window.innerWidth || 800) - 70, 560);
+            const skala = Math.max(0.2, (lebarMaks / asas.width)) * (previewState.zum || 1);
+            const vp = page.getViewport({ scale: skala });
+            const cv = document.getElementById('preview-canvas');
+            if (!cv) return;
+            cv.width = Math.round(vp.width);
+            cv.height = Math.round(vp.height);
+            const ctx = cv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, cv.width, cv.height);
+            await page.render({ canvasContext: ctx, viewport: vp }).promise;
+            const pp = document.getElementById('preview-page');
+            if (pp) pp.textContent = n;
+            const pt = document.getElementById('preview-total');
+            if (pt) pt.textContent = previewState.jumlah;
+        }
+
+        function pratontonHalaman(d) {
+            if (!previewState || !previewState.pdf) return;
+            pratontonLukis((previewState.halaman || 1) + d);
+        }
+
+        function pratontonZum(d) {
+            if (!previewState) return;
+            previewState.zum = Math.max(0.5, Math.min(3, (previewState.zum || 1) + (d > 0 ? 0.5 : -0.5)));
+            if (previewState.pdf) pratontonLukis(previewState.halaman || 1);
+            else {
+                const img = document.getElementById('preview-img');
+                if (img) img.style.maxWidth = Math.round(100 * previewState.zum) + '%';
+            }
+        }
+
+        function pratontonMuatTurun() {
+            if (!previewState) return;
+            const s = previewState;
+            tutupPratonton(true);
+            muatTurunTerus(s.blob, s.name);
+        }
+
+        async function pratontonKongsi() {
+            if (!previewState) return;
+            saveState = { blob: previewState.blob, name: previewState.name, url: previewState.url };
+            await shareSavedFile();
+        }
+
+        function pratontonCetak() {
+            if (!previewState) return;
+            cetakTerus(previewState.blob, previewState.name, previewState.jenis);
+        }
+
+        function tutupPratonton(keepState) {
+            const modal = document.getElementById('modal-preview');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+            if (!keepState && previewState && previewState.url) {
+                try { URL.revokeObjectURL(previewState.url); } catch (e) {}
+                previewState = null;
+            }
+        }
+
+        // cetak blob (PDF atau imej) — dipakai oleh panel pratonton
+        function cetakTerus(blob, name, jenis) {
+            const url = URL.createObjectURL(blob);
+            if ((jenis || '').indexOf('image/') === 0) {
+                const w = window.open('', '_blank');
+                if (w) {
+                    w.document.write('<html><head><title>Cetak PDFEasy</title></head><body style="margin:0;text-align:center"><img id="p" src="' + url + '" style="max-width:100%"><script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>');
+                    w.document.close();
+                    setTimeout(() => URL.revokeObjectURL(url), 120000);
+                } else {
+                    muatTurunTerus(blob, name, true);
+                    alert('Cetakan disekat pelayar. Fail telah dimuat turun — sila cetak dari fail itu.');
+                }
+                return;
+            }
+            const win = window.open(url, '_blank');
+            if (win) {
+                setTimeout(() => { try { win.focus(); win.print(); } catch (e) { console.error(e); } }, 900);
+                setTimeout(() => URL.revokeObjectURL(url), 180000);
+            } else {
+                muatTurunTerus(blob, name, true);
+                alert('Cetakan disekat pelayar. Fail PDF telah dimuat turun — sila cetak dari fail itu.');
+            }
         }
 
         function showSavePanel(blob, name) {
@@ -2186,51 +2357,25 @@
             finally { hideLoading(); }
         }
 
+        // cetak & kongsi juga melalui PRATONTON dahulu (semak sebelum cetak/hantar)
         async function printCurrent() {
-            showLoading('Menyediakan cetakan...');
+            showLoading('Menyediakan pratonton...');
             try {
                 const o = await buildCurrentOutput();
                 if (!o) return;
-                const url = URL.createObjectURL(o.blob);
-                if (o.mime === 'image/png') {
-                    const w = window.open('', '_blank');
-                    if (w) {
-                        w.document.write('<html><head><title>Cetak PDFEasy</title></head><body style="margin:0;text-align:center"><img id="p" src="' + url + '" style="max-width:100%"><script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>');
-                        w.document.close();
-                    } else {
-                        triggerDownload(o.blob, o.name);
-                        alert('Cetakan disekat pelayar. Fail telah dimuat turun — sila cetak dari fail itu.');
-                    }
-                } else {
-                    const pw = window.open(url, '_blank');
-                    if (pw) setTimeout(() => { try { pw.focus(); pw.print(); } catch (e) {} }, 900);
-                    else { triggerDownload(o.blob, o.name); alert('Cetakan disekat pelayar. Fail PDF telah dimuat turun — sila cetak dari fail itu.'); }
-                }
-                setTimeout(() => URL.revokeObjectURL(url), 120000);
+                tunjukPratonton(o.blob, o.name);
             } catch (err) { console.error(err); alert('Ralat menjana cetakan.'); }
             finally { hideLoading(); }
         }
 
         async function shareCurrent(platform) {
             showLoading('Menyediakan fail untuk dikongsi...');
-            const shareText = 'Jom guna PDFEasy (palang IC, tandatangan, QR, pasport) secara percuma di pelayar!';
-            const appUrl = 'https://pdf.payedlegacy.my';
             try {
                 const o = await buildCurrentOutput();
                 if (!o) return;
-                const file = new File([o.blob], o.name, { type: o.mime });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({ files: [file], title: 'PDFEasy', text: shareText + ' ' + appUrl });
-                } else {
-                    triggerDownload(o.blob, o.name);
-                    shareViaApp(platform === 'telegram' ? 'telegram' : 'whatsapp');
-                    alert('Fail telah dimuat turun. Sila lampirkan (attach) fail itu dalam WhatsApp/Telegram yang dibuka.');
-                }
-            } catch (err) {
-                if (err && err.name === 'AbortError') { hideLoading(); return; }
-                console.error(err);
-                alert('Gagal berkongsi: ' + (err && err.message ? err.message : err));
-            } finally { hideLoading(); }
+                tunjukPratonton(o.blob, o.name);      // semak dulu, kemudian tekan 📤 Kongsi
+            } catch (err) { console.error(err); alert('Ralat menyediakan fail.'); }
+            finally { hideLoading(); }
         }
 
         /* =====================================================================

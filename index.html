@@ -582,6 +582,36 @@
                         <span>Muka <span id="lbl-cur-page" class="text-blue-600">1</span> / <span id="lbl-tot-page">1</span></span>
                         <button onclick="changePage(1)" class="hover:text-blue-600 px-2 text-base">▶</button>
                     </div>
+
+                    <!-- 🎯 LARAS TEPAT: butang halus, snap ke garis borang, zum ruang kerja -->
+                    <div class="w-full bg-white border border-blue-200 rounded-xl p-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
+                        <span class="font-extrabold text-blue-900">🎯 Laras tepat (guna pada kotak yang dipilih):</span>
+                        <span class="inline-flex items-center gap-1" title="Gerak 1 piksel">
+                            <button onclick="nudgeAnotasi(0,-1)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">↑</button>
+                            <button onclick="nudgeAnotasi(0,1)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">↓</button>
+                            <button onclick="nudgeAnotasi(-1,0)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">←</button>
+                            <button onclick="nudgeAnotasi(1,0)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">→</button>
+                            <span class="text-slate-400 font-bold">1px</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1" title="Gerak 10 piksel">
+                            <button onclick="nudgeAnotasi(0,-10)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">⇧</button>
+                            <button onclick="nudgeAnotasi(0,10)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">⇩</button>
+                            <button onclick="nudgeAnotasi(-10,0)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">⇦</button>
+                            <button onclick="nudgeAnotasi(10,0)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">⇨</button>
+                            <span class="text-slate-400 font-bold">10px</span>
+                        </span>
+                        <label class="inline-flex items-center gap-1.5 font-extrabold text-blue-900 cursor-pointer">
+                            <input type="checkbox" id="snap-line" class="w-4 h-4 accent-blue-600" checked onchange="tukarSnap(this.checked)">
+                            <span>🧲 Snap ke garis borang</span>
+                        </label>
+                        <span class="inline-flex items-center gap-1 border-l border-slate-200 pl-2">
+                            <span class="font-bold text-slate-500">🔍 Zum:</span>
+                            <button onclick="zumRuangUbah(-0.25)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">−</button>
+                            <span id="zum-label" class="font-extrabold text-blue-700 w-9 text-center">100%</span>
+                            <button onclick="zumRuangUbah(0.25)" class="px-2 py-1 bg-slate-100 hover:bg-blue-100 rounded-lg font-black">+</button>
+                            <button onclick="zumSet(1)" class="px-2 py-1 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg font-bold">100%</button>
+                        </span>
+                    </div>
                 </div>
 
                 <!-- TOOLBAR: CONVERT (batch gambar + studio crop) -->
@@ -1437,7 +1467,8 @@
             wrapper.style.height = 'auto';
 
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            requestAnimationFrame(() => { try { selaraskanRuang(); } catch (e) {} });
+            garisCache = null;
+            requestAnimationFrame(() => { try { selaraskanRuang(); if (zumRuang !== 1) zumSet(zumRuang); } catch (e) {} });
             renderWatermark();
             restoreAnnotationsForPage();
         }
@@ -1463,7 +1494,8 @@
                     wrapper.style.height = 'auto';
 
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    requestAnimationFrame(() => { try { selaraskanRuang(); } catch (e) {} });
+                    garisCache = null;
+                    requestAnimationFrame(() => { try { selaraskanRuang(); if (zumRuang !== 1) zumSet(zumRuang); } catch (e) {} });
                     resolve();
                 };
                 // HEIC (foto iPhone) atau fail rosak → jangan biar skrin loading tergantung
@@ -4038,6 +4070,109 @@
                 setupResizable(div);
             });
         }
+
+        /* =====================================================================
+           🎯 LARAS TEPAT: butang halus (1px/10px), snap ke garis borang, zum
+           ===================================================================== */
+        var zumRuang = 1;
+        var garisCache = null;
+
+        function anotasiAktif() {
+            let el = document.querySelector('.draggable-item.selected');
+            if (el) return el;
+            const semua = document.querySelectorAll('.draggable-item');
+            return semua.length ? semua[semua.length - 1] : null;
+        }
+        function aktifSnap() {
+            const c = document.getElementById('snap-line');
+            return !!(c && c.checked);
+        }
+        function tukarSnap() {
+            garisCache = null;
+            const el = anotasiAktif();
+            if (aktifSnap() && el && snapKeGaris(el)) { try { saveCurrentAnnotations(); } catch (e) {} }
+        }
+
+        // kesan garis mendatar pada borang (untuk snap) — nisbah 0..1 ikut tinggi halaman
+        function kesanGarisBorang() {
+            const cv = document.getElementById('main-canvas');
+            if (!cv || !cv.width || !cv.height) return [];
+            if (garisCache && garisCache.w === cv.width && garisCache.h === cv.height) return garisCache.senarai;
+            let data;
+            try { data = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; } catch (e) { return []; }
+            const senarai = [];
+            const perlu = Math.round((cv.width / 2) * 0.42);
+            for (let y = 0; y < cv.height; y++) {
+                let gelap = 0, larian = 0, terbaik = 0;
+                for (let x = 0; x < cv.width; x += 2) {
+                    const i = (y * cv.width + x) * 4;
+                    const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                    if (lum < 150) { gelap++; larian++; if (larian > terbaik) terbaik = larian; } else larian = 0;
+                }
+                if (gelap >= perlu && terbaik >= perlu) senarai.push(y / cv.height);
+            }
+            garisCache = { w: cv.width, h: cv.height, senarai: senarai };
+            return senarai;
+        }
+
+        // letak anotasi tepat di atas garis borang terdekat (jarak maks 14px)
+        function snapKeGaris(el) {
+            if (!el || !aktifSnap()) return false;      // hormati togol 🧲
+            const layer = document.getElementById('annotation-layer');
+            const garis = kesanGarisBorang();
+            if (!layer || !garis.length) return false;
+            const lh = layer.clientHeight || 0;
+            if (!lh) return false;
+            const teks = el.querySelector('input') || el.querySelector('.anno-text');
+            const tinggiTeks = teks ? (parseInt(teks.style.fontSize) || 12) : 14;
+            const t = parseFloat(el.style.top) || 0;
+            let terbaik = null, jarak = 1e9;
+            garis.forEach(g => {
+                const yG = g * lh;
+                const d = Math.abs(yG - (t + tinggiTeks));
+                if (d < jarak) { jarak = d; terbaik = yG; }
+            });
+            if (terbaik == null || jarak > 14) return false;
+            el.style.top = Math.max(0, Math.round(terbaik - tinggiTeks)) + 'px';
+            return true;
+        }
+
+        function nudgeAnotasi(dx, dy) {
+            const el = anotasiAktif();
+            if (!el) { alert('Ketuk kotak yang mahu dilaras dahulu, kemudian guna anak panah.'); return; }
+            const L = parseFloat(el.style.left) || 0, T = parseFloat(el.style.top) || 0;
+            el.style.left = Math.max(0, Math.round(L + dx)) + 'px';
+            el.style.top = Math.max(0, Math.round(T + dy)) + 'px';
+            el.dataset.autoTempat = '';
+            if (dy !== 0) snapKeGaris(el);      // 🧲 snap pada garis borang (jika dihidupkan)
+            pilihAnotasi(el);
+            try { saveCurrentAnnotations(); } catch (e) {}
+        }
+
+        // 🔍 zum ruang kerja (anotasi diskala automatik oleh selaraskanRuang)
+        function zumSet(f) {
+            zumRuang = Math.max(1, Math.min(4, +(f || 1).toFixed(2)));
+            const cv = document.getElementById('main-canvas');
+            const w = document.getElementById('document-wrapper');
+            const bekas = document.getElementById('doc-area');
+            if (!cv) return;
+            const asas = Math.max(140, (bekas ? bekas.clientWidth : 360) - 34);
+            if (zumRuang > 1) {
+                // max-w-full menghadkan lebar kanvas → mesti dilepas dahulu supaya zum berkesan
+                cv.style.maxWidth = 'none';
+                if (w) w.style.maxWidth = 'none';
+                cv.style.width = Math.round(asas * zumRuang) + 'px';
+            } else {
+                cv.style.maxWidth = '';
+                if (w) w.style.maxWidth = '';
+                cv.style.width = '100%';
+            }
+            cv.style.height = 'auto';
+            selaraskanRuang();
+            const lbl = document.getElementById('zum-label');
+            if (lbl) lbl.textContent = Math.round(zumRuang * 100) + '%';
+        }
+        function zumRuangUbah(d) { zumSet(zumRuang + d); }
 
         // PENTING: pastikan lapisan anotasi SAMA SAIZ dengan imej dokumen yang dilihat.
         // Jika lapisan lebih tinggi daripada kanvas (kes telefon), kedudukan menegak akan

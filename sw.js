@@ -1,17 +1,19 @@
-/* PDFEasy service worker — app shell + CDN libs offline (stale-while-revalidate) */
-const VERSION = 'pdfeasy-v1';
+/* PDFEasy service worker — app shell + pustaka CDN untuk kegunaan OFFLINE
+   (boleh guna tanpa internet selepas kali pertama dibuka) */
+const VERSION = 'pdfeasy-v2';
 const SHELL = [
   '/',
   '/index.html',
-  '/app.js',
-  '/styles.css',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
   '/icons/apple-touch-icon.png',
+  '/icons/favicon.svg',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
   'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js'
 ];
 
@@ -38,6 +40,7 @@ self.addEventListener('fetch', (e) => {
   const isLib = /cdn\.tailwindcss\.com|cdnjs\.cloudflare\.com|unpkg\.com/.test(url.host);
 
   if (req.mode === 'navigate') {
+    // halaman: cuba rangkaian dahulu, jika tiada internet guna salinan cache (offline)
     e.respondWith(
       fetch(req).then((res) => {
         const copy = res.clone();
@@ -49,7 +52,8 @@ self.addEventListener('fetch', (e) => {
   }
 
   if (sameOrigin) {
-    // network-first untuk fail aplikasi sendiri (elak kod lama tersangkut selepas deploy)
+    // fail aplikasi sendiri: network-first supaya kemas kini terbaru diambil,
+    // tetapi kekal berfungsi offline guna cache
     e.respondWith(
       fetch(req).then((res) => {
         if (res && res.status === 200) {
@@ -63,7 +67,7 @@ self.addEventListener('fetch', (e) => {
   }
 
   if (isLib) {
-    // stale-while-revalidate untuk perpustakaan CDN
+    // pustaka CDN: cache dahulu (laju + boleh offline), dikemas kini di belakang
     e.respondWith(
       caches.match(req).then((hit) => {
         const net = fetch(req).then((res) => {

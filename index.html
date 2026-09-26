@@ -15,6 +15,61 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pdf.payedlegacy.my/">
     <meta property="og:image" content="https://pdf.payedlegacy.my/icons/icon-512.png">
+    <link rel="canonical" href="https://pdf.payedlegacy.my/">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="keywords" content="palang IC, watermark MyKad, isi borang PDF, tandatangan digital, mampatkan PDF, gambar pasport 35x50, kolaj gambar A4, alat PDF percuma Malaysia, tanpa muat naik, privasi">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="PDFEasy — Palang IC, Isi Borang, Gambar Pasport &amp; Kolaj A4">
+    <meta name="twitter:description" content="Alat PDF percuma dalam pelayar: palang IC, isi borang, tandatangan, kolaj 1–10 gambar satu halaman A4, studio pasport. 100% privasi — fail tidak dimuat naik.">
+    <meta name="twitter:image" content="https://pdf.payedlegacy.my/icons/icon-512.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PDFEasy">
+
+    <!-- Data berstruktur (membantu Google memahami laman ini) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "PDFEasy",
+      "alternateName": "PDFEasy — Alat PDF Dalam Pelayar",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "url": "https://pdf.payedlegacy.my/",
+      "description": "Alat PDF percuma 100% dalam pelayar: letak palang/watermark pada salinan MyKad/IC, isi borang PDF, tandatangan digital, cantum atau pisah PDF, mampatkan saiz fail, buat kolaj 1–10 gambar satu halaman A4, dan studio gambar pasport 35mm × 50mm.",
+      "inLanguage": "ms",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "MYR" },
+      "featureList": [
+        "Palang keselamatan / watermark pada salinan IC dan MyKad",
+        "Isi borang PDF dalam talian + tandatangan",
+        "Kolaj 1 hingga 10 gambar dalam satu halaman A4 dengan kapsyen",
+        "Studio gambar pasport 35mm x 50mm (templat A4 8 keping)",
+        "Cantum, pisah dan mampatkan PDF",
+        "Pratonton sebelum simpan atau cetak",
+        "Boleh dipasang sebagai app dan digunakan tanpa internet"
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Adakah fail saya dimuat naik ke pelayan?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Tidak. Semua pemprosesan berlaku di dalam pelayar anda (100% client-side). Fail tidak pernah dihantar ke mana-mana pelayan." } },
+        { "@type": "Question", "name": "Boleh guna PDFEasy tanpa internet?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Boleh, selepas kali pertama dibuka. Pasang ke skrin utama melalui butang Pasang App dan ia berfungsi walaupun tiada data." } },
+        { "@type": "Question", "name": "Bagaimana letak palang pada salinan IC?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Pilih alat Palang ID/IC, muat naik salinan IC, taip teks tujuan atau pilih preset (CUCKOO, BANK, KERJA), laraskan warna dan kelegapan, kemudian simpan. Palang dilukis pada setiap halaman." } },
+        { "@type": "Question", "name": "Boleh susun banyak gambar dalam satu halaman A4?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Boleh. Dalam alat Gambar ke PDF, pilih Kolaj A4: 1 hingga 10 gambar setiap halaman dengan kapsyen, tajuk laporan, tarikh dan nama pegawai." } },
+        { "@type": "Question", "name": "Ada alat buat gambar pasport 35mm x 50mm?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Ada. Studio Pasport membolehkan anda ambil selfie, laraskan kecerahan dan kontras, pilih latar, kemudian jana templat A4 8 keping sedia cetak." } }
+      ]
+    }
+    </script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -281,7 +336,56 @@
                     📷 Ambil Gambar (Kamera)
                 </label>
                 <input type="file" id="file-camera" accept="image/*" capture="environment" class="sr-file" onchange="handleFileSelect(event)">
-                <span class="text-[11px] font-semibold text-slate-500">Seret & lepas fail dari komputer juga boleh.</span>
+                <button onclick="pasangApp(false)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl shadow-sm">
+                    📲 Pasang App (Skrin Utama)
+                </button>
+            </div>
+            <p class="mt-2 text-[11px] font-semibold text-slate-500">Seret & lepas fail dari komputer juga boleh · Fungsinya sama ada dipasang atau tidak.</p>
+
+            <!-- CARA GUNA + SOALAN LAZIM (juga membantu carian Google) -->
+            <div class="mt-8 max-w-3xl mx-auto text-left">
+                <h2 class="font-black text-slate-900 text-lg sm:text-xl mb-3">Cara guna PDFEasy (3 langkah)</h2>
+                <div class="grid sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div class="text-2xl mb-1">1️⃣</div>
+                        <p class="font-extrabold text-slate-800 text-sm mb-1">Pilih fail atau ambil gambar</p>
+                        <p class="text-[11px] font-semibold text-slate-500">Muat naik PDF borang, salinan MyKad/IC, atau rakam gambar terus dengan kamera telefon.</p>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div class="text-2xl mb-1">2️⃣</div>
+                        <p class="font-extrabold text-slate-800 text-sm mb-1">Laras pada skrin</p>
+                        <p class="text-[11px] font-semibold text-slate-500">Letak palang keselamatan pada IC, taip isi borang, atau susun gambar (kolaj 1–10 gambar satu halaman A4).</p>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div class="text-2xl mb-1">3️⃣</div>
+                        <p class="font-extrabold text-slate-800 text-sm mb-1">Semak pratonton, kemudian simpan</p>
+                        <p class="text-[11px] font-semibold text-slate-500">Pratonton dahulu supaya tak salah, kemudian muat turun, kongsi ke WhatsApp/Telegram, atau cetak.</p>
+                    </div>
+                </div>
+
+                <h2 class="font-black text-slate-900 text-lg sm:text-xl mt-6 mb-2">Soalan lazim</h2>
+                <div class="space-y-2">
+                    <details class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <summary class="font-extrabold text-slate-800 text-sm cursor-pointer">Adakah fail saya dimuat naik ke pelayan?</summary>
+                        <p class="text-[12px] font-semibold text-slate-600 mt-2">Tidak. Semua pemprosesan berlaku di dalam pelayar telefon/komputer anda sendiri (100% client-side). Fail tidak pernah dihantar ke mana-mana pelayan, jadi dokumen rasmi anda kekal peribadi.</p>
+                    </details>
+                    <details class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <summary class="font-extrabold text-slate-800 text-sm cursor-pointer">Boleh guna tanpa internet?</summary>
+                        <p class="text-[12px] font-semibold text-slate-600 mt-2">Boleh, selepas kali pertama dibuka. Pasang PDFEasy ke skrin utama (butang 📲 Pasang App) dan ia akan berfungsi walaupun tiada data — sesuai ketika berurusan di kaunter atau kedai.</p>
+                    </details>
+                    <details class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <summary class="font-extrabold text-slate-800 text-sm cursor-pointer">Bagaimana nak letak palang (watermark) pada salinan IC?</summary>
+                        <p class="text-[12px] font-semibold text-slate-600 mt-2">Pilih alat <b>Palang ID/IC</b>, muat naik salinan IC, taip teks tujuan (contoh “UNTUK URUSAN PINJAMAN SAHAJA” atau preset CUCKOO/BANK/KERJA), laraskan warna/kelegapan, kemudian simpan. Palang akan dilukis pada setiap halaman.</p>
+                    </details>
+                    <details class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <summary class="font-extrabold text-slate-800 text-sm cursor-pointer">Boleh susun banyak gambar dalam satu halaman A4 untuk laporan?</summary>
+                        <p class="text-[12px] font-semibold text-slate-600 mt-2">Boleh. Dalam alat <b>Gambar → PDF</b>, pilih <b>🧩 Kolaj A4</b>: 1, 2, 3, 4, 5, 6, 7, 8, 9 atau 10 gambar setiap halaman, lengkap dengan kapsyen setiap gambar, tajuk laporan, tarikh dan nama pegawai.</p>
+                    </details>
+                    <details class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <summary class="font-extrabold text-slate-800 text-sm cursor-pointer">Ada alat buat gambar pasport 35mm × 50mm?</summary>
+                        <p class="text-[12px] font-semibold text-slate-600 mt-2">Ada. <b>Studio Pasport</b> membolehkan anda ambil selfie, laraskan kecerahan/kontras, pilih latar (asal/putih/biru/merah) atau auto-crop muka &amp; baju, kemudian jana templat A4 8 keping sedia cetak.</p>
+                    </details>
+                </div>
             </div>
 
             <!-- RUANG IKLAN (halaman utama) — muncul hanya bila ID AdSense dikonfigurasi -->
@@ -825,6 +929,17 @@
             </a>
         </div>
     </footer>
+
+    <!-- PASANG APP (PWA) — cadangan mesra pengguna -->
+    <div id="install-banner" class="hidden fixed bottom-3 left-3 right-3 z-[85] max-w-md mx-auto bg-slate-900 text-white rounded-2xl p-3.5 shadow-2xl flex items-center gap-3">
+        <div class="text-2xl">📲</div>
+        <div class="flex-1 text-[11px] leading-snug">
+            <p class="font-extrabold text-sm mb-0.5">Pasang PDFEasy di telefon</p>
+            <p id="install-note" class="text-slate-300">Ikon di skrin utama, buka macam app biasa — boleh guna walaupun tiada internet.</p>
+        </div>
+        <button id="install-go" onclick="pasangApp(false)" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-extrabold rounded-xl whitespace-nowrap">Pasang</button>
+        <button onclick="tutupBannerPasang()" title="Tutup" class="text-slate-400 hover:text-white text-lg font-bold px-1">✕</button>
+    </div>
 
     <!-- PRATONTON SEBELUM SIMPAN / CETAK -->
     <div id="modal-preview" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[95] hidden items-center justify-center p-3">
@@ -2158,7 +2273,72 @@
         /* ---- PRATONTON SEBELUM SIMPAN/CETAK (semak dulu, tak salah) ---- */
         let previewState = null;
 
-        // semua butang Muat Turun/Cetak/Kongsi melalui pratonton dahulu
+        /* ---- PASANG SEBAGAI APP (PWA): butang + cadangan automatik ---- */
+        let deferredInstall = null;
+
+        function sudahDipasang() {
+            try {
+                return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                       (window.navigator && window.navigator.standalone === true) ||
+                       localStorage.getItem('pdfeasy_install_done') === '1';
+            } catch (e) { return false; }
+        }
+
+        function iosSafari() {
+            const ua = navigator.userAgent || '';
+            return /iphone|ipad|ipod/i.test(ua) && /safari/i.test(ua) && !/crios|fxios|edgios|opios/i.test(ua);
+        }
+
+        function tunjukBannerPasang() {
+            if (sudahDipasang()) return;
+            try { if (localStorage.getItem('pdfeasy_install_hide') === '1') return; } catch (e) {}
+            const b = document.getElementById('install-banner');
+            const n = document.getElementById('install-note');
+            if (!b) return;
+            if (iosSafari() && n) n.innerHTML = 'Tekan <b>Kongsi ⬆️</b> di Safari → <b>“Tambah ke Skrin Utama”</b>. Selepas itu ia jadi macam app biasa.';
+            b.classList.remove('hidden');
+        }
+
+        function tutupBannerPasang() {
+            try { localStorage.setItem('pdfeasy_install_hide', '1'); } catch (e) {}
+            const b = document.getElementById('install-banner');
+            if (b) b.classList.add('hidden');
+        }
+
+        async function pasangApp(dariButangKekal) {
+            if (sudahDipasang()) { alert('✅ PDFEasy sudah dipasang di peranti ini. Buka dari ikon di skrin utama.'); return; }
+            if (deferredInstall) {
+                try {
+                    deferredInstall.prompt();
+                    const r = await deferredInstall.userChoice.catch(() => null);
+                    deferredInstall = null;
+                    if (r && r.outcome === 'accepted') {
+                        try { localStorage.setItem('pdfeasy_install_done', '1'); } catch (e) {}
+                        tutupBannerPasang();
+                    }
+                    return;   // pengguna tolak/batal prompt → jangan ganggu dengan arahan manual
+                } catch (e) { console.error(e); }
+            }
+            if (iosSafari()) {
+                alert('Cara pasang di iPhone / iPad:\n\n1. Tekan butang Kongsi (⬆️) di Safari\n2. Pilih “Tambah ke Skrin Utama”\n3. Tekan “Tambah”\n\nIkon PDFEasy akan muncul di skrin utama.');
+                return;
+            }
+            alert('Cara pasang:\n\n• Android (Chrome): tekan menu ⋮ di kanan atas → “Install app” / “Tambah ke skrin utama”\n• Komputer (Chrome/Edge): ikon ⊕ di bar alamat → “Install”\n\nPetua: semua alat tetap boleh digunakan terus tanpa dipasang.');
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstall = e;
+            setTimeout(tunjukBannerPasang, 2500);
+        });
+        // iOS Safari tidak menyokong beforeinstallprompt → tunjuk panduan selepas beberapa saat
+        if (iosSafari()) setTimeout(tunjukBannerPasang, 9000);
+        window.addEventListener('appinstalled', () => {
+            try { localStorage.setItem('pdfeasy_install_done', '1'); } catch (e) {}
+            const b = document.getElementById('install-banner');
+            if (b) b.classList.add('hidden');
+        });
+
         function triggerDownload(blob, name, senyap) {
             if (senyap) { muatTurunTerus(blob, name, true); return; }
             tunjukPratonton(blob, name);

@@ -1060,6 +1060,11 @@
         }
 
         function setMode(mode) {
+            // PENTING: simpan anotasi SELAGI ruang kerja masih kelihatan (sebelum tukar mod).
+            // Jika disimpan ketika lapisan tersembunyi, saiznya 0 → nisbah kedudukan rosak.
+            if (currentMode === 'fill' && mode !== 'fill') {
+                try { saveCurrentAnnotations(); } catch (e) { console.error(e); }
+            }
             currentMode = mode;
             ALL_MODES.forEach(m => {
                 const btn = document.getElementById(`tab-${m}`);
@@ -2226,13 +2231,20 @@
             previewState.halaman = n;
             const page = await previewState.pdf.getPage(n);
             const asas = page.getViewport({ scale: 1 });
-            const lebarMaks = Math.min((window.innerWidth || 800) - 70, 560);
-            const skala = Math.max(0.2, (lebarMaks / asas.width)) * (previewState.zum || 1);
-            const vp = page.getViewport({ scale: skala });
+            const lebarMaks = Math.min((window.innerWidth || 800) - 60, 520);
+            const lebarPaparan = Math.round(lebarMaks * (previewState.zum || 1));
+            // lukis pada resolusi TINGGI (2–3×) kemudian kecilkan melalui CSS → tajam pada
+            // skrin berketumpatan tinggi (telefon). Sebelum ini pratonton nampak kabur.
+            const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+            const ganda = Math.max(2, dpr * 1.6);
+            const skalaLukis = (lebarPaparan * ganda) / asas.width;
+            const vp = page.getViewport({ scale: skalaLukis });
             const cv = document.getElementById('preview-canvas');
             if (!cv) return;
             cv.width = Math.round(vp.width);
             cv.height = Math.round(vp.height);
+            cv.style.width = lebarPaparan + 'px';
+            cv.style.height = Math.round(lebarPaparan * (asas.height / asas.width)) + 'px';
             const ctx = cv.getContext('2d');
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, cv.width, cv.height);
@@ -2254,7 +2266,7 @@
             if (previewState.pdf) pratontonLukis(previewState.halaman || 1);
             else {
                 const img = document.getElementById('preview-img');
-                if (img) img.style.maxWidth = Math.round(100 * previewState.zum) + '%';
+                if (img) img.style.width = Math.round(Math.min((window.innerWidth || 800) - 60, 520) * (previewState.zum || 1)) + 'px';
             }
         }
 
@@ -3337,8 +3349,12 @@
 
             const div = document.createElement('div');
             div.className = 'draggable-item pointer-events-auto bg-white/80 border-emerald-400';
-            div.style.left = Math.max(0, (wrapper.offsetWidth / 2 - 70)) + 'px';
-            div.style.top = '180px';
+            // letak di tengah-bawah (tempat biasa tandatangan pada borang) — guna saiz sebenar
+            // jika ruang kerja belum dilukis supaya tidak tersangkut di sudut kiri
+            const lebarAda = wrapper.offsetWidth || 320;
+            const tinggiAda = wrapper.offsetHeight || 480;
+            div.style.left = Math.max(0, Math.round(lebarAda / 2 - 70)) + 'px';
+            div.style.top = Math.round(tinggiAda * 0.62) + 'px';
 
             div.innerHTML = `
                 <span class="drag-handle" title="Tarik sini">⠿</span>
@@ -3464,14 +3480,25 @@
 
         function saveCurrentAnnotations() {
             const layer = document.getElementById('annotation-layer');
+            if (!layer) return;
             const items = layer.querySelectorAll('.draggable-item');
-            // KESELAMATAN: jika lapisan kosong tetapi stor ADA data (cth selepas eksport atau
+            // KESELAMATAN 1: jika lapisan kosong tetapi stor ADA data (cth selepas eksport atau
             // selepas tukar halaman), JANGAN padam data itu — itu punca butir-butir "hilang".
             if (items.length === 0 && (annotations[currentPageNum] || []).length > 0 && layer.dataset.touched !== '1') {
                 return;
             }
-            const lw = layer.clientWidth || layer.offsetWidth || 1;
-            const lh = layer.clientHeight || layer.offsetHeight || 1;
+            // KESELAMATAN 2: jika lapisan TIADA SAIZ (ruang kerja tersembunyi / belum dilukis),
+            // JANGAN simpan — nisbah rx/ry akan jadi nilai piksel mentah dan anotasi
+            // kemudian dilukis jauh di luar halaman (butir "hilang", sain melompat ke atas).
+            const lwUkur = layer.clientWidth || 0;
+            const lhUkur = layer.clientHeight || 0;
+            if (lwUkur < 20 || lhUkur < 20) {
+                if (items.length === 0) return;
+                console.warn('saveCurrentAnnotations: lapisan tiada saiz (' + lwUkur + 'x' + lhUkur + ') — simpanan dilangkau untuk elak kedudukan rosak');
+                return;
+            }
+            const lw = lwUkur;
+            const lh = lhUkur;
             let pageData = [];
             
             items.forEach(el => {
@@ -3502,20 +3529,35 @@
             });
             annotations[currentPageNum] = pageData;
             layer.dataset.touched = '';
-            layer.innerHTML = '';
+            // JANGAN kosongkan lapisan di sini! Jika dikosongkan, anotasi hilang dari skrin dan
+            // sebarang item baharu (cth tandatangan) akan ditambah ke lapisan KOSONG →
+            // simpanan berikutnya menulis ganti stor dan butir-butir lama "hilang".
+            // (Halaman baharu dikosongkan secara eksplisit dalam changePage/handleFileSelect.)
         }
 
         // Anotasi dipulihkan HANYA untuk halaman semasa → tidak terikut ke halaman lain
-        function restoreAnnotationsForPage() {
+        function restoreAnnotationsForPage(cubaSemula) {
             const pageData = annotations[currentPageNum] || [];
             const layer = document.getElementById('annotation-layer');
+            if (!layer) return;
+            // Jangan pulihkan jika lapisan belum mempunyai saiz (jika tidak, semua anotasi
+            // akan tersusun di sudut kiri-atas). Cuba lagi sebentar bila susun atur sudah sedia.
+            const lwU = layer.clientWidth || 0, lhU = layer.clientHeight || 0;
+            if (lwU < 20 || lhU < 20) {
+                if (!cubaSemula) setTimeout(() => { try { restoreAnnotationsForPage(true); } catch (e) {} }, 350);
+                return;
+            }
             layer.innerHTML = '';
-            const lw = layer.clientWidth || layer.offsetWidth || 1;
-            const lh = layer.clientHeight || layer.offsetHeight || 1;
+            const lw = lwU;
+            const lh = lhU;
             
             pageData.forEach(item => {
-                const px = (item.rx != null) ? item.rx * lw : item.x;
-                const py = (item.ry != null) ? item.ry * lh : item.y;
+                // rx/ry sepatutnya 0–1. Jika lebih (data lama rosak semasa lapisan tersembunyi),
+                // guna nilai piksel x/y sebagai ganti supaya kedudukan tidak melompat.
+                const rxOk = (item.rx != null && item.rx <= 1.2);
+                const ryOk = (item.ry != null && item.ry <= 1.2);
+                const px = rxOk ? item.rx * lw : (item.x != null ? item.x : 0);
+                const py = ryOk ? item.ry * lh : (item.y != null ? item.y : 0);
                 const div = document.createElement('div');
                 div.style.left = px + 'px';
                 div.style.top = py + 'px';
@@ -3652,9 +3694,15 @@
 
             // 1. Bake Text & Signatures untuk halaman INI sahaja
             const pageAnns = annotations[pageNum] || [];
+            const skalaXp = tmpCanvas.width / (screenWrapper.offsetWidth || 1);
+            const skalaYp = tmpCanvas.height / (screenWrapper.offsetHeight || 1);
             for (const ann of pageAnns) {
-                const nx = (ann.rx != null) ? ann.rx * tmpCanvas.width : ann.x * scaleX;
-                const ny = (ann.ry != null) ? ann.ry * tmpCanvas.height : ann.y * scaleY;
+                // rx/ry sepatutnya 0–1. Jika rosak (>1.2, kerana disimpan ketika lapisan
+                // tersembunyi pada satu masa dahulu), guna kedudukan piksel x/y sebagai ganti.
+                const rxOk = (ann.rx != null && ann.rx <= 1.2);
+                const ryOk = (ann.ry != null && ann.ry <= 1.2);
+                const nx = rxOk ? ann.rx * tmpCanvas.width : (ann.x || 0) * skalaXp;
+                const ny = ryOk ? ann.ry * tmpCanvas.height : (ann.y || 0) * skalaYp;
                 if (ann.type === 'text') {
                     const parsedSize = parseInt(ann.fontSize || '14px') * (tmpCanvas.height / screenWrapper.offsetHeight) * 1.1;
                     tCtx.font = `bold ${parsedSize}px ${ann.font}`;

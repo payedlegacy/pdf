@@ -1419,12 +1419,18 @@
             const ctx = canvas.getContext('2d');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
+            canvas.style.width = '100%';
+            canvas.style.height = 'auto';
 
+            // PENTING: pembalut mesti ikut saiz PAPARAN kanvas, BUKAN saiz bitmap.
+            // (Jika pembalut setinggi bitmap, lapisan anotasi jadi lebih tinggi daripada imej
+            //  yang dilihat → kedudukan menegak termampat → sain naik ke atas / tulisan hilang.)
             const wrapper = document.getElementById('document-wrapper');
-            wrapper.style.width = `${viewport.width}px`;
-            wrapper.style.height = `${viewport.height}px`;
+            wrapper.style.width = '100%';
+            wrapper.style.height = 'auto';
 
             await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            requestAnimationFrame(() => { try { selaraskanRuang(); } catch (e) {} });
             renderWatermark();
             restoreAnnotationsForPage();
         }
@@ -1441,12 +1447,16 @@
                     const scale = img.width > maxW ? maxW / img.width : 1;
                     canvas.width = img.width * scale;
                     canvas.height = img.height * scale;
+                    canvas.style.width = '100%';
+                    canvas.style.height = 'auto';
 
+                    // pembalut = saiz paparan kanvas (bukan saiz bitmap) — lihat nota renderPDFPage
                     const wrapper = document.getElementById('document-wrapper');
-                    wrapper.style.width = `${canvas.width}px`;
-                    wrapper.style.height = `${canvas.height}px`;
+                    wrapper.style.width = '100%';
+                    wrapper.style.height = 'auto';
 
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    requestAnimationFrame(() => { try { selaraskanRuang(); } catch (e) {} });
                     resolve();
                 };
                 // HEIC (foto iPhone) atau fail rosak → jangan biar skrin loading tergantung
@@ -3605,6 +3615,34 @@
             addSignatureImage(dataUrl);
         }
 
+        // saiz sebenar ruang dokumen; jika belum dilukis (contoh: tab lain), guna kanvas sebagai rujukan
+        function tempatSedia() {
+            const w = document.getElementById('document-wrapper');
+            let lebar = w ? w.offsetWidth : 0, tinggi = w ? w.offsetHeight : 0;
+            if (!lebar || !tinggi) {
+                const cv = document.getElementById('main-canvas');
+                const r = cv ? cv.getBoundingClientRect() : null;
+                if (r && r.width) { lebar = r.width; tinggi = r.height; }
+            }
+            return { lebar: lebar || 320, tinggi: tinggi || 480, sedia: !!(w && w.offsetHeight > 20) };
+        }
+
+        // Jika anotasi diletak ketika ruang kerja BELUM bersaiz (0 px), kedudukannya akan tersasar
+        // (punca "sain lari ke atas"). Betulkan sebaik susun atur sedia.
+        function betulkanTempat(el, cuba) {
+            if (!el || !el.isConnected) return;
+            if (el.dataset.autoTempat !== '1') return;
+            const w = document.getElementById('document-wrapper');
+            if (!w || w.offsetHeight < 20) {
+                if ((cuba || 0) < 25) setTimeout(() => betulkanTempat(el, (cuba || 0) + 1), 200);
+                return;
+            }
+            el.style.left = Math.max(0, Math.round(w.offsetWidth / 2 - 55)) + 'px';
+            el.style.top = Math.round(w.offsetHeight * 0.62) + 'px';
+            el.dataset.autoTempat = '';
+            try { saveCurrentAnnotations(); } catch (e) {}
+        }
+
         // letak imej tandatangan (PNG lutsinar) sebagai anotasi pada dokumen semasa
         function addSignatureImage(dataUrl) {
             const layer = document.getElementById('annotation-layer');
@@ -3613,12 +3651,10 @@
 
             const div = document.createElement('div');
             div.className = 'draggable-item sig-item pointer-events-auto';
-            // letak di tengah-bawah (tempat biasa tandatangan pada borang) — guna saiz sebenar
-            // jika ruang kerja belum dilukis supaya tidak tersangkut di sudut kiri
-            const lebarAda = wrapper.offsetWidth || 320;
-            const tinggiAda = wrapper.offsetHeight || 480;
-            div.style.left = Math.max(0, Math.round(lebarAda / 2 - 70)) + 'px';
-            div.style.top = Math.round(tinggiAda * 0.62) + 'px';
+            const tempat = tempatSedia();
+            div.style.left = Math.max(0, Math.round(tempat.lebar / 2 - 55)) + 'px';
+            div.style.top = Math.round(tempat.tinggi * 0.62) + 'px';
+            if (!tempat.sedia) div.dataset.autoTempat = '1';   // betulkan kemudian bila susun atur sedia
 
             div.innerHTML = `
                 <span class="drag-handle" title="Tarik sini">⠿</span>
@@ -3631,6 +3667,7 @@
             setupDraggable(div);
             setupResizable(div);
             pilihAnotasi(div);
+            if (!tempat.sedia) betulkanTempat(div);           // elak sain tersangkut di atas
         }
 
         // PEMEGANG SERET: hanya boleh ditarik dari ikon ⠿ (kotak input tidak terganggu)
@@ -3748,10 +3785,14 @@
         function pulihBorangLepas() {
             const rekod = bacaBorangSemua()[borangFp];
             const bekas = document.getElementById('borang-restore');
+            // JANGAN ganti kerja yang sedang dibuat tanpa kebenaran (elak butir baru hilang)
+            const layer = document.getElementById('annotation-layer');
+            const adaKerja = (layer && layer.querySelectorAll('.draggable-item').length > 0) ||
+                Object.keys(annotations || {}).some(k => (annotations[k] || []).length > 0);
+            if (adaKerja && !confirm('Kotak pada borang ini akan diganti dengan entri kali lepas. Teruskan?')) return;
             if (rekod && rekod.annot) {
                 annotations = JSON.parse(JSON.stringify(rekod.annot));
                 currentPageNum = 1;
-                const layer = document.getElementById('annotation-layer');
                 if (layer) layer.innerHTML = '';          // elak simpanan menimpa data yang dipulihkan
                 if (pdfDocObj && typeof changePage === 'function') changePage(0);
                 else restoreAnnotationsForPage();
@@ -3803,14 +3844,23 @@
 
             const onPointerUp = () => {
                 dragging = false;
+                element.dataset.autoTempat = '';      // pengguna sudah pilih tempat sendiri
                 document.removeEventListener('mousemove', onPointerMove);
                 document.removeEventListener('mouseup', onPointerUp);
                 document.removeEventListener('touchmove', onPointerMove);
                 document.removeEventListener('touchend', onPointerUp);
             };
 
-            handle.onmousedown = onPointerDown;
-            handle.ontouchstart = onPointerDown;
+            // MUDAH DI TELEFON: seret dari MANA-MANA bahagian kotak (kecuali teks/butang),
+            // bukan hanya dari ikon ⠿. Kotak teks: ketuk = edit, seret dari ikon ⠿.
+            const mulaSeret = (e) => {
+                if (e.target.closest('input,button,select,.resize-handle')) return;
+                if (e.target.classList && e.target.classList.contains('anno-text')) { pilihAnotasi(element); return; }
+                pilihAnotasi(element);
+                onPointerDown(e);
+            };
+            element.addEventListener('mousedown', mulaSeret);
+            element.addEventListener('touchstart', mulaSeret, { passive: false });
 
             // GAYA FREEFORM: ketuk kotak → pilih (alat kecil muncul); taip → cadangan muncul
             element.addEventListener('click', (e) => {
@@ -3982,6 +4032,31 @@
             });
         }
 
+        // PENTING: pastikan lapisan anotasi SAMA SAIZ dengan imej dokumen yang dilihat.
+        // Jika lapisan lebih tinggi daripada kanvas (kes telefon), kedudukan menegak akan
+        // termampat dan anotasi tersasar (sain naik ke atas, tulisan keluar halaman).
+        function selaraskanRuang() {
+            const cv = document.getElementById('main-canvas');
+            const w = document.getElementById('document-wrapper');
+            if (!cv || !w) return;
+            const r = cv.getBoundingClientRect();
+            const lebar = Math.round(r.width), tinggi = Math.round(r.height);
+            if (lebar < 20 || tinggi < 20) return;
+            w.style.width = lebar + 'px';
+            w.style.height = tinggi + 'px';
+            ['annotation-layer', 'watermark-layer', 'doc-hint'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.width = lebar + 'px';
+                el.style.height = tinggi + 'px';
+                el.style.inset = 'auto';
+                el.style.left = '0';
+                el.style.top = '0';
+            });
+        }
+        window.addEventListener('resize', () => { try { selaraskanRuang(); } catch (e) {} });
+        window.addEventListener('orientationchange', () => setTimeout(() => { try { selaraskanRuang(); } catch (e) {} }, 300));
+
         async function generateFinalPDFBytes() {
             saveCurrentAnnotations();
             const { PDFDocument } = PDFLib;
@@ -4107,22 +4182,29 @@
         async function embedCanvasToPdf(tmpCanvas, outPdf, pageNum, quality) {
             const tCtx = tmpCanvas.getContext('2d');
             const screenWrapper = document.getElementById('document-wrapper');
-            const scaleX = tmpCanvas.width / screenWrapper.offsetWidth;
-            const scaleY = tmpCanvas.height / screenWrapper.offsetHeight;
+            // acuan = saiz sebenar ruang dokumen; jika tiada (ruang tersembunyi) guna saiz kanvas
+            const acuan = tempatSedia();
+            const scaleX = tmpCanvas.width / (acuan.lebar || 1);
+            const scaleY = tmpCanvas.height / (acuan.tinggi || 1);
 
             // 1. Bake Text & Signatures untuk halaman INI sahaja
             const pageAnns = annotations[pageNum] || [];
-            const skalaXp = tmpCanvas.width / (screenWrapper.offsetWidth || 1);
-            const skalaYp = tmpCanvas.height / (screenWrapper.offsetHeight || 1);
+            const skalaXp = tmpCanvas.width / (acuan.lebar || 1);
+            const skalaYp = tmpCanvas.height / (acuan.tinggi || 1);
             for (const ann of pageAnns) {
                 // rx/ry sepatutnya 0–1. Jika rosak (>1.2, kerana disimpan ketika lapisan
                 // tersembunyi pada satu masa dahulu), guna kedudukan piksel x/y sebagai ganti.
                 const rxOk = (ann.rx != null && ann.rx <= 1.2);
                 const ryOk = (ann.ry != null && ann.ry <= 1.2);
-                const nx = rxOk ? ann.rx * tmpCanvas.width : (ann.x || 0) * skalaXp;
-                const ny = ryOk ? ann.ry * tmpCanvas.height : (ann.y || 0) * skalaYp;
+                // JARING KESELAMATAN: jangan biarkan anotasi dilukis di luar halaman (nampak "hilang")
+                let nx = rxOk ? ann.rx * tmpCanvas.width : (ann.x || 0) * skalaXp;
+                let ny = ryOk ? ann.ry * tmpCanvas.height : (ann.y || 0) * skalaYp;
+                if (!isFinite(nx) || nx < 0) nx = 6;
+                if (!isFinite(ny) || ny < 0) ny = 6;
+                if (nx > tmpCanvas.width - 12) nx = Math.max(6, tmpCanvas.width * 0.92);
+                if (ny > tmpCanvas.height - 12) ny = Math.max(6, tmpCanvas.height - 40);
                 if (ann.type === 'text') {
-                    const parsedSize = parseInt(ann.fontSize || '14px') * (tmpCanvas.height / screenWrapper.offsetHeight) * 1.1;
+                    const parsedSize = parseInt(ann.fontSize || '14px') * (tmpCanvas.height / (acuan.tinggi || 1)) * 1.1;
                     tCtx.font = `bold ${parsedSize}px ${ann.font}`;
                     tCtx.fillStyle = ann.color || '#0f172a';
                     tCtx.textBaseline = 'top';

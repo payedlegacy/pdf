@@ -370,6 +370,37 @@
                         🗑️ Kosongkan
                     </button>
                     <span id="batch-count" class="ml-auto px-2.5 py-1 bg-white border border-purple-200 rounded-lg text-purple-800">0 gambar</span>
+
+                    <!-- KAWALAN PALANG KESELAMATAN UNTUK BATCH GAMBAR -->
+                    <div class="w-full mt-1 pt-3 border-t border-purple-200 flex flex-wrap items-center gap-2.5 bg-red-50/60 -m-3 mt-2 p-3 rounded-b-xl">
+                        <label class="inline-flex items-center gap-2 px-2.5 py-1.5 bg-white border border-red-200 rounded-xl cursor-pointer">
+                            <input type="checkbox" id="batch-wm-toggle" class="w-4 h-4 accent-red-600" onchange="updateBatchWmHint()">
+                            <span class="font-extrabold text-red-800">Sertakan Palang Keselamatan pada Gambar</span>
+                        </label>
+
+                        <div class="flex items-center gap-1.5">
+                            <label class="font-bold text-red-900 whitespace-nowrap">Teks Palang:</label>
+                            <input type="text" id="batch-wm-text" value="UNTUK URUSAN RASMI SAHAJA" class="border border-red-300 bg-white px-2.5 py-2 rounded-lg font-bold text-slate-800 w-full sm:w-56 outline-none" oninput="updateBatchWmHint()">
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <label class="font-bold text-red-900">Gaya:</label>
+                            <select id="batch-wm-style" class="bg-white border border-red-300 rounded-lg px-2 py-1.5 font-bold text-slate-800" onchange="updateBatchWmHint()">
+                                <option value="solid">Kotak Berwarna (Solid)</option>
+                                <option value="outline">Garisan Sahaja (Outline / Telus)</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-red-900">Pantas:</span>
+                            <button type="button" onclick="setBatchWmPreset('FOR CUCKOO ONLY')" class="px-2.5 py-1.5 bg-white border border-red-200 hover:bg-red-100 rounded-md font-bold text-red-700">CUCKOO</button>
+                            <button type="button" onclick="setBatchWmPreset('UNTUK URUSAN BANK SAHAJA')" class="px-2.5 py-1.5 bg-white border border-red-200 hover:bg-red-100 rounded-md font-bold text-red-700">BANK</button>
+                            <button type="button" onclick="setBatchWmPreset('UNTUK PERMOHONAN KERJA SAHAJA')" class="px-2.5 py-1.5 bg-white border border-red-200 hover:bg-red-100 rounded-md font-bold text-red-700">KERJA</button>
+                            <button type="button" onclick="setBatchWmPreset('SALINAN SAHAJA')" class="px-2.5 py-1.5 bg-white border border-red-200 hover:bg-red-100 rounded-md font-bold text-red-700">SALINAN</button>
+                        </div>
+
+                        <span id="batch-wm-hint" class="w-full text-[11px] font-semibold text-red-700">Palang: TIDAK AKTIF — gambar digabung tanpa palang.</span>
+                    </div>
                 </div>
 
                 <!-- STRIP THUMBNAIL (susun / putar / crop / buang) -->
@@ -619,6 +650,7 @@
                 }
             });
             renderWatermark();
+            if (typeof updateBatchWmHint === 'function') updateBatchWmHint();
         }
 
         function setWatermarkPreset(text) {
@@ -1257,16 +1289,54 @@
             });
         })();
 
+        // ---- KAWALAN PALANG untuk mod batch (toggle + teks kustom + gaya + presets) ----
+        function batchWmConfig() {
+            const tg = document.getElementById('batch-wm-toggle');
+            const tx = document.getElementById('batch-wm-text');
+            const st = document.getElementById('batch-wm-style');
+            return {
+                on: !!(tg && tg.checked),
+                text: tx ? (tx.value || '').trim() : '',
+                style: st ? st.value : 'solid'
+            };
+        }
+
+        function setBatchWmPreset(text) {
+            const tx = document.getElementById('batch-wm-text');
+            const tg = document.getElementById('batch-wm-toggle');
+            if (tx) tx.value = text;
+            if (tg) tg.checked = true;      // tekan preset = mahu palang pada gambar
+            updateBatchWmHint();
+        }
+
+        function updateBatchWmHint() {
+            const hint = document.getElementById('batch-wm-hint');
+            if (!hint) return;
+            const cfg = batchWmConfig();
+            if (!cfg.on) {
+                hint.textContent = 'Palang: TIDAK AKTIF — gambar digabung tanpa palang.';
+                return;
+            }
+            if (!cfg.text) {
+                hint.textContent = 'Palang: AKTIF tetapi teks kosong — sila taip teks palang.';
+                return;
+            }
+            const gaya = cfg.style === 'solid' ? 'Kotak Berwarna (solid)' : 'Garisan Kosong (outline)';
+            hint.textContent = 'Palang: AKTIF — “' + cfg.text + '” · ' + gaya + ' · sudut/kelegapan/warna ikut tetapan tab Palang IC/ID.';
+        }
+
         // ---- GABUNG SEMUA GAMBAR → SATU PDF ----
         async function mergeBatchToPdf() {
             if (!batchImages.length) { alert('Tiada gambar. Sila tambah gambar dahulu.'); return; }
+            const bw = batchWmConfig();
+            if (bw.on && !bw.text) { alert('Palang diaktifkan tetapi teks palang kosong. Sila taip teks atau kosongkan tanda “Sertakan Palang”.'); return; }
             showLoading('Menggabungkan ' + batchImages.length + ' gambar ke PDF...');
             try {
                 const { PDFDocument } = PDFLib;
                 const out = await PDFDocument.create();
                 for (const item of batchImages) {
                     const cv = processedCanvas(item);
-                    bakeWatermarkOnCanvas(cv);
+                    if (bw.on && bw.text) bakeWatermarkOnCanvas(cv, bw);   // palang pada SETIAP muka surat
                     const jpg = cv.toDataURL('image/jpeg', 0.92);
                     const emb = await out.embedJpg(jpg);
                     const pw = Math.min(595, (cv.width * 72 / 150) * 1.6);
@@ -1292,16 +1362,18 @@
         }
 
         // bak watermark pada kanvas (untuk batch gambar)
-        function bakeWatermarkOnCanvas(cv) {
+        // cfg = {text, style} dari toolbar batch; jika tiada, guna tetapan tab Palang IC/ID
+        function bakeWatermarkOnCanvas(cv, cfg) {
+            cfg = cfg || {};
             const elText = document.getElementById('wm-text');
-            const txt = elText ? (elText.value || '').trim() : '';
+            const txt = ((cfg.text != null && cfg.text !== '') ? cfg.text : (elText ? (elText.value || '') : '')).trim();
             if (!txt) return;
+            const style = cfg.style || document.getElementById('wm-style').value;
             const W = cv.width, H = cv.height;
             const c = cv.getContext('2d');
             const size = parseInt(document.getElementById('wm-size').value) * (H / 700) * 1.2;
             const angle = parseInt(document.getElementById('wm-angle').value);
             const opacity = parseInt(document.getElementById('wm-opacity').value) / 100;
-            const style = document.getElementById('wm-style').value;
             const colorVal = document.getElementById('wm-color').value;
             let hex = '#dc2626';
             if (colorVal === 'black') hex = '#0f172a';
@@ -1761,6 +1833,7 @@
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             }
+            updateBatchWmHint();
         });
     </script>
 </body>

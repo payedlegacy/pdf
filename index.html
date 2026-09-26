@@ -445,9 +445,12 @@
                     <button data-kolaj="2" onclick="collagePilih(2,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">2 gambar</button>
                     <button data-kolaj="3" onclick="collagePilih(3,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">3 gambar</button>
                     <button data-kolaj="4" onclick="collagePilih(4,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">4 gambar (2×2)</button>
-                    <button data-kolaj="5" onclick="collagePilih(5,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">5 gambar</button>
+                    <button data-kolaj="5" onclick="collagePilih(5,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">5 gambar (2+2+1)</button>
                     <button data-kolaj="6" onclick="collagePilih(6,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">6 gambar (2×3)</button>
+                    <button data-kolaj="7" onclick="collagePilih(7,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">7 gambar (2+2+2+1)</button>
+                    <button data-kolaj="8" onclick="collagePilih(8,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">8 gambar (2×4)</button>
                     <button data-kolaj="9" onclick="collagePilih(9,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">9 gambar (3×3)</button>
+                    <button data-kolaj="10" onclick="collagePilih(10,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">10 gambar (2×5)</button>
                     <span id="kolaj-status" class="w-full text-[11px] font-bold text-purple-700">👇 Tekan satu butang di atas — pratonton akan muncul dahulu (fail belum disimpan).</span>
 
                     <!-- TETAPAN KAPSEN & TAJUK LAPORAN (untuk kolaj) -->
@@ -1914,7 +1917,10 @@
             4: [2, 2],
             5: [2, 2, 1],
             6: [2, 2, 2],
-            9: [3, 3, 3]
+            7: [2, 2, 2, 1],
+            8: [2, 2, 2, 2],
+            9: [3, 3, 3],
+            10: [2, 2, 2, 2, 2]
         };
         let kolajPerPage = 4;
 

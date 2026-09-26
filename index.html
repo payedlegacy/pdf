@@ -440,12 +440,15 @@
                     </button>
 
                     <!-- 🧩 KOLAJ A4: banyak gambar dalam satu halaman (untuk laporan) -->
-                    <span class="w-full sm:w-auto font-extrabold text-purple-900 mt-1">🧩 Kolaj A4 (susun banyak gambar 1 halaman):</span>
-                    <button onclick="collageDownload(2)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-300 hover:bg-purple-100 text-purple-800 text-xs font-extrabold rounded-xl">2 gambar</button>
-                    <button onclick="collageDownload(4)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold rounded-xl shadow-sm">4 gambar (2×2)</button>
-                    <button onclick="collageDownload(6)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold rounded-xl shadow-sm">6 gambar (2×3)</button>
-                    <button onclick="collageDownload(9)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-300 hover:bg-purple-100 text-purple-800 text-xs font-extrabold rounded-xl">9 gambar (3×3)</button>
-                    <span class="text-[10px] font-semibold text-purple-700">→ keluaran PDF A4 (auto banyak halaman), + garisan pemisah</span>
+                    <span class="w-full sm:w-auto font-extrabold text-purple-900 mt-1">🧩 Kolaj A4 — pilih berapa gambar setiap halaman:</span>
+                    <button data-kolaj="1" onclick="collagePilih(1,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">1 gambar (penuh A4)</button>
+                    <button data-kolaj="2" onclick="collagePilih(2,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">2 gambar</button>
+                    <button data-kolaj="3" onclick="collagePilih(3,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">3 gambar</button>
+                    <button data-kolaj="4" onclick="collagePilih(4,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">4 gambar (2×2)</button>
+                    <button data-kolaj="5" onclick="collagePilih(5,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">5 gambar</button>
+                    <button data-kolaj="6" onclick="collagePilih(6,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">6 gambar (2×3)</button>
+                    <button data-kolaj="9" onclick="collagePilih(9,this)" class="kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold border-purple-300 bg-white text-purple-800">9 gambar (3×3)</button>
+                    <span id="kolaj-status" class="w-full text-[11px] font-bold text-purple-700">👇 Tekan satu butang di atas — pratonton akan muncul dahulu (fail belum disimpan).</span>
 
                     <!-- TETAPAN KAPSEN & TAJUK LAPORAN (untuk kolaj) -->
                     <div class="w-full bg-white border border-purple-200 rounded-xl p-2.5 flex flex-wrap items-center gap-2.5 text-[11px] text-slate-700">
@@ -1902,7 +1905,41 @@
            pilihan: 2 (1×2) · 4 (2×2) · 6 (2×3) · 9 (3×3) gambar setiap halaman A4
            + kapsyen setiap gambar + tajuk laporan + tarikh & nama pegawai
            ===================================================================== */
-        const COLLAGE_SUSUNAN = { 2: [1, 2], 4: [2, 2], 6: [2, 3], 9: [3, 3] };
+        // susunan: setiap nombor = bilangan gambar dalam baris itu
+        // 1 = penuh satu halaman · 5 = 2+2+1 (baris akhir di tengah) · 9 = 3×3
+        const COLLAGE_SUSUNAN = {
+            1: [1],
+            2: [1, 1],
+            3: [1, 1, 1],
+            4: [2, 2],
+            5: [2, 2, 1],
+            6: [2, 2, 2],
+            9: [3, 3, 3]
+        };
+        let kolajPerPage = 4;
+
+        // tanda butang kolaj yang sedang aktif (maklum balas warna)
+        function collageTandaAktif(perPage) {
+            document.querySelectorAll('.kolaj-btn').forEach(b => {
+                const aktif = String(b.dataset.kolaj) === String(perPage);
+                b.className = 'kolaj-btn px-3 py-2 rounded-xl border-2 text-xs font-extrabold ' +
+                    (aktif ? 'border-purple-700 bg-purple-700 text-white shadow-md'
+                           : 'border-purple-300 bg-white text-purple-800 hover:bg-purple-100');
+            });
+        }
+
+        // tekan butang kolaj → tanda aktif + status + jana pratonton
+        async function collagePilih(perPage, btn) {
+            if (!batchImages.length) { alert('Tiada gambar lagi. Tekan ➕ Tambah Gambar dahulu.'); return; }
+            kolajPerPage = perPage;
+            collageTandaAktif(perPage);
+            const st = document.getElementById('kolaj-status');
+            const jumlahHal = Math.ceil(batchImages.length / perPage);
+            if (st) st.textContent = '⏳ Menjana kolaj ' + perPage + ' gambar/halaman (' + jumlahHal + ' halaman A4)...';
+            try { await collageDownload(perPage); } catch (e) { console.error(e); }
+            if (st) st.textContent = '✅ Kolaj dipilih: ' + perPage + ' gambar/halaman A4 · ' + batchImages.length +
+                ' gambar → ' + jumlahHal + ' halaman. Semak pratonton, kemudian tekan 📥 Muat Turun.';
+        }
 
         function tarikhHariIni() {
             const d = new Date();
@@ -1935,8 +1972,8 @@
 
         async function buildCollagePdfBytes(perPage) {
             const { PDFDocument, rgb, StandardFonts } = PDFLib;
-            const susun = COLLAGE_SUSUNAN[perPage] || [2, 2];
-            const cols = susun[0], rows = susun[1];
+            const baris = COLLAGE_SUSUNAN[perPage] || [2, 2];      // cth [2,2,1] = baris 1: 2 gambar, baris 2: 2, baris 3: 1
+            const rows = baris.length;
             const A4W = 595.28, A4H = 841.89;
             const cfg = collageConfig();
             const margin = 28, gap = 12;
@@ -1951,9 +1988,18 @@
 
             const atasKandungan = A4H - margin - headerH;
             const bawahKandungan = margin + footerH;
-            const cellW = (A4W - margin * 2 - gap * (cols - 1)) / cols;
             const cellH = (atasKandungan - bawahKandungan - gap * (rows - 1)) / rows;
             const imgH = Math.max(40, cellH - kapsyenH);
+
+            // kedudukan slot (baris, lajur, bilangan gambar dalam baris itu)
+            const slotInfo = (idx) => {
+                let s = idx;
+                for (let r = 0; r < baris.length; r++) {
+                    if (s < baris[r]) return { row: r, col: s, cols: baris[r] };
+                    s -= baris[r];
+                }
+                return null;
+            };
 
             const bw = batchWmConfig();
             let page = null;
@@ -1993,29 +2039,30 @@
                     lukisKepala(page);
                     lukisKaki(page, Math.floor(i / perPage) + 1, jumlahHal);
                 }
-                const r = Math.floor(dalamHalaman / cols);
-                const c = dalamHalaman % cols;
-                const x = margin + c * (cellW + gap);
-                const y = atasKandungan - imgH - r * (cellH + gap);
+                const info = slotInfo(dalamHalaman);
+                if (!info) continue;                       // slot berlebih (cth 5 gambar pada susunan 2+2+1… sudah penuh)
+                const cwBaris = (A4W - margin * 2 - gap * (info.cols - 1)) / info.cols;
+                const x = margin + info.col * (cwBaris + gap);
+                const y = atasKandungan - imgH - info.row * (cellH + gap);
 
                 const item = batchImages[i];
                 const cv = processedCanvas(item);
                 if (bw.on && bw.text) bakeWatermarkOnCanvas(cv, bw);
 
                 // gambar dikekalkan nisbah (contain) + tengah dalam sel
-                const k = Math.min(cellW / cv.width, imgH / cv.height);
+                const k = Math.min(cwBaris / cv.width, imgH / cv.height);
                 const w = cv.width * k, h = cv.height * k;
                 const emb = await out.embedJpg(cv.toDataURL('image/jpeg', 0.9));
-                page.drawImage(emb, { x: x + (cellW - w) / 2, y: y + (imgH - h) / 2, width: w, height: h });
-                page.drawRectangle({ x, y, width: cellW, height: imgH, borderColor: rgb(0.65, 0.65, 0.68), borderWidth: 0.6 });
+                page.drawImage(emb, { x: x + (cwBaris - w) / 2, y: y + (imgH - h) / 2, width: w, height: h });
+                page.drawRectangle({ x, y, width: cwBaris, height: imgH, borderColor: rgb(0.65, 0.65, 0.68), borderWidth: 0.6 });
 
                 // 📝 kapsyen
                 if (cfg.kapsyen) {
                     const teksAsal = (item.caption && String(item.caption).trim()) ? String(item.caption).trim() : ('Gambar ' + (i + 1));
-                    const teksMuat = potongTeks(font, teksAsal, 8.5, cellW - 4);
+                    const teksMuat = potongTeks(font, teksAsal, 8.5, cwBaris - 4);
                     const tw = font.widthOfTextAtSize(teksMuat, 8.5);
                     page.drawText(teksMuat, {
-                        x: x + Math.max(0, (cellW - tw) / 2), y: y - kapsyenH + 4,
+                        x: x + Math.max(0, (cwBaris - tw) / 2), y: y - kapsyenH + 4,
                         size: 8.5, font: font, color: rgb(0.12, 0.14, 0.18)
                     });
                 }

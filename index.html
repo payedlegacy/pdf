@@ -710,15 +710,15 @@
             <div id="sumbangan" class="bg-gradient-to-br from-emerald-50 via-white to-white border border-emerald-100 rounded-3xl p-5 shadow-sm">
                 <div class="flex flex-col sm:flex-row items-center gap-5 justify-center max-w-3xl mx-auto">
                     <button type="button" id="qrs-buka" onclick="qrsBuka()" class="shrink-0 group relative" aria-label="Besarkan QR sumbangan DuitNow">
-                        <img src="/sumbangan-qr.png" alt="QR DuitNow BSN atas nama Mohamad Farid Bin Mat" width="150" height="163" class="block w-[150px] rounded-2xl border border-slate-200 shadow-sm group-hover:shadow-md transition bg-white">
+                        <img src="/sumbangan-qr.png" alt="QR DuitNow BSN untuk sumbangan" width="150" height="163" class="block w-[150px] rounded-2xl border border-slate-200 shadow-sm group-hover:shadow-md transition bg-white">
                         <span class="absolute -top-2 -right-2 text-[9px] font-black bg-emerald-600 text-white px-2 py-1 rounded-full shadow-sm">🔍 Besarkan</span>
                     </button>
                     <div class="text-center sm:text-left max-w-md">
                         <p class="text-[10px] font-extrabold text-emerald-600 tracking-[.12em] uppercase">Sumbangan</p>
                         <h2 class="font-black text-slate-900 text-lg leading-tight mt-1">Sokong PDFEasy — belanja kopi ☕</h2>
-                        <p class="text-[12px] font-semibold text-slate-600 leading-relaxed mt-2">Web ini <b>percuma</b>, tanpa daftar, tanpa muat naik fail dan tiada iklan yang menghalang alat. Sumbangan kecil membantu saya bayar pelayan supaya ia terus percuma untuk semua orang.</p>
-                        <p class="text-[11px] font-bold text-slate-700 mt-2.5">DuitNow QR &middot; BSN<br><span class="text-slate-500 font-semibold">Mohamad Farid Bin Mat</span></p>
-                        <p class="text-[11px] font-semibold text-slate-500 mt-1.5">Imbas dengan app bank / e-wallet anda, atau tekan QR untuk besarkan.</p>
+                        <p class="text-[12px] font-semibold text-slate-600 leading-relaxed mt-2">Alat ini <b>percuma sepenuhnya</b> untuk kegunaan harian anda. Jika ada rezeki lebih dan sudi menaja secawan kopi untuk menampung kos penyelenggaraan, amatlah dihargai. Jika tidak pun tiada masalah langsung, silakan guna sepuas-puasnya! 😊</p>
+                        <p class="text-[11px] font-bold text-slate-700 mt-2.5">DuitNow QR &middot; Bank Simpanan Nasional (BSN)</p>
+                        <p class="text-[11px] font-semibold text-slate-500 mt-1.5">Tekan QR untuk besarkan &amp; imbas dengan app bank / e-wallet anda. Nama penerima akan dipaparkan selepas QR diimbas.</p>
                     </div>
                 </div>
             </div>
@@ -1414,6 +1414,12 @@
                 <button onclick="pratontonCetak()" class="px-3 py-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold rounded-xl">🖨️ Cetak</button>
                 <button onclick="tutupPratonton()" class="px-3 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-extrabold rounded-xl">✏️ Kembali Edit</button>
             </div>
+            <!-- (v34) KONGSI TERUS ke WhatsApp / Telegram (paparan komputer; berfungsi dengan WhatsApp Web) -->
+            <div id="preview-apps" class="grid grid-cols-2 gap-2 mt-2">
+                <button type="button" id="preview-wa" onclick="kongsiApp('wa')" class="px-3 py-3 bg-[#25D366] hover:brightness-95 text-white text-xs font-extrabold rounded-xl shadow-sm">🟢 Kongsi ke WhatsApp</button>
+                <button type="button" id="preview-tg" onclick="kongsiApp('tg')" class="px-3 py-3 bg-[#229ED9] hover:brightness-95 text-white text-xs font-extrabold rounded-xl shadow-sm">✈️ Kongsi ke Telegram</button>
+            </div>
+            <p id="preview-kongsi-note" class="hidden text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 mt-2 leading-relaxed"></p>
             <p class="text-[11px] font-semibold text-slate-500 mt-2">Betul? Tekan <b>📥 Muat Turun</b>. Nak ubah? Tekan <b>✏️ Kembali Edit</b> — fail <b>belum</b> disimpan.</p>
         </div>
     </div>
@@ -2886,8 +2892,15 @@
             if (sb) {
                 let boleh = false;
                 try { boleh = !!(navigator.canShare) && navigator.canShare({ files: [new File([blob], name, { type: jenis })] }); } catch (e) { boleh = false; }
-                sb.classList.toggle('hidden', !boleh);
+                // (v34) helai kongsi SISTEM hanya sesuai di telefon; di komputer ia membuka
+                // helaian kongsi Windows yang menyuruh 'install app' (masalah besar utk WhatsApp Web)
+                sb.classList.toggle('hidden', !(boleh && adalahMudahAlih()));
             }
+            // (v34) Di komputer: paparkan butang kongsi TERUS (WhatsApp / Telegram)
+            const appsKongsi = document.getElementById('preview-apps');
+            if (appsKongsi) appsKongsi.classList.toggle('hidden', adalahMudahAlih());
+            const notaKongsi = document.getElementById('preview-kongsi-note');
+            if (notaKongsi) { notaKongsi.classList.add('hidden'); notaKongsi.innerHTML = ''; }
             // tunjuk muka mana ada isian (teks/tandatangan) supaya pengguna tidak tercari-cari
             const nota = document.getElementById('preview-note');
             const mukaAda = Object.keys(annotations || {})
@@ -5385,9 +5398,13 @@
             return true;
         }
 
-        async function dokPulih() {
+        async function dokPulih(paksa) {
             if (!dokSlot) return false;
             if (pdfDocObj && pdfDocObj === dokSlot.pdfDocObj) return false;   // dokumen yang sama sudah hidup
+            // (v34b) JANGAN timpa dokumen BAHARU yang muncul selepas permintaan pulih dibuat
+            // (cth pengguna tekan tab Isi Borang, kemudian terus muat naik gambar).
+            // Butang "↩️ Pulihkan dokumen sebelum ini" memanggil dengan paksa=true.
+            if (!paksa && (pdfDocObj || imageSrcUrl)) return false;
             pdfDocObj = dokSlot.pdfDocObj;
             imageSrcUrl = dokSlot.imageSrcUrl;
             annotations = dokSlot.annotations || {};
@@ -5453,7 +5470,7 @@
         }
 
         async function dokPulihButang() {
-            const ok = await dokPulih();
+            const ok = await dokPulih(true);   // butang = hasrat jelas pengguna → paksa pulih
             if (typeof updateDocHint === 'function') updateDocHint();
             if (typeof dokKemasBtn === 'function') dokKemasBtn();
             return ok;
@@ -5477,6 +5494,44 @@
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') { try { qrsTutup(); } catch (err) {} }
         });
+
+        /* =====================================================================
+           (v34) KONGSI TERUS — WhatsApp / Telegram
+           Helai kongsi sistem (navigator.share) di KOMPUTER membuka helaian kongsi
+           Windows yang meminta "install app" dan menyusahkan pengguna WhatsApp Web.
+           Jadi di komputer: fail dimuat turun + chat dibuka terus dengan mesej sedia.
+           Di telefon, helai kongsi sistem dikekalkan (ia boleh lampirkan fail terus).
+           ===================================================================== */
+        function adalahMudahAlih() {
+            try { return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent || ''); }
+            catch (e) { return false; }
+        }
+
+        function kongsiApp(app) {
+            if (!previewState) return false;
+            const nama = previewState.name;
+            const laman = 'https://pdf.payedlegacy.my';
+            // 1) muat turun fail supaya sedia untuk dilampirkan dalam chat
+            try { muatTurunTerus(previewState.blob, nama, true); } catch (e) {}
+            // 2) buka WhatsApp / Telegram dengan mesej sedia (wa.me berfungsi dgn WhatsApp Web)
+            let url;
+            if (app === 'wa') {
+                url = 'https://wa.me/?text=' + encodeURIComponent('Fail dari PDFEasy: ' + nama + ' — ' + laman);
+            } else {
+                url = 'https://t.me/share/url?url=' + encodeURIComponent(laman)
+                    + '&text=' + encodeURIComponent('Fail dari PDFEasy: ' + nama);
+            }
+            try { window.open(url, '_blank', 'noopener'); } catch (e) {}
+            // 3) arahan yang jelas (tiada tekaan)
+            const nota = document.getElementById('preview-kongsi-note');
+            if (nota) {
+                nota.innerHTML = (app === 'wa')
+                    ? '🟢 <b>WhatsApp dibuka.</b> Fail <b>sudah dimuat turun</b> — tekan <b>📎 Lampiran &rarr; Dokumen</b> dan pilih <b>' + nama + '</b>. (WhatsApp Web: 📎 &rarr; Dokumen.)'
+                    : '✈️ <b>Telegram dibuka.</b> Fail <b>sudah dimuat turun</b> — tekan <b>📎 &rarr; Fail</b> dan pilih <b>' + nama + '</b>. (Telegram Web: 📎 &rarr; Fail.)';
+                nota.classList.remove('hidden');
+            }
+            return url;
+        }
 
         // ingat pilihan pengguna: kalau dia pernah buka panel lanjutan, buka semula lain kali
         document.addEventListener('DOMContentLoaded', function () {

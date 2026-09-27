@@ -386,17 +386,36 @@
                     <p class="text-xs text-slate-600">Muat naik gambar IC depan dan belakang anda. Sistem akan susun secara auto mengikut saiz kad standard berserta palang keselamatan dalam 1 muka surat A4!</p>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left pt-2">
-                        <label for="ic-front-file" class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 hover:border-emerald-500 flex flex-col items-center cursor-pointer relative">
-                            <input type="file" id="ic-front-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'front')">
-                            <div id="front-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Pilih Gambar IC Depan</div>
+                        <div class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 flex flex-col items-center relative">
+                            <div id="front-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Gambar IC Depan</div>
                             <img id="front-preview" class="hidden h-28 object-contain rounded-lg border shadow-sm" alt="Pratonton IC depan">
-                        </label>
-                        <label for="ic-back-file" class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 hover:border-emerald-500 flex flex-col items-center cursor-pointer relative">
-                            <input type="file" id="ic-back-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'back')">
-                            <div id="back-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Pilih Gambar IC Belakang</div>
+                            <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+                                <label for="ic-front-cam" class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Gambar</label>
+                                <input type="file" id="ic-front-cam" accept="image/*" capture="environment" class="sr-file" onchange="previewICImage(event, 'front')">
+                                <label for="ic-front-file" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Dari Galeri</label>
+                                <input type="file" id="ic-front-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'front')">
+                            </div>
+                            <div id="front-alat" class="hidden flex-wrap items-center justify-center gap-2 mt-2">
+                                <button type="button" onclick="putarICImage('front')" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold rounded-lg">🔄 Putar</button>
+                                <button type="button" onclick="buangICImage('front')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold rounded-lg">🗑️ Buang</button>
+                            </div>
+                        </div>
+                        <div class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 flex flex-col items-center relative">
+                            <div id="back-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Gambar IC Belakang</div>
                             <img id="back-preview" class="hidden h-28 object-contain rounded-lg border shadow-sm" alt="Pratonton IC belakang">
-                        </label>
+                            <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+                                <label for="ic-back-cam" class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Gambar</label>
+                                <input type="file" id="ic-back-cam" accept="image/*" capture="environment" class="sr-file" onchange="previewICImage(event, 'back')">
+                                <label for="ic-back-file" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Dari Galeri</label>
+                                <input type="file" id="ic-back-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'back')">
+                            </div>
+                            <div id="back-alat" class="hidden flex-wrap items-center justify-center gap-2 mt-2">
+                                <button type="button" onclick="putarICImage('back')" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold rounded-lg">🔄 Putar</button>
+                                <button type="button" onclick="buangICImage('back')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold rounded-lg">🗑️ Buang</button>
+                            </div>
+                        </div>
                     </div>
+                    <p id="ic-tip" class="text-[11px] font-semibold text-slate-500">Tip: ambil gambar secara melintang, kad memenuhi bingkai, cahaya terang.</p>
 
                     <div class="space-y-2 text-left bg-slate-50 p-4 rounded-2xl border">
                         <label class="block text-xs font-extrabold text-slate-800" for="ic-wm-text">Teks Palang Keselamatan:</label>
@@ -4552,17 +4571,12 @@
             r.onload = (ev) => {
                 const img = new Image();
                 img.onload = () => {
-                    if (type === 'front') {
-                        frontICImg = img;
-                        const prev = document.getElementById('front-preview');
-                        prev.src = ev.target.result; prev.classList.remove('hidden');
-                        document.getElementById('front-label').innerText = '✅ IC Depan Dimuat Naik (ketuk untuk ganti)';
-                    } else {
-                        backICImg = img;
-                        const prev = document.getElementById('back-preview');
-                        prev.src = ev.target.result; prev.classList.remove('hidden');
-                        document.getElementById('back-label').innerText = '✅ IC Belakang Dimuat Naik (ketuk untuk ganti)';
-                    }
+                    if (type === 'front') { frontICImg = img; } else { backICImg = img; }
+                    icPutar[type] = 0;
+                    document.getElementById(type + '-preview').src = ev.target.result;
+                    icKemasUI(type);
+                    document.getElementById(type + '-label').innerText =
+                        (type === 'front' ? '✅ IC Depan dimuat naik' : '✅ IC Belakang dimuat naik');
                 };
                 img.onerror = () => alert('Gambar ini tidak dapat dibaca oleh pelayar (contoh HEIC dari iPhone). Sila ambil gambar guna butang kamera atau tukar ke JPG.');
                 img.src = ev.target.result;
@@ -4570,20 +4584,81 @@
             r.readAsDataURL(f);
         }
 
+        let icPutar = { front: 0, back: 0 };
+
+        // Kemas UI satu sisi: pratonton (ikut sudut putar), butang Putar/Buang, tip nisbah gambar
+        function icKemasUI(type) {
+            const img = (type === 'front') ? frontICImg : backICImg;
+            const prev = document.getElementById(type + '-preview');
+            const alat = document.getElementById(type + '-alat');
+            const sudut = icPutar[type] || 0;
+
+            if (img) {
+                prev.classList.remove('hidden');
+                prev.style.transform = 'rotate(' + sudut + 'deg)';
+                alat.classList.remove('hidden');
+                alat.classList.add('flex');
+            } else {
+                prev.classList.add('hidden');
+                prev.removeAttribute('src');
+                prev.style.transform = '';
+                alat.classList.add('hidden');
+                alat.classList.remove('flex');
+            }
+
+            const tip = document.getElementById('ic-tip');
+            if (!tip) return;
+            const w = img && (img.naturalWidth || img.width);
+            const h = img && (img.naturalHeight || img.height);
+            const nisbahKad = 85.6 / 54;                       // 1.585
+            const nisbah = (w && h) ? (((sudut === 90 || sudut === 270) ? h / w : w / h)) : null;
+            if (nisbah && Math.abs(nisbah - nisbahKad) / nisbahKad > 0.35) {
+                tip.className = 'text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2';
+                tip.innerText = '⚠️ Gambar ini nampak menegak atau berlatar banyak — kad akan dipaparkan lebih kecil dalam bingkai. Ambil semula secara melintang, atau tekan 🔄 Putar.';
+            } else {
+                tip.className = 'text-[11px] font-semibold text-slate-500';
+                tip.innerText = 'Tip: ambil gambar secara melintang, kad memenuhi bingkai, cahaya terang.';
+            }
+        }
+
+        function putarICImage(type) {
+            icPutar[type] = ((icPutar[type] || 0) + 90) % 360;
+            icKemasUI(type);
+        }
+
+        function buangICImage(type) {
+            if (type === 'front') { frontICImg = null; } else { backICImg = null; }
+            icPutar[type] = 0;
+            const pref = (type === 'front') ? 'ic-front' : 'ic-back';
+            ['-file', '-cam'].forEach(s => { const el = document.getElementById(pref + s); if (el) el.value = ''; });
+            icKemasUI(type);
+            document.getElementById(type + '-label').innerText =
+                (type === 'front' ? '📁 Gambar IC Depan' : '📁 Gambar IC Belakang');
+        }
+
         // Tukar imej apa jua format (JPG/PNG/WEBP) → JPEG data URL, dim ≤ 1400px
         // (pdf-lib hanya terima JPEG/PNG; mengecilkan dimensi menjimatkan saiz PDF)
-        function imageToJpg(img) {
+        // putaran (0/90/180/270) dibakar ke dalam imej supaya hasil PDF sama seperti pratonton
+        function imageToJpg(img, putaran) {
             const MAKS = 1400;
+            const sudut = (((putaran || 0) % 360) + 360) % 360;
             const w0 = img.naturalWidth || img.width || 0;
             const h0 = img.naturalHeight || img.height || 0;
             const f = (w0 && h0) ? Math.min(1, MAKS / Math.max(w0, h0)) : 1;
+            const w = Math.max(1, Math.round(w0 * f));
+            const h = Math.max(1, Math.round(h0 * f));
+            const tukar = (sudut === 90 || sudut === 270);
             const cv = document.createElement('canvas');
-            cv.width = Math.max(1, Math.round(w0 * f));
-            cv.height = Math.max(1, Math.round(h0 * f));
+            cv.width = tukar ? h : w;
+            cv.height = tukar ? w : h;
             const ctx = cv.getContext('2d');
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, cv.width, cv.height);
-            ctx.drawImage(img, 0, 0, cv.width, cv.height);
+            // PENTING: translate ke tengah MESTI sentiasa dibuat (walaupun sudut 0),
+            // kerana drawImage dilukis pada (-w/2, -h/2).
+            ctx.translate(cv.width / 2, cv.height / 2);
+            if (sudut) ctx.rotate(sudut * Math.PI / 180);
+            ctx.drawImage(img, -w / 2, -h / 2, w, h);
             return cv.toDataURL('image/jpeg', 0.92);
         }
 
@@ -4614,20 +4689,28 @@
 
                 const wmText = icTeksSelamat(document.getElementById('ic-wm-text').value) || 'UNTUK URUSAN RASMI SAHAJA';
 
-                async function drawICWithWatermark(img, yPos, title) {
+                async function drawICWithWatermark(img, yPos, title, putaran) {
                     page.drawText(title, { x: X0, y: yPos + ICH + 12, size: 11, font: font, color: rgb(0.15, 0.15, 0.15) });
 
                     if (img) {
-                        const embeddedImg = await pdfDoc.embedJpg(await imageToJpg(img));
-                        page.drawImage(embeddedImg, { x: X0, y: yPos, width: ICW, height: ICH });
+                        const embeddedImg = await pdfDoc.embedJpg(await imageToJpg(img, putaran));
+                        // 'contain': gambar TIDAK diherot walaupun nisbahnya bukan 1.585 (dipusat dalam bingkai kad)
+                        const dim = embeddedImg.scaleToFit(ICW, ICH);
+                        page.drawImage(embeddedImg, {
+                            x: X0 + (ICW - dim.width) / 2,
+                            y: yPos + (ICH - dim.height) / 2,
+                            width: dim.width, height: dim.height
+                        });
 
                         // PALANG: 3 baris serong menutup seluruh muka kad
-                        const saiz = 13;
-                        const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
+                        // Saiz fon menyesuaikan lebar kad supaya teks TIDAK terkeluar bingkai
                         const kos = Math.cos(15 * Math.PI / 180);
+                        let saiz = 13;
+                        while (saiz > 7 && font.widthOfTextAtSize(wmText, saiz) * kos > ICW * 0.94) saiz -= 0.5;
+                        const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
                         for (let i = 1; i <= 3; i++) {
                             page.drawText(wmText, {
-                                x: X0 + Math.max(6, (ICW - lebarTeks * kos) / 2),
+                                x: X0 + Math.max(4, (ICW - lebarTeks * kos) / 2),
                                 y: yPos + (ICH / 4) * i - 3,
                                 size: saiz, font: font, color: rgb(0.85, 0.08, 0.08),
                                 rotate: degrees(-15), opacity: 0.85
@@ -4643,8 +4726,8 @@
 
                 // Kedua-dua kad sentiasa dilukis (depan atas, belakang bawah) supaya
                 // susun atur 1 muka seragam; bingkai kosong + nota jika sisi itu tiada.
-                await drawICWithWatermark(frontICImg, 580, 'Salinan MyKad (Bahagian Depan)');
-                await drawICWithWatermark(backICImg, 357, 'Salinan MyKad (Bahagian Belakang)');
+                await drawICWithWatermark(frontICImg, 580, 'Salinan MyKad (Bahagian Depan)', icPutar.front);
+                await drawICWithWatermark(backICImg, 357, 'Salinan MyKad (Bahagian Belakang)', icPutar.back);
                 page.drawText('Dijana dengan PDFEasy — pdf.payedlegacy.my', { x: X0, y: 60, size: 8, font: font, color: rgb(0.55, 0.55, 0.55) });
 
                 const pdfBytes = await pdfDoc.save();

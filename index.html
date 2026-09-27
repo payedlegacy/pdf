@@ -375,6 +375,41 @@
                 </button>
             </div>
 
+            <!-- =====================================================================
+                 BAHARU (TERPENCIL): AUTO IC PHOTOSTAT (Depan & Belakang)
+                 Blok berasingan — TIDAK mengubah / menimpa alat lama.
+                 ===================================================================== -->
+            <div id="ic-photostat-container" class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                <div class="max-w-2xl mx-auto text-center space-y-4">
+                    <div class="inline-flex p-3 bg-red-50 text-red-600 rounded-2xl text-3xl font-bold">🛡️</div>
+                    <h3 class="font-black text-slate-900 text-xl">Auto Palang IC Photostat (Depan &amp; Belakang)</h3>
+                    <p class="text-xs text-slate-600">Muat naik gambar IC depan dan belakang anda. Sistem akan susun secara auto mengikut saiz kad standard berserta palang keselamatan dalam 1 muka surat A4!</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left pt-2">
+                        <label for="ic-front-file" class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 hover:border-emerald-500 flex flex-col items-center cursor-pointer relative">
+                            <input type="file" id="ic-front-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'front')">
+                            <div id="front-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Pilih Gambar IC Depan</div>
+                            <img id="front-preview" class="hidden h-28 object-contain rounded-lg border shadow-sm" alt="Pratonton IC depan">
+                        </label>
+                        <label for="ic-back-file" class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 hover:border-emerald-500 flex flex-col items-center cursor-pointer relative">
+                            <input type="file" id="ic-back-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'back')">
+                            <div id="back-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Pilih Gambar IC Belakang</div>
+                            <img id="back-preview" class="hidden h-28 object-contain rounded-lg border shadow-sm" alt="Pratonton IC belakang">
+                        </label>
+                    </div>
+
+                    <div class="space-y-2 text-left bg-slate-50 p-4 rounded-2xl border">
+                        <label class="block text-xs font-extrabold text-slate-800" for="ic-wm-text">Teks Palang Keselamatan:</label>
+                        <input type="text" id="ic-wm-text" value="UNTUK URUSAN RASMI SAHAJA" class="w-full p-3 border rounded-xl font-bold text-xs bg-white text-slate-800 outline-none">
+                    </div>
+
+                    <button onclick="generateICPhotostatPDF()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-lg transition">
+                        📥 Jana &amp; Muat Turun PDF IC Photostat (1 Muka)
+                    </button>
+                    <p class="text-[11px] font-semibold text-slate-500">Kad dilukis pada saiz sebenar MyKad (85.6 × 54 mm) di atas A4 · pratonton muncul sebelum simpan.</p>
+                </div>
+            </div>
+
             <!-- DROPZONE: guna <label> (pemicu asli, berfungsi di iOS/Android) + seret & lepas + kamera -->
             <label for="file-input" id="dropzone" class="block border-2 border-dashed border-slate-300 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition-all rounded-3xl p-8 sm:p-10 text-center cursor-pointer shadow-sm relative group">
                 <input type="file" id="file-input" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.heic,.heif" multiple class="sr-file" onchange="handleFileSelect(event)">
@@ -4498,6 +4533,129 @@
             const overlay = document.getElementById('loading-overlay');
             overlay.classList.add('hidden');
             overlay.style.display = 'none';
+        }
+
+        /* =====================================================================
+           BAHARU (TERPENCIL): AUTO IC PHOTOSTAT (Depan & Belakang)
+           Blok ini BERDIRI SENDIRI. Ia TIDAK mengubah, menimpa atau memanggil
+           ganti fungsi sedia ada (handleFileSelect, palang IC/ID, isi borang,
+           pasport, sain, QR, cantum, mampat, kolaj). Ia hanya menggunakan
+           pembantu awam yang sudah ada: showLoading / hideLoading /
+           triggerDownload / stamp / PDFLib (CDN).
+           ===================================================================== */
+        let frontICImg = null, backICImg = null;
+
+        function previewICImage(e, type) {
+            const f = e.target.files && e.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (type === 'front') {
+                        frontICImg = img;
+                        const prev = document.getElementById('front-preview');
+                        prev.src = ev.target.result; prev.classList.remove('hidden');
+                        document.getElementById('front-label').innerText = '✅ IC Depan Dimuat Naik (ketuk untuk ganti)';
+                    } else {
+                        backICImg = img;
+                        const prev = document.getElementById('back-preview');
+                        prev.src = ev.target.result; prev.classList.remove('hidden');
+                        document.getElementById('back-label').innerText = '✅ IC Belakang Dimuat Naik (ketuk untuk ganti)';
+                    }
+                };
+                img.onerror = () => alert('Gambar ini tidak dapat dibaca oleh pelayar (contoh HEIC dari iPhone). Sila ambil gambar guna butang kamera atau tukar ke JPG.');
+                img.src = ev.target.result;
+            };
+            r.readAsDataURL(f);
+        }
+
+        // Tukar imej apa jua format (JPG/PNG/WEBP) → JPEG data URL, dim ≤ 1400px
+        // (pdf-lib hanya terima JPEG/PNG; mengecilkan dimensi menjimatkan saiz PDF)
+        function imageToJpg(img) {
+            const MAKS = 1400;
+            const w0 = img.naturalWidth || img.width || 0;
+            const h0 = img.naturalHeight || img.height || 0;
+            const f = (w0 && h0) ? Math.min(1, MAKS / Math.max(w0, h0)) : 1;
+            const cv = document.createElement('canvas');
+            cv.width = Math.max(1, Math.round(w0 * f));
+            cv.height = Math.max(1, Math.round(h0 * f));
+            const ctx = cv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, cv.width, cv.height);
+            ctx.drawImage(img, 0, 0, cv.width, cv.height);
+            return cv.toDataURL('image/jpeg', 0.92);
+        }
+
+        // Font PDF standard (WinAnsi) tak boleh papar emoji/CJK → buang supaya tak jadi '?'
+        function icTeksSelamat(s) {
+            return String(s == null ? '' : s).replace(/[^\x20-\x7E\xA0-\xFF]/g, '').trim();
+        }
+
+        async function generateICPhotostatPDF() {
+            if (!frontICImg && !backICImg) {
+                alert('Sila muat naik sekurang-kurangnya satu gambar IC.');
+                return;
+            }
+            showLoading('Menyusun IC Photostat...');
+            try {
+                const { PDFDocument, rgb, degrees, StandardFonts } = PDFLib;
+                const A4W = 595.28, A4H = 841.89;               // A4 dalam pt
+                const MM = 2.834645669;                         // 1 mm = 2.8346 pt
+                const ICW = 85.6 * MM, ICH = 54 * MM;           // saiz kad sebenar MyKad 85.6 × 54 mm
+                const X0 = (A4W - ICW) / 2;                     // tengah halaman
+
+                const pdfDoc = await PDFDocument.create();
+                const page = pdfDoc.addPage([A4W, A4H]);
+                page.drawRectangle({ x: 0, y: 0, width: A4W, height: A4H, color: rgb(1, 1, 1) });
+
+                // drawText WAJIB ada 'font' — jika tiada, pdf-lib akan ralat
+                const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+                const wmText = icTeksSelamat(document.getElementById('ic-wm-text').value) || 'UNTUK URUSAN RASMI SAHAJA';
+
+                async function drawICWithWatermark(img, yPos, title) {
+                    page.drawText(title, { x: X0, y: yPos + ICH + 12, size: 11, font: font, color: rgb(0.15, 0.15, 0.15) });
+
+                    if (img) {
+                        const embeddedImg = await pdfDoc.embedJpg(await imageToJpg(img));
+                        page.drawImage(embeddedImg, { x: X0, y: yPos, width: ICW, height: ICH });
+
+                        // PALANG: 3 baris serong menutup seluruh muka kad
+                        const saiz = 13;
+                        const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
+                        const kos = Math.cos(15 * Math.PI / 180);
+                        for (let i = 1; i <= 3; i++) {
+                            page.drawText(wmText, {
+                                x: X0 + Math.max(6, (ICW - lebarTeks * kos) / 2),
+                                y: yPos + (ICH / 4) * i - 3,
+                                size: saiz, font: font, color: rgb(0.85, 0.08, 0.08),
+                                rotate: degrees(-15), opacity: 0.85
+                            });
+                        }
+                    } else {
+                        page.drawText('(gambar belum dimuat naik)', { x: X0 + 6, y: yPos + ICH / 2, size: 9, font: font, color: rgb(0.65, 0.65, 0.65) });
+                    }
+
+                    // bingkai kad (garis potong)
+                    page.drawRectangle({ x: X0, y: yPos, width: ICW, height: ICH, borderColor: rgb(0.75, 0.75, 0.75), borderWidth: 0.5 });
+                }
+
+                // Kedua-dua kad sentiasa dilukis (depan atas, belakang bawah) supaya
+                // susun atur 1 muka seragam; bingkai kosong + nota jika sisi itu tiada.
+                await drawICWithWatermark(frontICImg, 580, 'Salinan MyKad (Bahagian Depan)');
+                await drawICWithWatermark(backICImg, 357, 'Salinan MyKad (Bahagian Belakang)');
+                page.drawText('Dijana dengan PDFEasy — pdf.payedlegacy.my', { x: X0, y: 60, size: 8, font: font, color: rgb(0.55, 0.55, 0.55) });
+
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                // guna aliran sedia ada: pratonton dahulu → panel Simpan/Kongsi (kukuh di telefon)
+                triggerDownload(blob, 'PDFEasy_IC_Photostat_' + stamp() + '.pdf');
+            } catch (err) {
+                alert('Gagal menjana PDF: ' + (err && err.message ? err.message : err));
+            } finally {
+                hideLoading();
+            }
         }
 
         // ---- Seret & lepas fail, tampal (paste), dan PWA ----

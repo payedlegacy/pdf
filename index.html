@@ -5324,6 +5324,16 @@
             if (!adaPdf && !imageSrcUrl) return false;
             // jangan ganti borang yang sudah dilindungi dengan keadaan gambar
             if (!adaPdf && dokSlot && dokSlot.pdfDocObj) return false;
+            // (v32e) PENTING: simpan dahulu apa yang sedang berada di lapisan anotasi
+            // (isian yang baru ditaip). Pengawal saiz mengikut corak v18 — jangan simpan
+            // ketika lapisan tersembunyi (saiz 0) kerana nisbah kedudukan akan rosak.
+            try {
+                const _lay = document.getElementById('annotation-layer');
+                if (_lay && _lay.clientWidth > 20 && _lay.clientHeight > 20
+                    && typeof saveCurrentAnnotations === 'function') {
+                    saveCurrentAnnotations();
+                }
+            } catch (e) {}
             let ann = {};
             try { ann = JSON.parse(JSON.stringify(annotations || {})); } catch (e) { ann = {}; }
             dokSlot = {

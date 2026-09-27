@@ -1,6 +1,6 @@
 /* PDFEasy service worker — app shell + pustaka CDN untuk kegunaan OFFLINE
    (boleh guna tanpa internet selepas kali pertama dibuka) */
-const VERSION = 'pdfeasy-v2';
+const VERSION = 'pdfeasy-v3';   // 27-09-2026: naik versi supaya app shell dimuat semula (baiki glitch borang)
 const SHELL = [
   '/',
   '/index.html',

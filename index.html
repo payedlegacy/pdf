@@ -282,6 +282,151 @@
 
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        /* =====================================================================
+           (v32) LAPISAN REKA BENTUK — "ringkas & hebat"
+           Hanya CSS + pembalut markup. TIADA logik alat diubah.
+           ===================================================================== */
+        :root {
+            --pl-ink: #0f172a;
+            --pl-line: #e6ebf3;
+            --pl-muted: #64748b;
+            --pl-shadow: 0 1px 2px rgba(15,23,42,.04), 0 10px 30px -18px rgba(15,23,42,.25);
+            --pl-shadow-hi: 0 2px 4px rgba(15,23,42,.05), 0 18px 40px -20px rgba(15,23,42,.35);
+        }
+        body {
+            background:
+                radial-gradient(900px 320px at 50% -120px, rgba(16,185,129,.10), transparent 70%),
+                linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            background-attachment: fixed;
+        }
+        header {
+            background: rgba(255,255,255,.86) !important;
+            -webkit-backdrop-filter: saturate(180%) blur(12px);
+            backdrop-filter: saturate(180%) blur(12px);
+            border-bottom-color: var(--pl-line) !important;
+        }
+
+        /* ---------- HERO ---------- */
+        #main-title { letter-spacing: -.02em; line-height: 1.08; text-wrap: balance; }
+        #main-subtitle { text-wrap: pretty; }
+        .pl-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 999px;
+            background: #fff; border: 1px solid var(--pl-line);
+            font-size: 11px; font-weight: 800; color: #475569;
+            box-shadow: 0 1px 2px rgba(15,23,42,.04);
+        }
+
+        /* ---------- BUTANG ALAT (8 tab) ---------- */
+        #view-home [id^="tab-"] {
+            border-width: 1px; border-radius: 18px; min-height: 0;
+            background: #fff; border-color: var(--pl-line);
+            box-shadow: 0 1px 2px rgba(15,23,42,.04);
+            transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+        }
+        #view-home [id^="tab-"]:hover { transform: translateY(-2px); box-shadow: var(--pl-shadow); border-color: #a7f3d0; }
+        #view-home [id^="tab-"].border-emerald-500 {
+            background: linear-gradient(180deg, #ecfdf5, #ffffff) !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16,185,129,.14), var(--pl-shadow) !important;
+        }
+        #view-home [id^="tab-"] > span.absolute {
+            top: -9px; right: 9px; font-size: 8px; letter-spacing: .07em;
+            padding: 2px 7px; border-radius: 999px; background: #0f172a;
+            box-shadow: 0 2px 6px -2px rgba(15,23,42,.5);
+        }
+        #view-home [id^="tab-"] > span.absolute.bg-red-500 { background: linear-gradient(180deg,#ef4444,#b91c1c); }
+
+        /* ---------- KAD SERAGAM ---------- */
+        #ic-photostat-container, #dropzone, #ad-home > div, #view-home details {
+            border-radius: 22px !important;
+            border-color: var(--pl-line) !important;
+            box-shadow: var(--pl-shadow);
+        }
+        #ic-photostat-container { padding: 22px 20px !important; }
+        #dropzone {
+            box-shadow: 0 1px 2px rgba(15,23,42,.03) !important;
+            background: linear-gradient(180deg, #ffffff, #fbfdff) !important;
+        }
+        #dropzone:hover { box-shadow: var(--pl-shadow-hi) !important; background: #ffffff !important; }
+        #ic-photostat-container > div > p { max-width: 58ch; margin: 0 auto; color: #475569; line-height: 1.65; }
+        #ic-photostat-container > div > h3 { letter-spacing: -.01em; }
+
+        /* ---------- CHIP PILIHAN PALANG ---------- */
+        #ic-photostat-container [data-wm-preset],
+        #ic-photostat-container [data-wm-huruf],
+        #ic-photostat-container [data-wm-warna],
+        #ic-photostat-container [data-wm-saiz],
+        #ic-photostat-container [data-wm-baris] {
+            border-radius: 999px !important;
+            border: 1px solid var(--pl-line) !important;
+            background: #fff; color: #334155; min-height: 0;
+            padding: 6px 13px !important;
+            transition: background .15s, color .15s, border-color .15s, transform .15s;
+        }
+        #ic-photostat-container [data-wm-preset]:hover,
+        #ic-photostat-container [data-wm-huruf]:hover,
+        #ic-photostat-container [data-wm-warna]:hover,
+        #ic-photostat-container [data-wm-saiz]:hover,
+        #ic-photostat-container [data-wm-baris]:hover {
+            background: #f0fdf4; border-color: #86efac !important; color: #065f46; transform: translateY(-1px);
+        }
+        #ic-wm-lanjut-btn { border-radius: 14px !important; transition: background .15s, border-color .15s; }
+        #ic-wm-lanjut-btn:hover { background: #f8fafc; border-color: #cbd5e1 !important; }
+
+        /* ---------- BUTANG & INPUT ---------- */
+        #view-home .bg-emerald-600 {
+            background-image: linear-gradient(180deg, #10b981, #059669);
+            box-shadow: 0 10px 22px -12px rgba(5,150,105,.75);
+            transition: transform .15s, box-shadow .15s, filter .15s;
+        }
+        #view-home .bg-emerald-600:hover { transform: translateY(-1px); filter: brightness(1.04); }
+        #ic-photostat-container input[type="text"] {
+            border-radius: 14px !important; border-color: var(--pl-line) !important;
+            padding: 12px 14px !important;
+        }
+        #ic-photostat-container input[type="text"]:focus {
+            border-color: #10b981 !important; box-shadow: 0 0 0 3px rgba(16,185,129,.16);
+        }
+        #ic-photostat-container .border-dashed {
+            border-radius: 18px !important; background: #fbfdff !important; border-color: #dbe3ee !important;
+        }
+
+        /* ---------- SOALAN LAZIM ---------- */
+        #view-home details { background: #fff; transition: box-shadow .18s, transform .18s; }
+        #view-home details:hover { box-shadow: var(--pl-shadow-hi); }
+        #view-home summary { list-style: none; display: flex; align-items: center; gap: 9px; }
+        #view-home summary::-webkit-details-marker { display: none; }
+        #view-home summary::before {
+            content: '\FF0B'; font-weight: 900; color: #059669; font-size: 12px; line-height: 1;
+            display: inline-flex; width: 20px; height: 20px; flex: none;
+            align-items: center; justify-content: center; border-radius: 999px; background: #ecfdf5;
+        }
+        #view-home details[open] summary::before { content: '\FF0D'; }
+
+        /* ---------- LANGKAH 1-2-3 ---------- */
+        #view-home .sm\:grid-cols-3 > div {
+            border-radius: 20px !important; border-color: var(--pl-line) !important;
+            box-shadow: 0 1px 2px rgba(15,23,42,.04);
+            transition: transform .16s, box-shadow .16s;
+        }
+        #view-home .sm\:grid-cols-3 > div:hover { transform: translateY(-2px); box-shadow: var(--pl-shadow); }
+
+        /* ---------- FOOTER ---------- */
+        footer { background: linear-gradient(180deg, #ffffff, #f8fafc) !important; border-top-color: var(--pl-line) !important; }
+        footer a[target="_blank"] { transition: background .15s, color .15s, border-color .15s, transform .15s; }
+        footer a[target="_blank"]:hover {
+            background: #ecfdf5 !important; color: #065f46 !important;
+            border-color: #a7f3d0 !important; transform: translateY(-1px);
+        }
+
+        /* ---------- TELEFON ---------- */
+        @media (max-width: 640px) {
+            #ic-photostat-container { padding: 18px 15px !important; }
+            #view-home [id^="tab-"] { padding: 10px 8px; }
+            #view-home [id^="tab-"] > span.absolute { top: -8px; right: 7px; }
+            #ic-photostat-container > div > p { font-size: 11.5px; }
+        }
     </style>
 
     <!-- GOOGLE ADSENSE — Auto Ads (cara rasmi untuk halaman HTML biasa) -->
@@ -328,6 +473,11 @@
                 <p id="main-subtitle" class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed" data-i18n="hero_desc">
                     Lindungi salinan MyKad/IC, klik terus pada borang PDF untuk taip, tandatangan digital, atau tukar gambar kepada PDF dengan selamat di dalam pelayar anda.
                 </p>
+                <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <span class="pl-chip">🔒 100% dalam pelayar</span>
+                    <span class="pl-chip">🆓 Percuma &amp; tiada akaun</span>
+                    <span class="pl-chip">📱 Sedia untuk telefon</span>
+                </div>
             </div>
 
             <!-- TABS MODE -->
@@ -441,6 +591,11 @@
                                 </div>
                             </div>
 
+                            <button type="button" id="ic-wm-lanjut-btn" onclick="icWmLanjut()" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-[11px] font-extrabold text-slate-700">
+                                <span>⚙️ Pilihan lanjutan palang (huruf &middot; warna &middot; saiz &middot; baris &middot; tarikh)</span>
+                                <span id="ic-wm-lanjut-tanda">&#9662;</span>
+                            </button>
+                            <div id="ic-wm-lanjut" class="hidden space-y-3">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="text-[11px] font-extrabold text-slate-700">Huruf:</span>
                                 <button type="button" data-wm-huruf="asal" onclick="icWmSet('huruf','asal')" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Seperti ditaip</button>
@@ -473,6 +628,7 @@
                                 <input type="checkbox" id="ic-wm-tarikh" onchange="icWmSet('tarikh', this.checked)" class="w-4 h-4 accent-emerald-600">
                                 <span class="text-[11px] font-extrabold text-slate-800">Tambah tarikh hari ini pada palang (cth · 27/09/2026)</span>
                             </label>
+                            </div>
                         </div>
                     </div>
 
@@ -535,7 +691,8 @@
                 <span class="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-xs font-extrabold rounded-xl shadow-sm">📂 Pilih Fail</span>
             </label>
 
-            <div class="mt-3 flex flex-wrap items-center justify-center gap-3">
+            <div class="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm">
+            <div class="flex flex-wrap items-center justify-center gap-3">
                 <label for="file-camera" class="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-sm cursor-pointer">
                     📷 Ambil Gambar (Kamera)
                 </label>
@@ -545,6 +702,7 @@
                 </button>
             </div>
             <p class="mt-2 text-[11px] font-semibold text-slate-500">Seret & lepas fail dari komputer juga boleh · Fungsinya sama ada dipasang atau tidak.</p>
+            </div>
 
             <!-- CARA GUNA + SOALAN LAZIM (juga membantu carian Google) -->
             <div class="mt-8 max-w-3xl mx-auto text-left">
@@ -5225,6 +5383,30 @@
             if (typeof updateBatchWmHint === 'function') updateBatchWmHint();
             return batchImages.length;
         }
+
+        // (v32) buka/tutup pilihan lanjutan palang IC (lalai tertutup → halaman nampak ringkas)
+        function icWmLanjut() {
+            const d = document.getElementById('ic-wm-lanjut');
+            const t = document.getElementById('ic-wm-lanjut-tanda');
+            if (!d) return false;
+            const buka = d.classList.contains('hidden');
+            d.classList.toggle('hidden', !buka);
+            if (t) t.textContent = buka ? '\u25B4' : '\u25BE';
+            try { localStorage.setItem('pdfeasy_wm_lanjut', buka ? '1' : '0'); } catch (e) {}
+            return buka;
+        }
+
+        // ingat pilihan pengguna: kalau dia pernah buka panel lanjutan, buka semula lain kali
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                if (localStorage.getItem('pdfeasy_wm_lanjut') !== '1') return;
+                const d = document.getElementById('ic-wm-lanjut');
+                const t = document.getElementById('ic-wm-lanjut-tanda');
+                if (d) d.classList.remove('hidden');
+                if (t) t.textContent = '\u25B4';
+            } catch (e) {}
+        });
+
 
         /* =====================================================================
            RUANG IKLAN (Google AdSense) — tidak mengganggu pengguna

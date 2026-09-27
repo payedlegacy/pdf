@@ -419,9 +419,38 @@
                     </div>
                     <p id="ic-tip" class="text-[11px] font-semibold text-slate-500">Tip: ambil gambar secara melintang, kad memenuhi bingkai, cahaya terang.</p>
 
-                    <div class="space-y-2 text-left bg-slate-50 p-4 rounded-2xl border">
-                        <label class="block text-xs font-extrabold text-slate-800" for="ic-wm-text">Teks Palang Keselamatan:</label>
-                        <input type="text" id="ic-wm-text" value="UNTUK URUSAN RASMI SAHAJA" class="w-full p-3 border rounded-xl font-bold text-xs bg-white text-slate-800 outline-none">
+                    <div class="space-y-3 text-left bg-slate-50 p-4 rounded-2xl border">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="ic-wm-on" checked onchange="icWmSet('on', this.checked)" class="w-4 h-4 accent-emerald-600">
+                            <span class="text-xs font-extrabold text-slate-800">Letak palang keselamatan pada salinan</span>
+                        </label>
+
+                        <div id="ic-wm-opsi" class="space-y-3">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-extrabold text-slate-800" for="ic-wm-text">Teks Palang:</label>
+                                <input type="text" id="ic-wm-text" value="UNTUK URUSAN RASMI SAHAJA" class="w-full p-3 border rounded-xl font-bold text-xs bg-white text-slate-800 outline-none">
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[11px] font-extrabold text-slate-700">Warna:</span>
+                                <button type="button" data-wm-warna="merah" onclick="icWmSet('warna','merah')" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Merah Keselamatan</button>
+                                <button type="button" data-wm-warna="hitam" onclick="icWmSet('warna','hitam')" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Hitam Pekat</button>
+                                <button type="button" data-wm-warna="biru" onclick="icWmSet('warna','biru')" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Biru Rasmi</button>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[11px] font-extrabold text-slate-700">Saiz:</span>
+                                <button type="button" data-wm-saiz="10" onclick="icWmSet('saiz',10)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Kecil</button>
+                                <button type="button" data-wm-saiz="13" onclick="icWmSet('saiz',13)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Sederhana</button>
+                                <button type="button" data-wm-saiz="17" onclick="icWmSet('saiz',17)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Besar</button>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[11px] font-extrabold text-slate-700">Baris:</span>
+                                <button type="button" data-wm-baris="1" onclick="icWmSet('baris',1)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">1 baris (tengah)</button>
+                                <button type="button" data-wm-baris="2" onclick="icWmSet('baris',2)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">2 baris</button>
+                            </div>
+                        </div>
                     </div>
 
                     <button onclick="generateICPhotostatPDF()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-lg transition">
@@ -4867,6 +4896,42 @@
             icEditTutup();
         }
 
+        /* =====================================================================
+           PILIHAN PALANG IC: hidup/mati, warna, saiz, bilangan baris
+           ===================================================================== */
+        const IC_WM_WARNA = { merah: [0.85, 0.08, 0.08], hitam: [0.10, 0.10, 0.12], biru: [0.10, 0.30, 0.72] };
+        let icWm = { on: true, warna: 'merah', saiz: 13, baris: 2 };
+
+        function icWmChip(b, aktif) {
+            b.style.background = aktif ? '#0f172a' : '#ffffff';
+            b.style.color = aktif ? '#ffffff' : '#334155';
+            b.style.borderColor = aktif ? '#0f172a' : '#cbd5e1';
+        }
+
+        function icWmKemas() {
+            const opsi = document.getElementById('ic-wm-opsi');
+            if (opsi) {
+                opsi.style.opacity = icWm.on ? '1' : '0.35';
+                opsi.style.pointerEvents = icWm.on ? '' : 'none';
+            }
+            document.querySelectorAll('[data-wm-warna]').forEach(b => icWmChip(b, b.dataset.wmWarna === icWm.warna));
+            document.querySelectorAll('[data-wm-saiz]').forEach(b => icWmChip(b, parseInt(b.dataset.wmSaiz, 10) === icWm.saiz));
+            document.querySelectorAll('[data-wm-baris]').forEach(b => icWmChip(b, parseInt(b.dataset.wmBaris, 10) === icWm.baris));
+        }
+
+        function icWmSet(kunci, nilai) {
+            if (kunci === 'on') {
+                icWm.on = !!nilai;
+                const cb = document.getElementById('ic-wm-on');
+                if (cb) cb.checked = icWm.on;
+            } else {
+                icWm[kunci] = nilai;
+            }
+            icWmKemas();
+        }
+
+        try { icWmKemas(); } catch (e) { /* UI belum sedia — tidak kritikal */ }
+
         async function generateICPhotostatPDF() {
             if (!frontICImg && !backICImg) {
                 alert('Sila muat naik sekurang-kurangnya satu gambar IC.');
@@ -4908,18 +4973,23 @@
                             });
                         }
 
-                        // PALANG: 3 baris serong menutup seluruh muka kad
-                        // Saiz fon menyesuaikan lebar kad supaya teks TIDAK terkeluar bingkai
-                        const kos = Math.cos(15 * Math.PI / 180);
-                        let saiz = 13;
-                        while (saiz > 7 && font.widthOfTextAtSize(wmText, saiz) * kos > ICW * 0.85) saiz -= 0.5;
-                        const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
-                        for (let i = 1; i <= 3; i++) {
-                            page.drawText(wmText, {
-                                x: X0 + Math.max(4, (ICW - lebarTeks * kos) / 2),
-                                y: yPos + (ICH / 4) * i - 3,
-                                size: saiz, font: font, color: rgb(0.85, 0.08, 0.08),
-                                rotate: degrees(-15), opacity: 0.85
+                        // PALANG (pilihan): boleh dimatikan, warna & saiz & bilangan baris pilihan pengguna
+                        if (icWm.on) {
+                            const warna = IC_WM_WARNA[icWm.warna] || IC_WM_WARNA.merah;
+                            const kos = Math.cos(15 * Math.PI / 180);
+                            // saiz fon menyesuaikan lebar kad supaya teks TIDAK terkeluar bingkai
+                            let saiz = icWm.saiz;
+                            while (saiz > 6 && font.widthOfTextAtSize(wmText, saiz) * kos > ICW * 0.85) saiz -= 0.5;
+                            const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
+                            const kedudukan = (icWm.baris === 1) ? [ICH * 0.5] : [ICH * 0.35, ICH * 0.7];
+                            kedudukan.forEach(f => {
+                                page.drawText(wmText, {
+                                    x: X0 + Math.max(4, (ICW - lebarTeks * kos) / 2),
+                                    y: yPos + f - saiz * 0.35,
+                                    size: saiz, font: font,
+                                    color: rgb(warna[0], warna[1], warna[2]),
+                                    rotate: degrees(-15), opacity: 0.85
+                                });
                             });
                         }
                     } else {

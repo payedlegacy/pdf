@@ -1450,6 +1450,13 @@
             const isDoc = DOC_MODES.indexOf(mode) >= 0;
             const docArea = document.getElementById('doc-area');
             if (docArea) docArea.classList.toggle('hidden', !isDoc);
+
+            // (v32) balik ke alat dokumen (Isi Borang / Palang IC / Mampat) selepas
+            // kerja gambar → pulihkan dokumen yang dilindungi (jangan minta muat naik semula)
+            if (isDoc && mode !== 'convert' && dokAda() && dokSlot.pdfDocObj
+                && pdfDocObj !== dokSlot.pdfDocObj) {
+                requestAnimationFrame(() => { try { dokPulih(); } catch (e) { console.error(e); } });
+            }
             ['sign', 'qr', 'merge', 'passport'].forEach(m => {
                 const p = document.getElementById('panel-' + m);
                 if (p) p.classList.toggle('hidden', m !== mode);
@@ -1520,6 +1527,7 @@
             annotations = {};
             wmX = 0; wmY = 0;
             clearBatch();
+            try { dokKosongkan(); } catch (e) {}
             document.getElementById('file-input').value = '';
             document.getElementById('view-workspace').classList.add('hidden');
             document.getElementById('view-workspace').classList.remove('flex');
@@ -1538,6 +1546,31 @@
 
             const file = list[0];
             if (!file) return;
+
+            const _jns = jenisFail(file);
+            const _adaDok = !!(pdfDocObj || imageSrcUrl);
+
+            // (v32) PERLINDUNGAN DOKUMEN: gambar dimuat semasa alat dokumen terbuka
+            // (cth Isi Borang) → hantar ke alat "Tukar Gambar ke PDF" dan KEKALKAN
+            // borang pada skrin. Tiada rampasan mod, tiada kehilangan isian.
+            if ((_jns === 'imej' || _jns === 'heic') && _adaDok &&
+                DOC_MODES.indexOf(currentMode) >= 0 && currentMode !== 'convert') {
+                showLoading('Menambah gambar...');
+                try {
+                    const n = await tambahGambarKeBatch([file]);
+                    alert('📌 Gambar ditambah ke alat "Tukar Gambar ke PDF" (' + n + ' gambar).\n'
+                        + 'Dokumen anda masih selamat di sini — tekan tab itu apabila sedia.');
+                } finally {
+                    hideLoading();
+                    document.getElementById('file-input').value = '';
+                }
+                updateDocHint();
+                return;
+            }
+
+            // (v32) simpan dokumen semasa sebelum sebarang reset;
+            // PDF baharu menggantikan dokumen lama (slot dibuang).
+            if (_jns === 'pdf') { dokKosongkan(); } else { dokSimpan(); }
 
             showLoading('Memuatkan fail...');
             document.getElementById('view-home').classList.add('hidden');
@@ -1922,6 +1955,18 @@
             const semua = Array.from((e && e.target && e.target.files) || []);
             const files = semua.filter(f => { const j = jenisFail(f); return j === 'imej' || j === 'heic'; });
             if (!files.length) { document.getElementById('file-input').value = ''; document.getElementById('file-batch').value = ''; return; }
+
+            // (v32) dokumen terbuka di alat dokumen (cth Isi Borang) → jangan rampas mod;
+            // hanya tambah gambar ke alat "Tukar Gambar ke PDF" & pastikan isian kekal.
+            if ((pdfDocObj || imageSrcUrl) && DOC_MODES.indexOf(currentMode) >= 0 && currentMode !== 'convert') {
+                const n2 = await tambahGambarKeBatch(files);
+                document.getElementById('file-input').value = '';
+                document.getElementById('file-batch').value = '';
+                alert('📌 ' + files.length + ' gambar ditambah ke alat "Tukar Gambar ke PDF" (' + n2 + ' gambar).\n'
+                    + 'Dokumen anda masih selamat di sini — tekan tab itu apabila sedia.');
+                updateDocHint();
+                return;
+            }
 
             showLoading('Memuatkan ' + files.length + ' gambar...');
             const gagal = [];
@@ -5100,6 +5145,86 @@
             updateBatchWmHint();
             initAds();
         });
+
+        /* =====================================================================
+           (v32) PERLINDUNGAN DOKUMEN & ALIRAN MOD
+           Pepijat dibaiki (aduan pemilik 27-09-2026): selepas mengisi borang,
+           memuat naik GAMBAR melalui alat "Tukar Gambar ke PDF" memadam
+           pdfDocObj + anotasi dan MERAMPAS mod. Balik ke "Isi Borang" nampak
+           boleh taip, tetapi butang Kongsi berkata "Muat naik fail PDF dahulu".
+           Kini: dokumen dilindungi, gambar dihantar ke alat Tukar Gambar,
+           dan dokumen dipulihkan automatik. Fungsi lama TIDAK diubah.
+           ===================================================================== */
+        let dokSlot = null;          // simpanan dokumen (borang/gambar) yang dilindungi
+
+        function dokAda() { return !!dokSlot; }
+
+        function dokKosongkan() { dokSlot = null; return true; }
+
+        function dokSimpan() {
+            const adaPdf = !!pdfDocObj;
+            if (!adaPdf && !imageSrcUrl) return false;
+            // jangan ganti borang yang sudah dilindungi dengan keadaan gambar
+            if (!adaPdf && dokSlot && dokSlot.pdfDocObj) return false;
+            let ann = {};
+            try { ann = JSON.parse(JSON.stringify(annotations || {})); } catch (e) { ann = {}; }
+            dokSlot = {
+                pdfDocObj: pdfDocObj,
+                imageSrcUrl: imageSrcUrl,
+                annotations: ann,
+                originalFileSize: originalFileSize,
+                currentPageNum: currentPageNum,
+                totalPagesNum: totalPagesNum,
+                fp: (typeof borangFp !== 'undefined' ? borangFp : null),
+                nama: (document.getElementById('ws-filename') || {}).innerText || '',
+                meta: (document.getElementById('ws-filemeta') || {}).innerText || '',
+                masa: Date.now()
+            };
+            return true;
+        }
+
+        async function dokPulih() {
+            if (!dokSlot) return false;
+            if (pdfDocObj && pdfDocObj === dokSlot.pdfDocObj) return false;   // dokumen yang sama sudah hidup
+            pdfDocObj = dokSlot.pdfDocObj;
+            imageSrcUrl = dokSlot.imageSrcUrl;
+            annotations = dokSlot.annotations || {};
+            originalFileSize = dokSlot.originalFileSize || 0;
+            currentPageNum = dokSlot.currentPageNum || 1;
+            totalPagesNum = dokSlot.totalPagesNum || 1;
+            try { if (typeof borangFp !== 'undefined') borangFp = dokSlot.fp || null; } catch (e) {}
+            const fn = document.getElementById('ws-filename');
+            if (fn && dokSlot.nama) fn.innerText = dokSlot.nama;
+            const fm = document.getElementById('ws-filemeta');
+            if (fm && dokSlot.meta) fm.innerText = dokSlot.meta;
+            const pc = document.getElementById('page-controls');
+            if (pc) {
+                pc.classList.toggle('hidden', totalPagesNum <= 1);
+                pc.classList.toggle('flex', totalPagesNum > 1);
+            }
+            const tot = document.getElementById('lbl-tot-page');
+            if (tot) tot.innerText = totalPagesNum;
+            if (pdfDocObj) await renderPDFPage();              // render + pulihkan anotasi halaman ini
+            else if (imageSrcUrl) await renderImage();
+            if (typeof updateDocHint === 'function') updateDocHint();
+            return true;
+        }
+
+        // tambah gambar ke alat "Tukar Gambar ke PDF" TANPA mengganggu dokumen terbuka
+        async function tambahGambarKeBatch(files) {
+            for (const f of files) {
+                const j = jenisFail(f);
+                if (j !== 'imej' && j !== 'heic') continue;
+                const src = URL.createObjectURL(f);
+                let img;
+                try { img = await loadImgEl(src); } catch (e) { URL.revokeObjectURL(src); continue; }
+                batchImages.push({ id: ++batchSeq, src, name: f.name, imgEl: img,
+                                   w: img.naturalWidth, h: img.naturalHeight, rot: 0, crop: null });
+            }
+            if (typeof renderBatchStrip === 'function') renderBatchStrip();
+            if (typeof updateBatchWmHint === 'function') updateBatchWmHint();
+            return batchImages.length;
+        }
 
         /* =====================================================================
            RUANG IKLAN (Google AdSense) — tidak mengganggu pengguna

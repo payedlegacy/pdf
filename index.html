@@ -427,8 +427,22 @@
 
                         <div id="ic-wm-opsi" class="space-y-3">
                             <div class="space-y-1">
-                                <label class="block text-xs font-extrabold text-slate-800" for="ic-wm-text">Teks Palang:</label>
+                                <label class="block text-xs font-extrabold text-slate-800" for="ic-wm-text">Teks Palang (anda boleh taip apa sahaja):</label>
                                 <input type="text" id="ic-wm-text" value="UNTUK URUSAN RASMI SAHAJA" class="w-full p-3 border rounded-xl font-bold text-xs bg-white text-slate-800 outline-none">
+                                <div class="flex flex-wrap items-center gap-2 pt-1">
+                                    <span class="text-[11px] font-extrabold text-slate-700">Sedia guna:</span>
+                                    <button type="button" data-wm-preset="FOR CUCKOO ONLY" onclick="icWmPreset(this)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">CUCKOO</button>
+                                    <button type="button" data-wm-preset="UNTUK URUSAN BANK SAHAJA" onclick="icWmPreset(this)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">BANK</button>
+                                    <button type="button" data-wm-preset="UNTUK PERMOHONAN KERJA SAHAJA" onclick="icWmPreset(this)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">KERJA</button>
+                                    <button type="button" data-wm-preset="SALINAN SAHAJA" onclick="icWmPreset(this)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">SALINAN</button>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[11px] font-extrabold text-slate-700">Huruf:</span>
+                                <button type="button" data-wm-huruf="asal" onclick="icWmSet('huruf','asal')" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Seperti ditaip</button>
+                                <button type="button" data-wm-huruf="besar" onclick="icWmSet('huruf','besar')" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">HURUF BESAR</button>
+                                <button type="button" data-wm-huruf="kecil" onclick="icWmSet('huruf','kecil')" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">huruf kecil</button>
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2">
@@ -447,9 +461,15 @@
 
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="text-[11px] font-extrabold text-slate-700">Baris:</span>
-                                <button type="button" data-wm-baris="1" onclick="icWmSet('baris',1)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">1 baris (tengah)</button>
-                                <button type="button" data-wm-baris="2" onclick="icWmSet('baris',2)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">2 baris</button>
+                                <button type="button" data-wm-baris="1" onclick="icWmSet('baris',1)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">1 (tengah)</button>
+                                <button type="button" data-wm-baris="2" onclick="icWmSet('baris',2)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">2</button>
+                                <button type="button" data-wm-baris="4" onclick="icWmSet('baris',4)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Penuh (rata) — tutup nombor IC &amp; gambar</button>
                             </div>
+
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="ic-wm-tarikh" onchange="icWmSet('tarikh', this.checked)" class="w-4 h-4 accent-emerald-600">
+                                <span class="text-[11px] font-extrabold text-slate-800">Tambah tarikh hari ini pada palang (cth · 27/09/2026)</span>
+                            </label>
                         </div>
                     </div>
 
@@ -4900,7 +4920,7 @@
            PILIHAN PALANG IC: hidup/mati, warna, saiz, bilangan baris
            ===================================================================== */
         const IC_WM_WARNA = { merah: [0.85, 0.08, 0.08], hitam: [0.10, 0.10, 0.12], biru: [0.10, 0.30, 0.72] };
-        let icWm = { on: true, warna: 'merah', saiz: 13, baris: 2 };
+        let icWm = { on: true, warna: 'merah', saiz: 13, baris: 2, huruf: 'asal', tarikh: false };
 
         function icWmChip(b, aktif) {
             b.style.background = aktif ? '#0f172a' : '#ffffff';
@@ -4914,9 +4934,14 @@
                 opsi.style.opacity = icWm.on ? '1' : '0.35';
                 opsi.style.pointerEvents = icWm.on ? '' : 'none';
             }
+            const taipan = (document.getElementById('ic-wm-text') || {}).value || '';
             document.querySelectorAll('[data-wm-warna]').forEach(b => icWmChip(b, b.dataset.wmWarna === icWm.warna));
             document.querySelectorAll('[data-wm-saiz]').forEach(b => icWmChip(b, parseInt(b.dataset.wmSaiz, 10) === icWm.saiz));
             document.querySelectorAll('[data-wm-baris]').forEach(b => icWmChip(b, parseInt(b.dataset.wmBaris, 10) === icWm.baris));
+            document.querySelectorAll('[data-wm-huruf]').forEach(b => icWmChip(b, b.dataset.wmHuruf === icWm.huruf));
+            document.querySelectorAll('[data-wm-preset]').forEach(b => icWmChip(b, b.dataset.wmPreset === taipan));
+            const cbT = document.getElementById('ic-wm-tarikh');
+            if (cbT) cbT.checked = !!icWm.tarikh;
         }
 
         function icWmSet(kunci, nilai) {
@@ -4924,10 +4949,33 @@
                 icWm.on = !!nilai;
                 const cb = document.getElementById('ic-wm-on');
                 if (cb) cb.checked = icWm.on;
+            } else if (kunci === 'tarikh') {
+                icWm.tarikh = !!nilai;
             } else {
                 icWm[kunci] = nilai;
             }
             icWmKemas();
+        }
+
+        // preset teks — SAMA format dengan alat "Palang IC/ID" sedia ada
+        function icWmPreset(btn) {
+            const tx = document.getElementById('ic-wm-text');
+            if (tx && btn && btn.dataset) tx.value = btn.dataset.wmPreset || '';
+            icWmKemas();
+        }
+
+        // teks akhir palang: ikut pilihan huruf pengguna + pilihan tarikh
+        function icWmTeks() {
+            const tx = document.getElementById('ic-wm-text');
+            let s = icTeksSelamat(tx ? tx.value : '') || 'UNTUK URUSAN RASMI SAHAJA';
+            if (icWm.huruf === 'besar') s = s.toUpperCase();
+            else if (icWm.huruf === 'kecil') s = s.toLowerCase();
+            if (icWm.tarikh) {
+                const d = new Date();
+                const p = n => (n < 10 ? '0' + n : '' + n);
+                s += ' \u00B7 ' + p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear();
+            }
+            return s;
         }
 
         try { icWmKemas(); } catch (e) { /* UI belum sedia — tidak kritikal */ }
@@ -4952,7 +5000,8 @@
                 // drawText WAJIB ada 'font' — jika tiada, pdf-lib akan ralat
                 const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-                const wmText = icTeksSelamat(document.getElementById('ic-wm-text').value) || 'UNTUK URUSAN RASMI SAHAJA';
+                // teks palang akhir: ikut huruf pilihan pengguna (asal/besar/kecil) + tarikh (jika dipilih)
+                const wmText = icWmTeks();
 
                 async function drawICWithWatermark(img, yPos, title, putaran, hasil) {
                     page.drawText(title, { x: X0, y: yPos + ICH + 12, size: 11, font: font, color: rgb(0.15, 0.15, 0.15) });
@@ -4981,7 +5030,10 @@
                             let saiz = icWm.saiz;
                             while (saiz > 6 && font.widthOfTextAtSize(wmText, saiz) * kos > ICW * 0.85) saiz -= 0.5;
                             const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
-                            const kedudukan = (icWm.baris === 1) ? [ICH * 0.5] : [ICH * 0.35, ICH * 0.7];
+                            // 1 = tengah · 2 = dua baris · 4 = PENUH (rata, tutup nombor IC & gambar)
+                            const kedudukan = (icWm.baris === 1) ? [ICH * 0.5]
+                                : (icWm.baris === 4) ? [ICH * 0.2, ICH * 0.4, ICH * 0.6, ICH * 0.8]
+                                : [ICH * 0.35, ICH * 0.7];
                             kedudukan.forEach(f => {
                                 page.drawText(wmText, {
                                     x: X0 + Math.max(4, (ICW - lebarTeks * kos) / 2),

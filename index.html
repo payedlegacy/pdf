@@ -4706,7 +4706,7 @@
                         // Saiz fon menyesuaikan lebar kad supaya teks TIDAK terkeluar bingkai
                         const kos = Math.cos(15 * Math.PI / 180);
                         let saiz = 13;
-                        while (saiz > 7 && font.widthOfTextAtSize(wmText, saiz) * kos > ICW * 0.94) saiz -= 0.5;
+                        while (saiz > 7 && font.widthOfTextAtSize(wmText, saiz) * kos > ICW * 0.85) saiz -= 0.5;
                         const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
                         for (let i = 1; i <= 3; i++) {
                             page.drawText(wmText, {

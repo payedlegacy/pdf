@@ -784,6 +784,9 @@
                         <label for="file-camera" class="px-3 py-2 bg-sky-50 border border-sky-300 hover:bg-sky-100 text-sky-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                             📷 Kamera
                         </label>
+                        <button type="button" id="btn-pulih-dok" onclick="dokPulihButang()" class="hidden px-3 py-2 bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-800 text-xs font-extrabold rounded-xl transition items-center gap-1.5 shadow-sm cursor-pointer">
+                            ↩️ Pulihkan dokumen sebelum ini
+                        </button>
                     </div>
 
                     <!-- ACTION BUTTONS UNIVERSAL (semua melalui PRATONTON dahulu) -->
@@ -1612,8 +1615,21 @@
             // (v32) balik ke alat dokumen (Isi Borang / Palang IC / Mampat) selepas
             // kerja gambar → pulihkan dokumen yang dilindungi (jangan minta muat naik semula)
             if (isDoc && mode !== 'convert' && dokAda() && dokSlot.pdfDocObj
-                && pdfDocObj !== dokSlot.pdfDocObj) {
+                && !pdfDocObj && !imageSrcUrl) {
                 requestAnimationFrame(() => { try { dokPulih(); } catch (e) { console.error(e); } });
+            }
+            // (v32b) jika tiada dokumen DAN tiada simpanan → kosongkan kanvas supaya pengguna
+            // TIDAK nampak "borang hantu" (sisa render lama) yang membuat dia sangka fail sudah dimuat naik.
+            if (isDoc && !pdfDocObj && !imageSrcUrl && !dokAda()) {
+                requestAnimationFrame(() => {
+                    try {
+                        const _cv = document.getElementById('main-canvas');
+                        if (_cv && _cv.width) _cv.getContext('2d').clearRect(0, 0, _cv.width, _cv.height);
+                        const _lay = document.getElementById('annotation-layer');
+                        if (_lay) _lay.innerHTML = '';
+                        if (typeof updateDocHint === 'function') updateDocHint();
+                    } catch (e) {}
+                });
             }
             ['sign', 'qr', 'merge', 'passport'].forEach(m => {
                 const p = document.getElementById('panel-' + m);
@@ -1672,6 +1688,8 @@
             }
             const lbl = document.getElementById('ws-upload-label');
             if (lbl) lbl.textContent = ada ? 'Ganti / Tambah Fail' : 'Muat Naik Fail';
+            // (v32c) tunjuk/sembunyi butang pulih dokumen tersimpan
+            if (typeof dokKemasBtn === 'function') dokKemasBtn();
         }
 
         function setWatermarkPreset(text) {
@@ -1680,12 +1698,14 @@
         }
 
         function resetToHome() {
+            // (v32b) SIMPAN kerja dahulu: tekan "Kembali" tidak lagi menghilangkan borang/isian.
+            // Dokumen + isian dipulihkan automatik bila pengguna membuka semula alat dokumen.
+            try { dokSimpan(); } catch (e) {}
             pdfDocObj = null;
             imageSrcUrl = null;
             annotations = {};
             wmX = 0; wmY = 0;
             clearBatch();
-            try { dokKosongkan(); } catch (e) {}
             document.getElementById('file-input').value = '';
             document.getElementById('view-workspace').classList.add('hidden');
             document.getElementById('view-workspace').classList.remove('flex');
@@ -1708,23 +1728,9 @@
             const _jns = jenisFail(file);
             const _adaDok = !!(pdfDocObj || imageSrcUrl);
 
-            // (v32) PERLINDUNGAN DOKUMEN: gambar dimuat semasa alat dokumen terbuka
-            // (cth Isi Borang) → hantar ke alat "Tukar Gambar ke PDF" dan KEKALKAN
-            // borang pada skrin. Tiada rampasan mod, tiada kehilangan isian.
-            if ((_jns === 'imej' || _jns === 'heic') && _adaDok &&
-                DOC_MODES.indexOf(currentMode) >= 0 && currentMode !== 'convert') {
-                showLoading('Menambah gambar...');
-                try {
-                    const n = await tambahGambarKeBatch([file]);
-                    alert('📌 Gambar ditambah ke alat "Tukar Gambar ke PDF" (' + n + ' gambar).\n'
-                        + 'Dokumen anda masih selamat di sini — tekan tab itu apabila sedia.');
-                } finally {
-                    hideLoading();
-                    document.getElementById('file-input').value = '';
-                }
-                updateDocHint();
-                return;
-            }
+            // (v32c) Gambar yang dipilih menjadi DOKUMEN bagi alat semasa (cth Isi Borang):
+            // pengguna kekal di alat yang dipilih, dan gambar itu terus boleh ditaip/ditandatangan.
+            // Dokumen sebelumnya sudah disimpan dalam slot (boleh dipulihkan).
 
             // (v32) simpan dokumen semasa sebelum sebarang reset;
             // PDF baharu menggantikan dokumen lama (slot dibuang).
@@ -1766,7 +1772,10 @@
                 } else if (jenis === 'imej' || jenis === 'heic') {
                     imageSrcUrl = URL.createObjectURL(file);
                     totalPagesNum = 1; currentPageNum = 1;
-                    if(currentMode !== 'protect') setMode('convert');
+                    // (v32b) JANGAN rampas mod: jika pengguna sedang berada dalam alat dokumen
+                    // (Isi Borang / Palang IC / Mampat), gambar itu menjadi dokumen bagi alat itu.
+                    // Hanya alat khas (Sain/Cantum/Pasport/QR) yang berpindah ke "Tukar Gambar ke PDF".
+                    if (DOC_MODES.indexOf(currentMode) < 0) setMode('convert');
                     await renderImage();
                     borangFp = capJariBorang(file.name, file.size, 1);
                     setTimeout(() => { try { tawarkanPulihBorang(borangFp); } catch (e) {} }, 500);
@@ -2114,17 +2123,8 @@
             const files = semua.filter(f => { const j = jenisFail(f); return j === 'imej' || j === 'heic'; });
             if (!files.length) { document.getElementById('file-input').value = ''; document.getElementById('file-batch').value = ''; return; }
 
-            // (v32) dokumen terbuka di alat dokumen (cth Isi Borang) → jangan rampas mod;
-            // hanya tambah gambar ke alat "Tukar Gambar ke PDF" & pastikan isian kekal.
-            if ((pdfDocObj || imageSrcUrl) && DOC_MODES.indexOf(currentMode) >= 0 && currentMode !== 'convert') {
-                const n2 = await tambahGambarKeBatch(files);
-                document.getElementById('file-input').value = '';
-                document.getElementById('file-batch').value = '';
-                alert('📌 ' + files.length + ' gambar ditambah ke alat "Tukar Gambar ke PDF" (' + n2 + ' gambar).\n'
-                    + 'Dokumen anda masih selamat di sini — tekan tab itu apabila sedia.');
-                updateDocHint();
-                return;
-            }
+            // (v32c) Banyak gambar serentak = hasrat jelas untuk alat kolaj → kekal seperti asal
+            // (tukar ke "Tukar Gambar ke PDF"); dokumen borang tidak dipadam, jadi tiada kehilangan.
 
             showLoading('Memuatkan ' + files.length + ' gambar...');
             const gagal = [];
@@ -5394,6 +5394,25 @@
             if (t) t.textContent = buka ? '\u25B4' : '\u25BE';
             try { localStorage.setItem('pdfeasy_wm_lanjut', buka ? '1' : '0'); } catch (e) {}
             return buka;
+        }
+
+
+        // (v32c) butang "Pulihkan dokumen sebelum ini": muncul HANYA bila ada dokumen tersimpan
+        // yang berbeza daripada dokumen di skrin (cth borang tersimpan semasa gambar dibuka).
+        function dokKemasBtn() {
+            const b = document.getElementById('btn-pulih-dok');
+            if (!b) return false;
+            const berbeza = !!(dokSlot && dokSlot.pdfDocObj) && pdfDocObj !== dokSlot.pdfDocObj;
+            b.classList.toggle('hidden', !berbeza);
+            b.classList.toggle('flex', berbeza);
+            return berbeza;
+        }
+
+        async function dokPulihButang() {
+            const ok = await dokPulih();
+            if (typeof updateDocHint === 'function') updateDocHint();
+            if (typeof dokKemasBtn === 'function') dokKemasBtn();
+            return ok;
         }
 
         // ingat pilihan pengguna: kalau dia pernah buka panel lanjutan, buka semula lain kali

@@ -704,6 +704,25 @@
             <p class="mt-2 text-[11px] font-semibold text-slate-500">Seret & lepas fail dari komputer juga boleh · Fungsinya sama ada dipasang atau tidak.</p>
             </div>
 
+            <!-- =====================================================================
+                 (v33) SUMBANGAN — QR DuitNow (BSN). Blok TERPENCIL, tiada alat disentuh.
+                 ===================================================================== -->
+            <div id="sumbangan" class="bg-gradient-to-br from-emerald-50 via-white to-white border border-emerald-100 rounded-3xl p-5 shadow-sm">
+                <div class="flex flex-col sm:flex-row items-center gap-5 justify-center max-w-3xl mx-auto">
+                    <button type="button" id="qrs-buka" onclick="qrsBuka()" class="shrink-0 group relative" aria-label="Besarkan QR sumbangan DuitNow">
+                        <img src="/sumbangan-qr.png" alt="QR DuitNow BSN atas nama Mohamad Farid Bin Mat" width="150" height="163" class="block w-[150px] rounded-2xl border border-slate-200 shadow-sm group-hover:shadow-md transition bg-white">
+                        <span class="absolute -top-2 -right-2 text-[9px] font-black bg-emerald-600 text-white px-2 py-1 rounded-full shadow-sm">🔍 Besarkan</span>
+                    </button>
+                    <div class="text-center sm:text-left max-w-md">
+                        <p class="text-[10px] font-extrabold text-emerald-600 tracking-[.12em] uppercase">Sumbangan</p>
+                        <h2 class="font-black text-slate-900 text-lg leading-tight mt-1">Sokong PDFEasy — belanja kopi ☕</h2>
+                        <p class="text-[12px] font-semibold text-slate-600 leading-relaxed mt-2">Web ini <b>percuma</b>, tanpa daftar, tanpa muat naik fail dan tiada iklan yang menghalang alat. Sumbangan kecil membantu saya bayar pelayan supaya ia terus percuma untuk semua orang.</p>
+                        <p class="text-[11px] font-bold text-slate-700 mt-2.5">DuitNow QR &middot; BSN<br><span class="text-slate-500 font-semibold">Mohamad Farid Bin Mat</span></p>
+                        <p class="text-[11px] font-semibold text-slate-500 mt-1.5">Imbas dengan app bank / e-wallet anda, atau tekan QR untuk besarkan.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- CARA GUNA + SOALAN LAZIM (juga membantu carian Google) -->
             <div class="mt-8 max-w-3xl mx-auto text-left">
                 <h2 class="font-black text-slate-900 text-lg sm:text-xl mb-3">Cara guna PDFEasy (3 langkah)</h2>
@@ -747,6 +766,17 @@
                         <summary class="font-extrabold text-slate-800 text-sm cursor-pointer">Ada alat buat gambar pasport 35mm × 50mm?</summary>
                         <p class="text-[12px] font-semibold text-slate-600 mt-2">Ada. <b>Studio Pasport</b> membolehkan anda ambil selfie, laraskan kecerahan/kontras, pilih latar (asal/putih/biru/merah) atau auto-crop muka &amp; baju, kemudian jana templat A4 8 keping sedia cetak.</p>
                     </details>
+                </div>
+            </div>
+
+            <!-- (v33) MODAL: QR sumbangan dibesarkan untuk diimbas -->
+            <div id="qrs-modal" class="fixed inset-0 bg-slate-900/70 z-[75] hidden items-center justify-center p-4" onclick="qrsTutup()">
+                <div class="bg-white rounded-3xl p-5 shadow-2xl text-center w-full max-w-xs" onclick="event.stopPropagation()">
+                    <h3 class="font-black text-slate-900 text-base">Imbas untuk sumbangan</h3>
+                    <p class="text-[11px] font-semibold text-slate-500 mb-3">DuitNow &middot; BSN &middot; Mohamad Farid Bin Mat</p>
+                    <img src="/sumbangan-qr.png" alt="QR DuitNow BSN" class="block w-full max-w-[260px] mx-auto rounded-2xl border border-slate-200 bg-white">
+                    <p class="text-[11px] font-semibold text-slate-500 mt-3 leading-relaxed">Buka app bank / e-wallet (DuitNow) &rarr; <b>Imbas QR</b> &rarr; masukkan jumlah &rarr; sahkan. Terima kasih! 💚</p>
+                    <button type="button" onclick="qrsTutup()" class="mt-4 w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl text-sm shadow-sm">Tutup</button>
                 </div>
             </div>
 
@@ -1334,7 +1364,11 @@
             </a>
             <span class="text-slate-300">•</span>
             <a href="https://payedlegacy.my" target="_blank" class="text-[10px] font-bold text-emerald-600 hover:underline">
-                🏠 Real Estate & House Hub
+                🏠 Real Estate &amp; House Hub
+            </a>
+            <span class="text-slate-300">•</span>
+            <a href="#sumbangan" class="text-[10px] font-bold text-emerald-600 hover:underline">
+                💚 Sumbangan (QR DuitNow)
             </a>
         </div>
     </footer>
@@ -5424,6 +5458,25 @@
             if (typeof dokKemasBtn === 'function') dokKemasBtn();
             return ok;
         }
+
+        // (v33) SUMBANGAN — buka/tutup QR DuitNow yang dibesarkan (modul terpencil)
+        function qrsBuka() {
+            const m = document.getElementById('qrs-modal');
+            if (!m) return false;
+            m.classList.remove('hidden'); m.classList.add('flex');
+            return true;
+        }
+
+        function qrsTutup() {
+            const m = document.getElementById('qrs-modal');
+            if (!m) return false;
+            m.classList.add('hidden'); m.classList.remove('flex');
+            return true;
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { try { qrsTutup(); } catch (err) {} }
+        });
 
         // ingat pilihan pengguna: kalau dia pernah buka panel lanjutan, buka semula lain kali
         document.addEventListener('DOMContentLoaded', function () {

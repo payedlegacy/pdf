@@ -396,7 +396,8 @@
                                 <input type="file" id="ic-front-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'front')">
                             </div>
                             <div id="front-alat" class="hidden flex-wrap items-center justify-center gap-2 mt-2">
-                                <button type="button" onclick="putarICImage('front')" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold rounded-lg">🔄 Putar</button>
+                                <button type="button" id="front-laras" onclick="icEditBuka('front')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold rounded-lg shadow-sm">✂️ Laraskan (Saiz Kad)</button>
+                                <button type="button" id="front-putar" onclick="putarICImage('front')" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold rounded-lg">🔄 Putar</button>
                                 <button type="button" onclick="buangICImage('front')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold rounded-lg">🗑️ Buang</button>
                             </div>
                         </div>
@@ -410,7 +411,8 @@
                                 <input type="file" id="ic-back-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'back')">
                             </div>
                             <div id="back-alat" class="hidden flex-wrap items-center justify-center gap-2 mt-2">
-                                <button type="button" onclick="putarICImage('back')" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold rounded-lg">🔄 Putar</button>
+                                <button type="button" id="back-laras" onclick="icEditBuka('back')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold rounded-lg shadow-sm">✂️ Laraskan (Saiz Kad)</button>
+                                <button type="button" id="back-putar" onclick="putarICImage('back')" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold rounded-lg">🔄 Putar</button>
                                 <button type="button" onclick="buangICImage('back')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-bold rounded-lg">🗑️ Buang</button>
                             </div>
                         </div>
@@ -425,7 +427,48 @@
                     <button onclick="generateICPhotostatPDF()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-lg transition">
                         📥 Jana &amp; Muat Turun PDF IC Photostat (1 Muka)
                     </button>
-                    <p class="text-[11px] font-semibold text-slate-500">Kad dilukis pada saiz sebenar MyKad (85.6 × 54 mm) di atas A4 · pratonton muncul sebelum simpan.</p>
+                    <p class="text-[11px] font-semibold text-slate-500">Kad dilukis pada saiz sebenar MyKad (85.6 × 54 mm) di atas A4 · pratonton muncul sebelum simpan · tekan <b>✂️ Laraskan</b> selepas ambil gambar untuk potong ikut kerangka saiz kad.</p>
+                </div>
+            </div>
+
+            <!-- =====================================================================
+                 MODAL BAHARU (TERPENCIL): EDITOR POTONG IKUT KERANGKA SAIZ KAD
+                 Kanvas = kerangka kad sebenar 85.6 × 54 mm pada 300 DPI (1011 × 638 px).
+                 Apa yang berada DALAM kerangka itulah yang dicetak pada saiz kad sebenar.
+                 ===================================================================== -->
+            <div id="ic-edit" class="fixed inset-0 bg-slate-900/70 z-[70] hidden items-center justify-center p-3">
+                <div class="bg-white rounded-3xl w-full max-w-lg p-4 space-y-3 shadow-2xl max-h-[96vh] overflow-y-auto">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h3 id="ic-edit-tajuk" class="font-black text-slate-900 text-base">Laraskan IC</h3>
+                            <p class="text-[11px] font-semibold text-slate-600">Kerangka = <b>saiz sebenar kad 85.6 × 54 mm</b>. Isi kad penuh dalam kerangka supaya hasil cetak sama besar dengan kad sebenar.</p>
+                        </div>
+                        <button type="button" onclick="icEditTutup()" class="w-8 h-8 shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black">✕</button>
+                    </div>
+
+                    <div class="relative">
+                        <canvas id="ic-edit-canvas" width="1011" height="638" class="w-full h-auto rounded-xl border-4 border-emerald-500 bg-slate-100 cursor-move block" style="touch-action:none"></canvas>
+                        <div class="absolute inset-0 rounded-xl border-2 border-dashed border-white/60 pointer-events-none"></div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="icEditZoom(-0.1)" class="w-10 h-10 shrink-0 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-lg">➖</button>
+                        <input id="ic-edit-zoom" type="range" min="0.3" max="4" step="0.01" value="1" oninput="icEditZoom(0, parseFloat(this.value))" class="flex-1 accent-emerald-600">
+                        <button type="button" onclick="icEditZoom(0.1)" class="w-10 h-10 shrink-0 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-lg">➕</button>
+                        <span id="ic-edit-zoom-label" class="w-12 text-center text-[11px] font-extrabold text-slate-600">100%</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="icEditAuto()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold rounded-xl">🎯 Auto-isi</button>
+                        <button type="button" onclick="icEditPutar()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold rounded-xl">🔄 Putar 90°</button>
+                        <button type="button" onclick="icEditReset()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold rounded-xl">↺ Reset</button>
+                    </div>
+                    <p class="text-[11px] font-semibold text-slate-500">Seret gambar untuk gerak · cubit 2 jari (atau slider/roda tetikus) untuk kecil-besar. Gambar di luar kerangka akan dipotong.</p>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="icEditTutup()" class="py-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-extrabold rounded-2xl text-sm">Batal</button>
+                        <button type="button" onclick="icEditSimpan()" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-lg">✅ Simpan (Saiz Kad)</button>
+                    </div>
                 </div>
             </div>
 
@@ -4573,6 +4616,7 @@
                 img.onload = () => {
                     if (type === 'front') { frontICImg = img; } else { backICImg = img; }
                     icPutar[type] = 0;
+                    icHasil[type] = null;            // gambar baharu → potongan lama dibuang
                     document.getElementById(type + '-preview').src = ev.target.result;
                     icKemasUI(type);
                     document.getElementById(type + '-label').innerText =
@@ -4595,7 +4639,7 @@
 
             if (img) {
                 prev.classList.remove('hidden');
-                prev.style.transform = 'rotate(' + sudut + 'deg)';
+                prev.style.transform = (icHasil[type] ? '' : 'rotate(' + sudut + 'deg)');
                 alat.classList.remove('hidden');
                 alat.classList.add('flex');
             } else {
@@ -4606,8 +4650,17 @@
                 alat.classList.remove('flex');
             }
 
+            // selepas dipotong ikut kerangka, butang Putar lama disembunyikan (putaran sudah dibakar)
+            const btnPutar = document.getElementById(type + '-putar');
+            if (btnPutar) btnPutar.style.display = icHasil[type] ? 'none' : '';
+
             const tip = document.getElementById('ic-tip');
             if (!tip) return;
+            if (icHasil[type]) {   // sudah dipotong ikut kerangka saiz kad → mesej kejayaan
+                tip.className = 'text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2';
+                tip.innerText = '✅ Gambar sudah dipotong ikut kerangka saiz kad sebenar — akan dicetak tepat 85.6 × 54 mm.';
+                return;
+            }
             const w = img && (img.naturalWidth || img.width);
             const h = img && (img.naturalHeight || img.height);
             const nisbahKad = 85.6 / 54;                       // 1.585
@@ -4629,6 +4682,7 @@
         function buangICImage(type) {
             if (type === 'front') { frontICImg = null; } else { backICImg = null; }
             icPutar[type] = 0;
+            icHasil[type] = null;                 // buang juga hasil potongan
             const pref = (type === 'front') ? 'ic-front' : 'ic-back';
             ['-file', '-cam'].forEach(s => { const el = document.getElementById(pref + s); if (el) el.value = ''; });
             icKemasUI(type);
@@ -4667,6 +4721,152 @@
             return String(s == null ? '' : s).replace(/[^\x20-\x7E\xA0-\xFF]/g, '').trim();
         }
 
+        /* =====================================================================
+           EDITOR POTONG IKUT KERANGKA SAIZ KAD SEBENAR (modul baharu, terpencil)
+           Kanvas 1011 × 638 px = 85.6 × 54 mm pada 300 DPI.
+           Apa yang berada dalam kanvas/kerangka itulah yang dicetak pada saiz
+           kad sebenar (ICW × ICH dalam PDF) — tanpa herot, tanpa jidar.
+           ===================================================================== */
+        const IC_PX_W = 1011, IC_PX_H = 638;          // 85.6×54 mm @300 DPI
+        let icHasil = { front: null, back: null };     // imej yang sudah dipotong ikut kerangka
+        let icEdit = { type: null, zoom: 1, x: 0, y: 0, sudut: 0, asas: 1 };
+        let icPenunjuk = new Map(), icCubit = null;
+
+        function icEditBuka(type) {
+            const img = (type === 'front') ? frontICImg : backICImg;
+            if (!img) { alert('Muat naik atau ambil gambar IC ' + (type === 'front' ? 'depan' : 'belakang') + ' dahulu.'); return; }
+            const cv = document.getElementById('ic-edit-canvas');
+            cv.width = IC_PX_W; cv.height = IC_PX_H;
+            icEdit = { type: type, zoom: 1, x: 0, y: 0, sudut: (icPutar[type] || 0), asas: 1 };
+            const t = document.getElementById('ic-edit-tajuk');
+            if (t) t.innerText = 'Laraskan IC ' + (type === 'front' ? 'Depan' : 'Belakang') + ' (kerangka saiz kad)';
+            const m = document.getElementById('ic-edit');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            icEditPasangInput();
+            icEditAuto();
+        }
+
+        function icEditTutup() {
+            const m = document.getElementById('ic-edit');
+            if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+        }
+
+        // saiz imej selepas diputar (lebar/tinggi bertukar bagi 90°/270°)
+        function icEditSaizImg(img, sudut) {
+            const w = img.naturalWidth || img.width || 1;
+            const h = img.naturalHeight || img.height || 1;
+            return (sudut === 90 || sudut === 270) ? { w: h, h: w } : { w: w, h: h };
+        }
+
+        // 'auto-isi': skala imej supaya MENUTUPI kerangka penuh (kad penuh dalam kerangka)
+        function icEditAuto() {
+            const img = (icEdit.type === 'front') ? frontICImg : backICImg;
+            if (!img) return;
+            const s = icEditSaizImg(img, icEdit.sudut);
+            icEdit.asas = Math.max(IC_PX_W / s.w, IC_PX_H / s.h);
+            icEdit.zoom = 1;
+            icEdit.x = IC_PX_W / 2; icEdit.y = IC_PX_H / 2;
+            icEditLukis();
+        }
+
+        function icEditReset() { icEditAuto(); }
+
+        function icEditLukis() {
+            const cv = document.getElementById('ic-edit-canvas');
+            if (!cv) return;
+            const ctx = cv.getContext('2d');
+            const img = (icEdit.type === 'front') ? frontICImg : backICImg;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(0, 0, cv.width, cv.height);
+            if (img) {
+                const s = icEditSaizImg(img, icEdit.sudut);          // saiz PAPARAN (bertukar bila putar)
+                const w0 = img.naturalWidth || img.width || 1;        // saiz ASAL imej
+                const h0 = img.naturalHeight || img.height || 1;
+                const skala = icEdit.asas * icEdit.zoom;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.save();
+                ctx.translate(icEdit.x, icEdit.y);
+                ctx.rotate(icEdit.sudut * Math.PI / 180);
+                // ⚠️ Selepas rotate(), lukis guna dimensi ASAL (w0/h0) — hasilnya di skrin = s.w × s.h.
+                // Jangan guna s.w/s.h di sini, jika tidak imej tersilap saiz (jalur kosong) bila sudut 90/270.
+                ctx.drawImage(img, -w0 * skala / 2, -h0 * skala / 2, w0 * skala, h0 * skala);
+                ctx.restore();
+            }
+            const z = document.getElementById('ic-edit-zoom');
+            if (z) z.value = icEdit.zoom;
+            const zl = document.getElementById('ic-edit-zoom-label');
+            if (zl) zl.innerText = Math.round(icEdit.zoom * 100) + '%';
+        }
+
+        function icEditZoom(d, mutlak) {
+            const baru = (mutlak != null) ? mutlak : (icEdit.zoom + d);
+            icEdit.zoom = Math.min(6, Math.max(0.3, baru));
+            icEditLukis();
+        }
+
+        function icEditPutar() {
+            icEdit.sudut = (icEdit.sudut + 90) % 360;
+            icEditAuto();
+        }
+
+        // seret (1 jari / tetikus) + cubit (2 jari) + roda tetikus
+        function icEditPasangInput() {
+            const cv = document.getElementById('ic-edit-canvas');
+            if (!cv || cv.dataset.pasang === '1') return;
+            cv.dataset.pasang = '1';
+            const nisbah = () => IC_PX_W / (cv.getBoundingClientRect().width || IC_PX_W);
+
+            cv.addEventListener('pointerdown', e => {
+                try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+                icPenunjuk.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (icPenunjuk.size === 2) {
+                    const p = [...icPenunjuk.values()];
+                    icCubit = { jarak: Math.max(1, Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y)), zoom: icEdit.zoom };
+                }
+            });
+
+            cv.addEventListener('pointermove', e => {
+                if (!icPenunjuk.has(e.pointerId)) return;
+                const lama = icPenunjuk.get(e.pointerId);
+                icPenunjuk.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (icPenunjuk.size === 2 && icCubit) {
+                    const p = [...icPenunjuk.values()];
+                    const jarak = Math.max(1, Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y));
+                    icEditZoom(0, icCubit.zoom * (jarak / icCubit.jarak));
+                    return;
+                }
+                const k = nisbah();
+                icEdit.x += (e.clientX - lama.x) * k;
+                icEdit.y += (e.clientY - lama.y) * k;
+                icEditLukis();
+            });
+
+            const lepas = e => { icPenunjuk.delete(e.pointerId); if (icPenunjuk.size < 2) icCubit = null; };
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => cv.addEventListener(ev, lepas));
+            cv.addEventListener('wheel', e => { e.preventDefault(); icEditZoom(e.deltaY < 0 ? 0.08 : -0.08); }, { passive: false });
+        }
+
+        // simpan hasil potongan (kanvas = kerangka saiz kad) untuk dimasukkan ke PDF
+        function icEditSimpan() {
+            const cv = document.getElementById('ic-edit-canvas');
+            const type = icEdit.type;
+            if (!cv || !type) return;
+            const data = cv.toDataURL('image/jpeg', 0.92);
+            icHasil[type] = data;
+            const prev = document.getElementById(type + '-preview');
+            if (prev) { prev.src = data; prev.style.transform = ''; }
+            document.getElementById(type + '-label').innerText =
+                (type === 'front' ? '✅ IC Depan siap (dipotong ikut saiz kad)' : '✅ IC Belakang siap (dipotong ikut saiz kad)');
+            const tip = document.getElementById('ic-tip');
+            if (tip) {
+                tip.className = 'text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2';
+                tip.innerText = '✅ Gambar sudah dipotong ikut kerangka saiz kad sebenar — akan dicetak tepat 85.6 × 54 mm.';
+            }
+            icKemasUI(type);
+            icEditTutup();
+        }
+
         async function generateICPhotostatPDF() {
             if (!frontICImg && !backICImg) {
                 alert('Sila muat naik sekurang-kurangnya satu gambar IC.');
@@ -4689,18 +4889,24 @@
 
                 const wmText = icTeksSelamat(document.getElementById('ic-wm-text').value) || 'UNTUK URUSAN RASMI SAHAJA';
 
-                async function drawICWithWatermark(img, yPos, title, putaran) {
+                async function drawICWithWatermark(img, yPos, title, putaran, hasil) {
                     page.drawText(title, { x: X0, y: yPos + ICH + 12, size: 11, font: font, color: rgb(0.15, 0.15, 0.15) });
 
                     if (img) {
-                        const embeddedImg = await pdfDoc.embedJpg(await imageToJpg(img, putaran));
-                        // 'contain': gambar TIDAK diherot walaupun nisbahnya bukan 1.585 (dipusat dalam bingkai kad)
-                        const dim = embeddedImg.scaleToFit(ICW, ICH);
-                        page.drawImage(embeddedImg, {
-                            x: X0 + (ICW - dim.width) / 2,
-                            y: yPos + (ICH - dim.height) / 2,
-                            width: dim.width, height: dim.height
-                        });
+                        if (hasil) {
+                            // SUDAH DIPOTONG ikut kerangka saiz kad (300 DPI) → isi bingkai TEPAT saiz kad sebenar
+                            const emb = await pdfDoc.embedJpg(hasil);
+                            page.drawImage(emb, { x: X0, y: yPos, width: ICW, height: ICH });
+                        } else {
+                            const embeddedImg = await pdfDoc.embedJpg(await imageToJpg(img, putaran));
+                            // 'contain': gambar TIDAK diherot walaupun nisbahnya bukan 1.585 (dipusat dalam bingkai kad)
+                            const dim = embeddedImg.scaleToFit(ICW, ICH);
+                            page.drawImage(embeddedImg, {
+                                x: X0 + (ICW - dim.width) / 2,
+                                y: yPos + (ICH - dim.height) / 2,
+                                width: dim.width, height: dim.height
+                            });
+                        }
 
                         // PALANG: 3 baris serong menutup seluruh muka kad
                         // Saiz fon menyesuaikan lebar kad supaya teks TIDAK terkeluar bingkai
@@ -4726,9 +4932,9 @@
 
                 // Kedua-dua kad sentiasa dilukis (depan atas, belakang bawah) supaya
                 // susun atur 1 muka seragam; bingkai kosong + nota jika sisi itu tiada.
-                await drawICWithWatermark(frontICImg, 580, 'Salinan MyKad (Bahagian Depan)', icPutar.front);
-                await drawICWithWatermark(backICImg, 357, 'Salinan MyKad (Bahagian Belakang)', icPutar.back);
-                page.drawText('Dijana dengan PDFEasy — pdf.payedlegacy.my', { x: X0, y: 60, size: 8, font: font, color: rgb(0.55, 0.55, 0.55) });
+                await drawICWithWatermark(frontICImg, 580, 'Salinan MyKad (Bahagian Depan)', icPutar.front, icHasil.front);
+                await drawICWithWatermark(backICImg, 357, 'Salinan MyKad (Bahagian Belakang)', icPutar.back, icHasil.back);
+                page.drawText('Saiz kad 85.6 × 54 mm (saiz sebenar) · Dijana dengan PDFEasy — pdf.payedlegacy.my', { x: X0, y: 60, size: 8, font: font, color: rgb(0.55, 0.55, 0.55) });
 
                 const pdfBytes = await pdfDoc.save();
                 const blob = new Blob([pdfBytes], { type: 'application/pdf' });

@@ -1464,7 +1464,7 @@
     </main>
 
     <!-- RUANG IKLAN (bawah halaman) — muncul hanya bila ID AdSense dikonfigurasi -->
-    <div id="ad-footer" class="hidden max-w-5xl mx-auto px-4 py-3">
+    <div id="ad-footer" class="hidden max-w-5xl mx-auto px-4 py-3" style="width:100%">
         <div class="relative bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
             <span class="absolute top-1.5 left-3 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Iklan</span>
             <button onclick="dismissAds()" title="Tutup iklan" class="absolute top-1 right-2 w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 text-xs font-black">✕</button>
@@ -6027,7 +6027,7 @@
         // (Biarkan kosong untuk Auto Ads sahaja — kotak tetap hanya muncul bila slot diisi.)
         // NOTA: satu slot = satu penempatan. Untuk kotak di ruang kerja & bawah,
         // buat unit iklan BAHARU di AdSense dan isi nombornya di sini.
-        const ADSENSE_SLOTS = { home: '2793138078', workspace: '', footer: '' };
+        const ADSENSE_SLOTS = { home: '2793138078', workspace: '1941032892', footer: '7109599094' };
 
         function initAds() {
             const boxes = ['ad-home', 'ad-workspace', 'ad-footer'];

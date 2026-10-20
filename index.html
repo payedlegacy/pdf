@@ -427,7 +427,13 @@
             #view-home [id^="tab-"] > span.absolute { top: -8px; right: 7px; }
             #ic-photostat-container > div > p { font-size: 11.5px; }
         }
-    </style>
+    
+        /* Slot iklan yang TIDAK diisi Google: sembunyikan supaya tiada kotak kosong */
+        ins.adsbygoogle[data-ad-status="unfilled"]{display:none !important}
+        #ad-home:has(ins.adsbygoogle[data-ad-status="unfilled"]),
+        #ad-workspace:has(ins.adsbygoogle[data-ad-status="unfilled"]),
+        #ad-footer:has(ins.adsbygoogle[data-ad-status="unfilled"]){display:none !important}
+</style>
 
     <!-- GOOGLE ADSENSE — Auto Ads (cara rasmi untuk halaman HTML biasa) -->
     <meta name="google-adsense-account" content="ca-pub-9978987699948390">
@@ -6026,6 +6032,7 @@
         function initAds() {
             const boxes = ['ad-home', 'ad-workspace', 'ad-footer'];
             const allowed = !ADSENSE_CLIENT ? false : (localStorage.getItem('pdfeasy_ad_dismiss') !== '1');
+            const sedia = [];
             boxes.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
@@ -6035,16 +6042,46 @@
                 el.classList.toggle('hidden', !boleh);
                 if (!boleh) { el.classList.remove('flex'); return; }
                 const ins = el.querySelector('ins.adsbygoogle');
-                if (ins) {
-                    // elak push berulang (punca ralat "all ins elements already have ads")
-                    if (ins.dataset.dipush === '1') { el.classList.add('flex'); return; }
-                    ins.setAttribute('data-ad-client', ADSENSE_CLIENT);
-                    ins.setAttribute('data-ad-slot', ADSENSE_SLOTS[key]);
-                    ins.dataset.dipush = '1';
-                }
-                el.classList.add('flex');
-                try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+                if (!ins) return;
+                // PENTING (20-10-2026): bekas JANGAN dijadikan flex. Flex mengecilkan
+                // anak kad kepada 26px -> <ins> jadi 0px -> Google balas
+                // "adsbygoogle.push() error: No slot size for availableWidth=0"
+                // dan TIADA permintaan iklan dihantar langsung. Guna blok biasa.
+                el.classList.remove('flex');
+                el.classList.add('block');
+                ins.setAttribute('data-ad-client', ADSENSE_CLIENT);
+                ins.setAttribute('data-ad-slot', ADSENSE_SLOTS[key]);
+                // elak push berulang (punca ralat "all ins elements already have ads")
+                if (ins.dataset.dipush !== '1') sedia.push(ins);
             });
+            // Push HANYA bila slot benar-benar ada lebar (susun atur siap).
+            function minta(ins, cubaan) {
+                if (!ins || ins.dataset.dipush === '1') return;
+                if (!ins.getBoundingClientRect().width) {
+                    if ((cubaan || 0) < 12) setTimeout(function () { minta(ins, (cubaan || 0) + 1); }, 400);
+                    return;
+                }
+                ins.dataset.dipush = '1';
+                try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+            }
+            if (!sedia.length) return;
+            if (!('IntersectionObserver' in window)) {
+                setTimeout(function () { sedia.forEach(function (i) { minta(i, 0); }); }, 800);
+                return;
+            }
+            const io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (en) {
+                    if (!en.isIntersecting) return;
+                    io.unobserve(en.target);
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            setTimeout(function () { minta(en.target.querySelector('ins.adsbygoogle'), 0); }, 150);
+                        });
+                    });
+                });
+            }, { rootMargin: '300px 0px', threshold: 0 });
+            // Perhati BEKAS kotak, bukan <ins> (ins kosong tinggi 0px tak pernah 'intersecting').
+            sedia.forEach(function (ins) { io.observe(ins.closest('#ad-home, #ad-workspace, #ad-footer') || ins); });
         }
 
         function dismissAds() {

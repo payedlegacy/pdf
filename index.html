@@ -433,6 +433,9 @@
         #ad-home:has(ins.adsbygoogle[data-ad-status="unfilled"]),
         #ad-workspace:has(ins.adsbygoogle[data-ad-status="unfilled"]),
         #ad-footer:has(ins.adsbygoogle[data-ad-status="unfilled"]){display:none !important}
+        /* Kotak iklan "ruang kerja" hanya kelihatan apabila alat dibuka (bukan di halaman utama).
+           #ad-workspace ialah adik-beradik #view-workspace dalam <main>. */
+        #view-workspace.hidden ~ #ad-workspace{display:none !important}
 </style>
 
     <!-- GOOGLE ADSENSE — Auto Ads (cara rasmi untuk halaman HTML biasa) -->

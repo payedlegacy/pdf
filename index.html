@@ -558,17 +558,22 @@
                 <div class="max-w-2xl mx-auto text-center space-y-4">
                     <div class="inline-flex p-3 bg-red-50 text-red-600 rounded-2xl text-3xl font-bold">🛡️</div>
                     <h3 class="font-black text-slate-900 text-xl">Salinan Dokumen + Palang Keselamatan (Depan &amp; Belakang)</h3>
-                    <p class="text-xs text-slate-600">Muat naik gambar <b>depan</b> dan <b>belakang</b> dokumen (Kad Pengenalan, Lesen Memandu, Pasport atau dokumen lain). Sistem susun auto pada saiz kad standard dalam 1 muka surat A4 — <b>kapsyen boleh disunting</b> dan saiz kad boleh dilaras.</p>
+                    <p class="text-xs text-slate-600">Muat naik gambar <b>JPG/PNG</b> atau <b>fail PDF</b> (depan dan belakang) dokumen — Kad Pengenalan, Lesen Memandu, Pasport atau dokumen lain. Sistem susun auto pada saiz kad standard dalam 1 muka surat A4 — <b>kapsyen boleh disunting</b> dan saiz kad boleh dilaras.</p>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left pt-2">
                         <div class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 flex flex-col items-center relative">
                             <div id="front-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Gambar IC Depan</div>
                             <img id="front-preview" class="hidden h-28 object-contain rounded-lg border shadow-sm" alt="Pratonton IC depan">
+                            <div id="front-pdf-bekas" class="hidden flex-wrap items-center justify-center gap-1.5 mt-2">
+                                <span class="text-[10px] font-extrabold text-slate-600">📄 Halaman PDF:</span>
+                                <select id="front-pdf-hlm" onchange="icPdfHalaman('front', this.value)" class="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-white text-slate-800"></select>
+                                <span id="front-pdf-jumlah" class="text-[10px] font-semibold text-slate-500"></span>
+                            </div>
                             <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
                                 <label for="ic-front-cam" class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Gambar</label>
                                 <input type="file" id="ic-front-cam" accept="image/*" capture="environment" class="sr-file" onchange="previewICImage(event, 'front')">
                                 <label for="ic-front-file" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Dari Galeri</label>
-                                <input type="file" id="ic-front-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'front')">
+                                <input type="file" id="ic-front-file" accept="image/*,application/pdf" class="sr-file" onchange="previewICImage(event, 'front')">
                             </div>
                             <div id="front-alat" class="hidden flex-wrap items-center justify-center gap-2 mt-2">
                                 <button type="button" id="front-laras" onclick="icEditBuka('front')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold rounded-lg shadow-sm">✂️ Laraskan (Saiz Kad)</button>
@@ -579,11 +584,16 @@
                         <div class="border-2 border-dashed border-slate-300 p-4 rounded-2xl bg-slate-50 flex flex-col items-center relative">
                             <div id="back-label" class="text-xs font-extrabold text-slate-700 mb-2">📁 Gambar IC Belakang</div>
                             <img id="back-preview" class="hidden h-28 object-contain rounded-lg border shadow-sm" alt="Pratonton IC belakang">
+                            <div id="back-pdf-bekas" class="hidden flex-wrap items-center justify-center gap-1.5 mt-2">
+                                <span class="text-[10px] font-extrabold text-slate-600">📄 Halaman PDF:</span>
+                                <select id="back-pdf-hlm" onchange="icPdfHalaman('back', this.value)" class="text-[11px] font-bold border border-slate-300 rounded-lg px-2 py-1 bg-white text-slate-800"></select>
+                                <span id="back-pdf-jumlah" class="text-[10px] font-semibold text-slate-500"></span>
+                            </div>
                             <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
                                 <label for="ic-back-cam" class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📷 Ambil Gambar</label>
                                 <input type="file" id="ic-back-cam" accept="image/*" capture="environment" class="sr-file" onchange="previewICImage(event, 'back')">
                                 <label for="ic-back-file" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[11px] font-extrabold rounded-xl shadow-sm cursor-pointer">📁 Dari Galeri</label>
-                                <input type="file" id="ic-back-file" accept="image/*" class="sr-file" onchange="previewICImage(event, 'back')">
+                                <input type="file" id="ic-back-file" accept="image/*,application/pdf" class="sr-file" onchange="previewICImage(event, 'back')">
                             </div>
                             <div id="back-alat" class="hidden flex-wrap items-center justify-center gap-2 mt-2">
                                 <button type="button" id="back-laras" onclick="icEditBuka('back')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold rounded-lg shadow-sm">✂️ Laraskan (Saiz Kad)</button>
@@ -592,7 +602,7 @@
                             </div>
                         </div>
                     </div>
-                    <p id="ic-tip" class="text-[11px] font-semibold text-slate-500">Tip: ambil gambar secara melintang, kad memenuhi bingkai, cahaya terang.</p>
+                    <p id="ic-tip" class="text-[11px] font-semibold text-slate-500">Tip: ambil gambar secara melintang, kad memenuhi bingkai, cahaya terang. Boleh juga muat naik <b>fail PDF</b> (skrol ke halaman yang betul).</p>
 
                     <!-- ============ (v35) KAPSYEN BOLEH DISUNTING + SKALA KAD + PRATONTON A4 ============ -->
                     <div class="space-y-3 text-left bg-white p-4 rounded-2xl border border-slate-200">
@@ -5128,10 +5138,18 @@
            triggerDownload / stamp / PDFLib (CDN).
            ===================================================================== */
         let frontICImg = null, backICImg = null;
+        let icPdfSumber = { front: null, back: null };   // (v40) PDF dimuat naik → {doc, hlm, jumlah, nama}
+
+        function adalahPdfFail(f) {
+            return !!f && (((f.type || '') === 'application/pdf') || /\.pdf$/i.test(f.name || ''));
+        }
 
         function previewICImage(e, type) {
             const f = e.target.files && e.target.files[0];
             if (!f) return;
+            if (adalahPdfFail(f)) { icMuatPdfIC(f, type); return; }
+            icPdfSumber[type] = null;                    // gambar biasa → sumber PDF lama dibuang
+            icPdfKemasUI(type);
             const r = new FileReader();
             r.onload = (ev) => {
                 const img = new Image();
@@ -5149,6 +5167,108 @@
                 img.src = ev.target.result;
             };
             r.readAsDataURL(f);
+        }
+
+        /* (v40) MUAT NAIK PDF — setiap sisi boleh pilih halaman PDF sendiri.
+           Halaman dirender dengan pdf.js → JPEG, jadi semua alat sedia ada
+           (laraskan/potong, palang, skala, JPG/PNG/PDF) terus berfungsi. */
+        async function icMuatPdfIC(f, type) {
+            if (typeof pdfjsLib === 'undefined') {
+                alert('Pelayar belum sedia membaca PDF. Muat semula halaman dan cuba lagi.');
+                return;
+            }
+            showLoading('Membaca fail PDF...');
+            try {
+                const buf = await f.arrayBuffer();
+                let doc;
+                try {
+                    doc = await pdfjsLib.getDocument({ data: buf }).promise;
+                } catch (err) {
+                    alert('Fail PDF tidak dapat dibaca' + (err && err.message ? ': ' + err.message : '.'));
+                    return;
+                }
+                const hlmAwal = (type === 'back' && doc.numPages > 1) ? 2 : 1;
+                icPdfSumber[type] = { doc: doc, hlm: hlmAwal, jumlah: doc.numPages, nama: f.name || 'dokumen.pdf' };
+                await icPdfHalaman(type, hlmAwal, true);
+                if (doc.numPages > 1) {
+                    const tip = document.getElementById('ic-tip');
+                    if (tip) {
+                        tip.className = 'text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2';
+                        tip.innerText = '📄 PDF dimuat (' + doc.numPages + ' halaman). Pilih halaman yang betul pada menu "Halaman PDF" di sisi berkenaan.';
+                    }
+                }
+            } catch (err) {
+                alert('Gagal membaca PDF: ' + (err && err.message ? err.message : err));
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function icPdfHalaman(type, n, senyap) {
+            const s = icPdfSumber[type];
+            if (!s) return false;
+            n = Math.max(1, Math.min(s.jumlah, parseInt(n, 10) || 1));
+            if (!senyap) showLoading('Menyediakan halaman ' + n + '...');
+            try {
+                const page = await s.doc.getPage(n);
+                const vp1 = page.getViewport({ scale: 1 });
+                const skala = Math.max(1, Math.min(3, 1800 / Math.max(1, vp1.width)));
+                const vp = page.getViewport({ scale: skala });
+                const cv = document.createElement('canvas');
+                cv.width = Math.round(vp.width);
+                cv.height = Math.round(vp.height);
+                const ctx = cv.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, cv.width, cv.height);
+                await page.render({ canvasContext: ctx, viewport: vp }).promise;
+                const data = cv.toDataURL('image/jpeg', 0.92);
+                const img = new Image();
+                await new Promise((res, rej) => {
+                    img.onload = res;
+                    img.onerror = () => rej(new Error('imej PDF gagal dijana'));
+                    img.src = data;
+                });
+                s.hlm = n;
+                if (type === 'front') { frontICImg = img; } else { backICImg = img; }
+                icPutar[type] = 0;
+                icHasil[type] = null;
+                icHasilImg[type] = null;
+                const prev = document.getElementById(type + '-preview');
+                if (prev) { prev.src = data; prev.style.transform = ''; }
+                const lbl = document.getElementById(type + '-label');
+                if (lbl) lbl.innerText = (type === 'front' ? '✅ IC Depan' : '✅ IC Belakang')
+                    + ' dari PDF (halaman ' + n + '/' + s.jumlah + ')';
+                icPdfKemasUI(type);
+                icKemasUI(type);
+                return true;
+            } catch (err) {
+                alert('Gagal menyediakan halaman PDF: ' + (err && err.message ? err.message : err));
+                return false;
+            } finally {
+                if (!senyap) hideLoading();
+            }
+        }
+
+        function icPdfKemasUI(type) {
+            const bekas = document.getElementById(type + '-pdf-bekas');
+            const sel = document.getElementById(type + '-pdf-hlm');
+            const jml = document.getElementById(type + '-pdf-jumlah');
+            const s = icPdfSumber[type];
+            if (!bekas || !sel) return;
+            if (!s || s.jumlah <= 1) {
+                bekas.classList.add('hidden');
+                bekas.classList.remove('flex');
+                sel.innerHTML = '';
+                if (jml) jml.textContent = '';
+                return;
+            }
+            bekas.classList.remove('hidden');
+            bekas.classList.add('flex');
+            let html = '';
+            for (let i = 1; i <= s.jumlah; i++) html += '<option value="' + i + '">' + i + '</option>';
+            sel.innerHTML = html;
+            sel.value = String(s.hlm || 1);
+            if (jml) jml.textContent = 'daripada ' + s.jumlah + ' halaman';
         }
 
         let icPutar = { front: 0, back: 0 };
@@ -5205,6 +5325,8 @@
 
         function buangICImage(type) {
             if (type === 'front') { frontICImg = null; } else { backICImg = null; }
+            icPdfSumber[type] = null;             // (v40) buang juga sumber PDF
+            icPdfKemasUI(type);
             icPutar[type] = 0;
             icHasil[type] = null;                 // buang juga hasil potongan
             icHasilImg[type] = null;

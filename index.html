@@ -357,7 +357,8 @@
         #ic-photostat-container [data-wm-huruf],
         #ic-photostat-container [data-wm-warna],
         #ic-photostat-container [data-wm-saiz],
-        #ic-photostat-container [data-wm-baris] {
+        #ic-photostat-container [data-wm-baris],
+        #ic-photostat-container [data-ic-fmt] {
             border-radius: 999px !important;
             border: 1px solid var(--pl-line) !important;
             background: #fff; color: #334155; min-height: 0;
@@ -368,9 +369,13 @@
         #ic-photostat-container [data-wm-huruf]:hover,
         #ic-photostat-container [data-wm-warna]:hover,
         #ic-photostat-container [data-wm-saiz]:hover,
-        #ic-photostat-container [data-wm-baris]:hover {
+        #ic-photostat-container [data-wm-baris]:hover,
+        #ic-photostat-container [data-ic-fmt]:hover {
             background: #f0fdf4; border-color: #86efac !important; color: #065f46; transform: translateY(-1px);
         }
+        /* pratonton A4 boleh diseret untuk mengalihkan palang (v39) */
+        #ic-a4-preview { touch-action: none; cursor: grab; }
+        #ic-a4-preview:active { cursor: grabbing; }
         #ic-wm-lanjut-btn { border-radius: 14px !important; transition: background .15s, border-color .15s; }
         #ic-wm-lanjut-btn:hover { background: #f8fafc; border-color: #cbd5e1 !important; }
 
@@ -630,7 +635,12 @@
                                 <button type="button" onclick="icPratonton()" class="text-[10px] font-extrabold text-emerald-700 bg-white border border-emerald-200 px-2 py-1 rounded-lg">🔄 Muat semula</button>
                             </div>
                             <canvas id="ic-a4-preview" width="744" height="1052" class="block mx-auto w-full max-w-[300px] h-auto bg-white rounded-lg border border-slate-200 shadow-sm"></canvas>
-                            <p class="text-[10px] font-semibold text-slate-500 text-center mt-2">Pratonton ini sama dengan hasil PDF — tukar kapsyen atau skala dan ia dikemas kini serta-merta.</p>
+                            <p class="text-[10px] font-semibold text-slate-500 text-center mt-2">Pratonton ini sama dengan hasil PDF/JPG — tukar kapsyen atau skala dan ia dikemas kini serta-merta. <b>🖐️ Seret dalam pratonton</b> untuk mengalihkan palang.</p>
+                            <div class="flex flex-wrap items-center justify-center gap-2 mt-2">
+                                <span class="text-[10px] font-extrabold text-slate-600">Kedudukan palang:</span>
+                                <span id="ic-palang-status" class="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">Auto</span>
+                                <button type="button" onclick="icWmAuto()" class="text-[10px] font-extrabold text-slate-700 bg-white border border-slate-300 px-2 py-1 rounded-lg">🎯 Auto (tengah kad)</button>
+                            </div>
                         </div>
                     </div>
 
@@ -686,6 +696,36 @@
                                 <button type="button" data-wm-baris="4" onclick="icWmSet('baris',4)" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-extrabold">Penuh (rata) — tutup nombor IC &amp; gambar</button>
                             </div>
 
+                            <!-- ============ (v39) KEDUDUKAN PALANG: AUTO ATAU MANUAL ============ -->
+                            <div class="bg-white border border-slate-200 rounded-2xl p-3 space-y-2.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="text-[11px] font-extrabold text-slate-800">📍 Laras tepat kedudukan palang</span>
+                                    <span class="text-[10px] font-semibold text-slate-500">seret pada pratonton A4 atau guna slaid</span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-[11px] font-extrabold text-slate-700" for="ic-wm-y">Naik / turun palang</label>
+                                        <span id="ic-wm-y-label" class="text-[11px] font-extrabold text-emerald-700">Tengah</span>
+                                    </div>
+                                    <input id="ic-wm-y" type="range" min="-20" max="25" step="1" value="0" class="w-full accent-emerald-600" oninput="icWmY(this.value)">
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-[11px] font-extrabold text-slate-700" for="ic-wm-x">Kiri / kanan palang</label>
+                                        <span id="ic-wm-x-label" class="text-[11px] font-extrabold text-emerald-700">Tengah</span>
+                                    </div>
+                                    <input id="ic-wm-x" type="range" min="-40" max="40" step="1" value="0" class="w-full accent-emerald-600" oninput="icWmX(this.value)">
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-[11px] font-extrabold text-slate-700" for="ic-wm-sudut">Kecondongan palang</label>
+                                        <span id="ic-wm-sudut-label" class="text-[11px] font-extrabold text-emerald-700">-15°</span>
+                                    </div>
+                                    <input id="ic-wm-sudut" type="range" min="-30" max="30" step="1" value="-15" class="w-full accent-emerald-600" oninput="icWmSudut(this.value)">
+                                </div>
+                                <p class="text-[10px] font-semibold text-slate-500">Had naik/turun dan kiri/kanan dikira daripada panjang teks, sudut &amp; bilangan baris — palang tidak akan menutup kapsyen kad sebelah.</p>
+                            </div>
+
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="ic-wm-tarikh" onchange="icWmSet('tarikh', this.checked)" class="w-4 h-4 accent-emerald-600">
                                 <span class="text-[11px] font-extrabold text-slate-800">Tambah tarikh hari ini pada palang (cth · 27/09/2026)</span>
@@ -694,9 +734,31 @@
                         </div>
                     </div>
 
-                    <button onclick="generateICPhotostatPDF()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-lg transition">
-                        📥 Jana &amp; Muat Turun PDF IC Photostat (1 Muka)
-                    </button>
+                    <!-- ============ (v39) FORMAT MUAT TURUN / KONGSI: PDF · JPG/JPEG · PNG ============ -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-3 space-y-3 text-left">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-xs font-extrabold text-slate-800">📥 Format simpan / kongsi</span>
+                            <span id="ic-fmt-info" class="text-[10px] font-bold text-slate-500">PDF · 1 muka A4</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" data-ic-fmt="pdf" onclick="icFmtSet('pdf')" class="px-2 py-2.5 rounded-xl border text-[11px] font-extrabold">📄 PDF</button>
+                            <button type="button" data-ic-fmt="jpg" onclick="icFmtSet('jpg')" class="px-2 py-2.5 rounded-xl border text-[11px] font-extrabold">🖼️ JPG</button>
+                            <button type="button" data-ic-fmt="png" onclick="icFmtSet('png')" class="px-2 py-2.5 rounded-xl border text-[11px] font-extrabold">🖼️ PNG</button>
+                        </div>
+                        <div id="ic-dpi-bekas">
+                            <label class="block text-[11px] font-extrabold text-slate-700 mb-1" for="ic-dpi">Kualiti imej (JPG / PNG)</label>
+                            <select id="ic-dpi" onchange="icDpiSet(this.value)" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-white text-slate-800 outline-none">
+                                <option value="150">150 DPI — fail kecil</option>
+                                <option value="200" selected>200 DPI — disyorkan untuk permohonan online</option>
+                                <option value="300">300 DPI — cetak / kualiti penuh</option>
+                            </select>
+                            <p class="text-[10px] font-semibold text-slate-500 mt-1">JPG/JPEG ialah format yang paling banyak diterima sistem permohonan online. PNG lebih tajam tetapi saiz fail lebih besar.</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <button type="button" id="ic-btn-muat" onclick="generateICPhotostat()" class="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-lg transition">📥 Muat Turun PDF</button>
+                            <button type="button" id="ic-btn-kongsi" onclick="kongsiICPhotostat()" class="py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-extrabold rounded-2xl text-sm shadow-lg transition">📤 Kongsi</button>
+                        </div>
+                    </div>
                     <p class="text-[11px] font-semibold text-slate-500">Kad dilukis pada saiz sebenar MyKad (85.6 × 54 mm) di atas A4 · pratonton muncul sebelum simpan · tekan <b>✂️ Laraskan</b> selepas ambil gambar untuk potong ikut kerangka saiz kad.</p>
                 </div>
             </div>
@@ -5387,20 +5449,15 @@
             return icTeksSelamat(teks || lalai);
         }
 
-        // Pratonton helaian A4 (sama geometri dengan PDF: pt, asal bawah-kiri)
-        function icPratonton() {
-            const cv = document.getElementById('ic-a4-preview');
-            if (!cv) return;
-            const A4W = 595.28, A4H = 841.89, MM = 2.834645669;
-            const P = cv.width / A4W;                        // px per pt
-            const ctx = cv.getContext('2d');
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.clearRect(0, 0, cv.width, cv.height);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, cv.width, cv.height);
-            ctx.save();
-            ctx.scale(P, P);
+        /* =====================================================================
+           (v39) LUKISAN HELAIAN A4 DIKONGSI: pratonton skrin + eksport JPG/PNG
+           Semua koordinat dalam pt (sama seperti PDF) — pemanggil menetapkan
+           ctx.scale() dahulu. Satu sumber geometri = pratonton & imej 100% sama.
+           ===================================================================== */
+        const IC_A4W = 595.28, IC_A4H = 841.89, IC_MM = 2.834645669;
 
+        function icHelaianLukis(ctx) {
+            const A4W = IC_A4W, A4H = IC_A4H, MM = IC_MM;
             const skala = Math.max(0.7, Math.min(1.3, (icSkala || 100) / 100));
             const ICW = 85.6 * MM * skala, ICH = 54 * MM * skala;
             const X0 = (A4W - ICW) / 2;
@@ -5432,28 +5489,26 @@
                         const dw = w0 * k, dh = h0 * k;
                         ctx.drawImage(im, X0 + (ICW - dw) / 2, top + (ICH - dh) / 2, dw, dh);
                     }
-                }
-                if (wm) {
-                    const warna = IC_WM_WARNA[icWm.warna] || IC_WM_WARNA.merah;
-                    ctx.fillStyle = 'rgba(' + Math.round(warna[0] * 255) + ',' + Math.round(warna[1] * 255) + ',' + Math.round(warna[2] * 255) + ',0.85)';
-                    const kos = Math.cos(15 * Math.PI / 180);
-                    let saiz = icWm.saiz;
-                    ctx.font = 'bold ' + saiz + 'px Arial, Helvetica, sans-serif';
-                    while (saiz > 6 && ctx.measureText(wm).width * kos > ICW * 0.85) {
-                        saiz -= 0.5;
+                    // PALANG hanya pada kad yang ADA gambar (sama seperti PDF)
+                    if (wm) {
+                        const warna = IC_WM_WARNA[icWm.warna] || IC_WM_WARNA.merah;
+                        ctx.fillStyle = 'rgba(' + Math.round(warna[0] * 255) + ',' + Math.round(warna[1] * 255) + ',' + Math.round(warna[2] * 255) + ',0.85)';
+                        let saiz = icWm.saiz;
                         ctx.font = 'bold ' + saiz + 'px Arial, Helvetica, sans-serif';
+                        while (saiz > 6 && ctx.measureText(wm).width * icPalangKos() > ICW * 0.85) {
+                            saiz -= 0.5;
+                            ctx.font = 'bold ' + saiz + 'px Arial, Helvetica, sans-serif';
+                        }
+                        const lebar = ctx.measureText(wm).width;
+                        // (v39) kedudukan palang: auto (tengah baris) ATAU manual (seret/slider)
+                        icPalangKedudukan(ICW, ICH, lebar, saiz).forEach(p => {
+                            ctx.save();
+                            ctx.translate(X0 + p.x, top + p.y);
+                            ctx.rotate((icWm.sudut || 0) * Math.PI / 180);
+                            ctx.fillText(wm, 0, 0);
+                            ctx.restore();
+                        });
                     }
-                    const lebar = ctx.measureText(wm).width;
-                    const posF = (icWm.baris === 1) ? [ICH * 0.5]
-                        : (icWm.baris === 4) ? [ICH * 0.2, ICH * 0.4, ICH * 0.6, ICH * 0.8]
-                            : [ICH * 0.35, ICH * 0.7];
-                    posF.forEach(f => {
-                        ctx.save();
-                        ctx.translate(X0 + Math.max(4, (ICW - lebar * kos) / 2), top + ICH - f + saiz * 0.35);
-                        ctx.rotate(-15 * Math.PI / 180);
-                        ctx.fillText(wm, 0, 0);
-                        ctx.restore();
-                    });
                 }
                 ctx.strokeStyle = '#c0c0c0';
                 ctx.lineWidth = 0.6;
@@ -5466,7 +5521,38 @@
                 ctx.font = '8px Arial, Helvetica, sans-serif';
                 ctx.fillText(kaki, X0, A4H - 60);
             }
+        }
+
+        // Pratonton helaian A4 (sama geometri dengan PDF: pt, asal bawah-kiri)
+        function icPratonton() {
+            const cv = document.getElementById('ic-a4-preview');
+            if (!cv) return;
+            const ctx = cv.getContext('2d');
+            const P = cv.width / IC_A4W;                        // px per pt
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, cv.width, cv.height);
+            ctx.save();
+            ctx.scale(P, P);
+            icHelaianLukis(ctx);
             ctx.restore();
+        }
+
+        // Helaian A4 pada resolusi cetak (dpi) → kanvas untuk eksport JPG/PNG
+        function icHelaianKanvas(dpi) {
+            const P = (Math.max(72, Math.min(400, parseInt(dpi, 10) || 200))) / 72;
+            const cv = document.createElement('canvas');
+            cv.width = Math.round(IC_A4W * P);
+            cv.height = Math.round(IC_A4H * P);
+            const ctx = cv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, cv.width, cv.height);
+            ctx.save();
+            ctx.scale(P, P);
+            icHelaianLukis(ctx);
+            ctx.restore();
+            return cv;
         }
 
         /* =====================================================================
@@ -5625,10 +5711,15 @@
         }
 
         /* =====================================================================
-           PILIHAN PALANG IC: hidup/mati, warna, saiz, bilangan baris
+           PILIHAN PALANG IC: hidup/mati, warna, saiz, baris
+           + (v39) KEDUDUKAN PALANG: auto (tengah kad) atau manual (seret / slider)
            ===================================================================== */
         const IC_WM_WARNA = { merah: [0.85, 0.08, 0.08], hitam: [0.10, 0.10, 0.12], biru: [0.10, 0.30, 0.72] };
-        let icWm = { on: true, warna: 'merah', saiz: 13, baris: 2, huruf: 'asal', tarikh: false };
+        const IC_PALANG_KEY = 'pdfeasy_ic_palang_v1';
+        const IC_SUDUT_LALAI = -15;                       // darjah (condong ke atas)
+        let icWm = { on: true, warna: 'merah', saiz: 13, baris: 2, huruf: 'asal', tarikh: false,
+                     offsetXPct: 0, offsetYPct: 0, sudut: IC_SUDUT_LALAI };
+        let icFmt = 'pdf', icDpi = 200;                   // (v39) format & kualiti simpan/kongsi
 
         function icWmChip(b, aktif) {
             b.style.background = aktif ? '#0f172a' : '#ffffff';
@@ -5636,12 +5727,159 @@
             b.style.borderColor = aktif ? '#0f172a' : '#cbd5e1';
         }
 
-        function icWmKemas() {
+        // kosinus sudut palang — untuk kira lebar teks selepas diputar
+        function icPalangKos() {
+            return Math.cos(Math.min(60, Math.abs(+icWm.sudut || 0)) * Math.PI / 180);
+        }
+
+        // pecahan kedudukan baris (0 = tepi bawah kad, 1 = tepi atas kad)
+        function icPalangFrac() {
+            return (icWm.baris === 1) ? [0.5]
+                : (icWm.baris === 4) ? [0.2, 0.4, 0.6, 0.8]
+                    : [0.35, 0.7];
+        }
+
+        // ukur teks palang (auto-susut saiz sama seperti lukisan) — untuk had kedudukan
+        let icUkurCtx = null;
+        function icPalangMetrik() {
+            const skala = Math.max(0.7, Math.min(1.3, (icSkala || 100) / 100));
+            const ICW = 85.6 * IC_MM * skala;
+            const wm = icWm.on ? icWmTeks() : '';
+            let saiz = +icWm.saiz || 13;
+            if (!wm) return { lebar: 0, saiz: saiz, ICW: ICW };
+            if (!icUkurCtx) icUkurCtx = document.createElement('canvas').getContext('2d');
+            const set = () => { icUkurCtx.font = 'bold ' + saiz + 'px Arial, Helvetica, sans-serif'; };
+            set();
+            while (saiz > 6 && icUkurCtx.measureText(wm).width * icPalangKos() > ICW * 0.85) {
+                saiz -= 0.5; set();
+            }
+            return { lebar: icUkurCtx.measureText(wm).width, saiz: saiz, ICW: ICW };
+        }
+
+        // had anjakan menegak (%) — dikira dari kotak teks BERPUTAR supaya palang
+        // tidak menutup kapsyen kad sebelah; sedikit limpahan dibenarkan (seperti lalai)
+        function icPalangHadY() {
+            const skala = Math.max(0.7, Math.min(1.3, (icSkala || 100) / 100));
+            const ICH = 54 * IC_MM * skala;
+            const m = icPalangMetrik();
+            const rad = Math.abs(+icWm.sudut || 0) * Math.PI / 180;
+            const rise = m.lebar * Math.sin(rad);          // tinggi teks berputar
+            const rend = m.saiz * Math.cos(rad);           // turun di bawah garis asas
+            const f = icPalangFrac();
+            const minF = Math.min.apply(null, f), maxF = Math.max.apply(null, f);
+            const lebihAtas = 8, lebihBawah = 10;          // pt limpahan dibenarkan
+            const bawah = rise - lebihAtas - (ICH - maxF * ICH + m.saiz * 0.35);
+            const atas = ICH + lebihBawah - rend - (ICH - minF * ICH + m.saiz * 0.35);
+            let min = Math.max(-45, Math.round(bawah / ICH * 100));
+            let max = Math.min(45, Math.round(atas / ICH * 100));
+            if (max < min) {                               // mustahil (teks sangat curam) → kekal dekat tengah
+                min = -6; max = 6;
+            } else if (max - min < 6) {
+                const mid = Math.round((min + max) / 2);
+                min = Math.max(-45, mid - 3); max = Math.min(45, mid + 3);
+            }
+            return { min: min, max: max };
+        }
+
+        // had anjakan mendatar (%) — teks boleh lebih sedikit keluar tepi kad (seperti cop)
+        function icPalangHadX() {
+            const m = icPalangMetrik();
+            if (!m.lebar) return { min: -40, max: 40 };
+            const lebarRot = m.lebar * icPalangKos();
+            const lega = Math.max(0, (m.ICW - lebarRot) / 2) + m.ICW * 0.12;
+            const had = Math.min(40, Math.round(lega / m.ICW * 100));
+            return { min: -had, max: had };
+        }
+
+        function icPalangManual() {
+            return Math.abs(+icWm.offsetXPct || 0) > 0.5
+                || Math.abs(+icWm.offsetYPct || 0) > 0.5
+                || Math.round(+icWm.sudut || 0) !== IC_SUDUT_LALAI;
+        }
+
+        // Kedudukan palang dalam koordinat HELAIAN (asal ATAS-KIRI, unit pt).
+        // x, y = jarak dari tepi kiri / tepi atas KAD (bukan helaian).
+        function icPalangKedudukan(ICW, ICH, lebarTeks, saiz) {
+            const lebarRot = lebarTeks * icPalangKos();
+            const hadY = icPalangHadY(), hadX = icPalangHadX();
+            const oy = Math.max(hadY.min, Math.min(hadY.max, +icWm.offsetYPct || 0));
+            const ox = Math.max(hadX.min, Math.min(hadX.max, +icWm.offsetXPct || 0));
+            const lebihX = ICW * 0.12;
+            const xMin = -lebihX;
+            const xMaks = ICW + lebihX - lebarRot;
+            let x = (ICW - lebarRot) / 2 + (ox / 100) * ICW;
+            x = (xMaks > xMin + 4) ? Math.max(xMin, Math.min(xMaks, x)) : Math.max(2, (ICW - lebarRot) / 2);
+            const dy = (oy / 100) * ICH;
+            return icPalangFrac().map(f => ({ x: x, y: ICH - f * ICH + dy + saiz * 0.35 }));
+        }
+
+        function icWmLabelY() {
+            const el = document.getElementById('ic-wm-y-label');
+            if (!el) return;
+            const v = Math.round(+icWm.offsetYPct || 0);
+            el.textContent = v === 0 ? 'Tengah' : (v < 0 ? 'Naik ' + Math.abs(v) + '%' : 'Turun ' + v + '%');
+        }
+
+        function icWmLabelX() {
+            const el = document.getElementById('ic-wm-x-label');
+            if (!el) return;
+            const v = Math.round(+icWm.offsetXPct || 0);
+            el.textContent = v === 0 ? 'Tengah' : (v < 0 ? 'Kiri ' + Math.abs(v) + '%' : 'Kanan ' + v + '%');
+        }
+
+        function icWmLabelSudut() {
+            const el = document.getElementById('ic-wm-sudut-label');
+            if (el) el.textContent = Math.round(+icWm.sudut || 0) + '\u00B0';
+        }
+
+        function icWmStatus() {
+            const el = document.getElementById('ic-palang-status');
+            if (!el) return;
+            const manual = icPalangManual();
+            el.textContent = manual ? 'Manual' : 'Auto';
+            el.className = manual
+                ? 'text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full'
+                : 'text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full';
+        }
+
+        // simpan / pulih pilihan pengguna (tanpa teks palang — elak teks lama terpakai)
+        function icWmSimpan() {
+            try {
+                localStorage.setItem(IC_PALANG_KEY, JSON.stringify({
+                    warna: icWm.warna, saiz: icWm.saiz, baris: icWm.baris, huruf: icWm.huruf,
+                    tarikh: !!icWm.tarikh, offsetXPct: +icWm.offsetXPct || 0,
+                    offsetYPct: +icWm.offsetYPct || 0, sudut: +icWm.sudut || 0,
+                    fmt: icFmt, dpi: icDpi
+                }));
+            } catch (e) { /* localStorage disekat — tidak kritikal */ }
+        }
+
+        function icWmMuat() {
+            try {
+                const s = JSON.parse(localStorage.getItem(IC_PALANG_KEY) || 'null');
+                if (!s) return false;
+                if (['merah', 'hitam', 'biru'].indexOf(s.warna) >= 0) icWm.warna = s.warna;
+                if ([10, 13, 17].indexOf(+s.saiz) >= 0) icWm.saiz = +s.saiz;
+                if ([1, 2, 4].indexOf(+s.baris) >= 0) icWm.baris = +s.baris;
+                if (['asal', 'besar', 'kecil'].indexOf(s.huruf) >= 0) icWm.huruf = s.huruf;
+                icWm.tarikh = !!s.tarikh;
+                icWm.offsetXPct = Math.max(-40, Math.min(40, +s.offsetXPct || 0));
+                icWm.offsetYPct = +s.offsetYPct || 0;
+                icWm.sudut = Math.max(-30, Math.min(30, Math.round(+s.sudut || 0)));
+                if (s.fmt === 'jpg' || s.fmt === 'png' || s.fmt === 'pdf') icFmt = s.fmt;
+                if ([150, 200, 300].indexOf(+s.dpi) >= 0) icDpi = +s.dpi;
+                return true;
+            } catch (e) { return false; }
+        }
+
+        function icWmKemas(simpan) {
             const opsi = document.getElementById('ic-wm-opsi');
             if (opsi) {
                 opsi.style.opacity = icWm.on ? '1' : '0.35';
                 opsi.style.pointerEvents = icWm.on ? '' : 'none';
             }
+            const cb = document.getElementById('ic-wm-on');
+            if (cb) cb.checked = !!icWm.on;
             const taipan = (document.getElementById('ic-wm-text') || {}).value || '';
             document.querySelectorAll('[data-wm-warna]').forEach(b => icWmChip(b, b.dataset.wmWarna === icWm.warna));
             document.querySelectorAll('[data-wm-saiz]').forEach(b => icWmChip(b, parseInt(b.dataset.wmSaiz, 10) === icWm.saiz));
@@ -5650,7 +5888,42 @@
             document.querySelectorAll('[data-wm-preset]').forEach(b => icWmChip(b, b.dataset.wmPreset === taipan));
             const cbT = document.getElementById('ic-wm-tarikh');
             if (cbT) cbT.checked = !!icWm.tarikh;
+
+            // (v39) slaid kedudukan palang — had ikut panjang teks, sudut & bilangan baris
+            const hadY = icPalangHadY(), hadX = icPalangHadX();
+            icWm.offsetYPct = Math.max(hadY.min, Math.min(hadY.max, +icWm.offsetYPct || 0));
+            icWm.offsetXPct = Math.max(hadX.min, Math.min(hadX.max, +icWm.offsetXPct || 0));
+            icWm.sudut = Math.max(-30, Math.min(30, Math.round(+icWm.sudut || 0)));
+            const sy = document.getElementById('ic-wm-y');
+            if (sy) { sy.min = hadY.min; sy.max = hadY.max; sy.value = Math.round(icWm.offsetYPct); }
+            const sx = document.getElementById('ic-wm-x');
+            if (sx) { sx.min = hadX.min; sx.max = hadX.max; sx.value = Math.round(icWm.offsetXPct); }
+            const ss = document.getElementById('ic-wm-sudut');
+            if (ss) ss.value = icWm.sudut;
+            icWmLabelY(); icWmLabelX(); icWmLabelSudut(); icWmStatus();
+
+            // (v39) format simpan / kongsi
+            document.querySelectorAll('[data-ic-fmt]').forEach(b => icWmChip(b, b.dataset.icFmt === icFmt));
+            const bMuat = document.getElementById('ic-btn-muat');
+            if (bMuat) bMuat.textContent = '\uD83D\uDCE5 Muat Turun ' + (icFmt === 'pdf' ? 'PDF' : (icFmt === 'png' ? 'PNG' : 'JPG'));
+            const info = document.getElementById('ic-fmt-info');
+            if (info) {
+                info.textContent = (icFmt === 'pdf')
+                    ? 'PDF \u00B7 1 muka A4'
+                    : (icFmt === 'png' ? 'PNG' : 'JPG') + ' \u00B7 ' + icDpi + ' DPI \u00B7 '
+                        + Math.round(IC_A4W * icDpi / 72) + ' \u00D7 ' + Math.round(IC_A4H * icDpi / 72) + ' px';
+            }
+            const dBekas = document.getElementById('ic-dpi-bekas');
+            if (dBekas) {
+                const guna = icFmt !== 'pdf';
+                dBekas.style.opacity = guna ? '1' : '0.45';
+                dBekas.style.pointerEvents = guna ? '' : 'none';
+            }
+            const sel = document.getElementById('ic-dpi');
+            if (sel) sel.value = String(icDpi);
+
             try { icPratonton(); } catch (e) { /* pratonton belum sedia */ }
+            if (simpan !== false) icWmSimpan();
         }
 
         function icWmSet(kunci, nilai) {
@@ -5664,6 +5937,73 @@
                 icWm[kunci] = nilai;
             }
             icWmKemas();
+        }
+
+        // (v39) AUTO: palang kembali ke tengah kad, sudut lalai -15°
+        function icWmAuto() {
+            icWm.offsetXPct = 0; icWm.offsetYPct = 0; icWm.sudut = IC_SUDUT_LALAI;
+            icWmKemas();
+        }
+
+        function icWmY(v) { icWm.offsetYPct = +v || 0; icWmKemas(); }
+        function icWmX(v) { icWm.offsetXPct = +v || 0; icWmKemas(); }
+        function icWmSudut(v) { icWm.sudut = +v || 0; icWmKemas(); }
+
+        // (v39) FORMAT: pdf | jpg | png
+        function icFmtSet(f) {
+            icFmt = (f === 'jpg' || f === 'png') ? f : 'pdf';
+            icWmKemas();
+        }
+
+        function icDpiSet(v) {
+            icDpi = Math.max(72, Math.min(400, parseInt(v, 10) || 200));
+            icWmKemas();
+        }
+
+        /* (v39) SERET PALANG PADA PRATONTON A4 — manual, ikut kesukaan pengguna */
+        function icPalangSeretPasang() {
+            const cv = document.getElementById('ic-a4-preview');
+            if (!cv || cv.dataset.seret === '1') return false;
+            cv.dataset.seret = '1';
+            let aktif = false, px = 0, py = 0;
+            const ptDari = (e) => {
+                const r = cv.getBoundingClientRect();
+                return {
+                    x: (e.clientX - r.left) * (IC_A4W / Math.max(1, r.width)),
+                    y: (e.clientY - r.top) * (IC_A4H / Math.max(1, r.height))
+                };
+            };
+            const kadSaiz = () => {
+                const skala = Math.max(0.7, Math.min(1.3, (icSkala || 100) / 100));
+                return { w: 85.6 * IC_MM * skala, h: 54 * IC_MM * skala };
+            };
+            cv.addEventListener('pointerdown', (e) => {
+                if (!icWm.on) return;
+                aktif = true;
+                try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ujian tanpa penunjuk sebenar */ }
+                const p = ptDari(e); px = p.x; py = p.y;
+                cv.style.cursor = 'grabbing';
+                try { e.preventDefault(); } catch (err) {}
+            });
+            cv.addEventListener('pointermove', (e) => {
+                if (!aktif) return;
+                const p = ptDari(e);
+                const d = kadSaiz();
+                icWm.offsetXPct = (+icWm.offsetXPct || 0) + ((p.x - px) / d.w) * 100;
+                icWm.offsetYPct = (+icWm.offsetYPct || 0) + ((p.y - py) / d.h) * 100;
+                px = p.x; py = p.y;
+                icWmKemas(false);                       // kemas kini pratonton tanpa tulis localStorage
+                try { e.preventDefault(); } catch (err) {}
+            });
+            const tamat = () => {
+                if (!aktif) return;
+                aktif = false;
+                cv.style.cursor = icWm.on ? 'grab' : 'default';
+                icWmSimpan();
+            };
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => cv.addEventListener(ev, tamat));
+            cv.style.cursor = icWm.on ? 'grab' : 'default';
+            return true;
         }
 
         // preset teks — SAMA format dengan alat "Palang IC/ID" sedia ada
@@ -5687,109 +6027,160 @@
             return s;
         }
 
+        try { icWmMuat(); } catch (e) { /* tiada pilihan tersimpan */ }
         try { icWmKemas(); } catch (e) { /* UI belum sedia — tidak kritikal */ }
 
-        async function generateICPhotostatPDF() {
-            if (!frontICImg && !backICImg) {
-                alert('Sila muat naik sekurang-kurangnya satu gambar IC.');
-                return;
-            }
-            showLoading('Menyusun IC Photostat...');
-            try {
-                const { PDFDocument, rgb, degrees, StandardFonts } = PDFLib;
-                const A4W = 595.28, A4H = 841.89;               // A4 dalam pt
-                const MM = 2.834645669;                         // 1 mm = 2.8346 pt
-                // (v35) SKALA kad pada helaian A4 — dikawal slider 70–130% (pratonton A4)
-                const skalaKad = Math.max(0.7, Math.min(1.3, (icSkala || 100) / 100));
-                const ICW = 85.6 * MM * skalaKad, ICH = 54 * MM * skalaKad;   // saiz kad × skala
-                const X0 = (A4W - ICW) / 2;                     // tengah halaman
-                // (v35) KAPSYEN BOLEH DISUNTING — bukan lagi hardcoded "MyKad"
-                const capDepan = icKapsyen('front'), capBelakang = icKapsyen('back'), capKaki = icKapsyen('kaki');
+        // (v39) Jana PDF 1 muka A4 → bait. Dipakai oleh pilihan PDF & fungsi lain.
+        async function icPdfBytes() {
+            const { PDFDocument, rgb, degrees, StandardFonts } = PDFLib;
+            const A4W = IC_A4W, A4H = IC_A4H;               // A4 dalam pt
+            const MM = IC_MM;                               // 1 mm = 2.8346 pt
+            // (v35) SKALA kad pada helaian A4 — dikawal slider 70–130% (pratonton A4)
+            const skalaKad = Math.max(0.7, Math.min(1.3, (icSkala || 100) / 100));
+            const ICW = 85.6 * MM * skalaKad, ICH = 54 * MM * skalaKad;   // saiz kad × skala
+            const X0 = (A4W - ICW) / 2;                     // tengah halaman
+            // (v35) KAPSYEN BOLEH DISUNTING — bukan lagi hardcoded "MyKad"
+            const capDepan = icKapsyen('front'), capBelakang = icKapsyen('back'), capKaki = icKapsyen('kaki');
 
-                const pdfDoc = await PDFDocument.create();
-                const page = pdfDoc.addPage([A4W, A4H]);
-                page.drawRectangle({ x: 0, y: 0, width: A4W, height: A4H, color: rgb(1, 1, 1) });
+            const pdfDoc = await PDFDocument.create();
+            const page = pdfDoc.addPage([A4W, A4H]);
+            page.drawRectangle({ x: 0, y: 0, width: A4W, height: A4H, color: rgb(1, 1, 1) });
 
-                // drawText WAJIB ada 'font' — jika tiada, pdf-lib akan ralat
-                const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+            // drawText WAJIB ada 'font' — jika tiada, pdf-lib akan ralat
+            const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-                // teks palang akhir: ikut huruf pilihan pengguna (asal/besar/kecil) + tarikh (jika dipilih)
-                const wmText = icWmTeks();
+            // teks palang akhir: ikut huruf pilihan pengguna (asal/besar/kecil) + tarikh (jika dipilih)
+            const wmText = icWmTeks();
 
-                async function drawICWithWatermark(img, yPos, title, putaran, hasil) {
-                    // (v35) tajuk boleh disunting → potong jika terlalu panjang supaya tak terkeluar halaman
-                    let tajuk = String(title || '');
-                    while (tajuk.length > 6 && font.widthOfTextAtSize(tajuk, 11) > A4W - 80) tajuk = tajuk.slice(0, -2);
-                    if (tajuk) page.drawText(tajuk, { x: X0, y: yPos + ICH + 12, size: 11, font: font, color: rgb(0.15, 0.15, 0.15) });
+            async function drawICWithWatermark(img, yPos, title, putaran, hasil) {
+                // (v35) tajuk boleh disunting → potong jika terlalu panjang supaya tak terkeluar halaman
+                let tajuk = String(title || '');
+                while (tajuk.length > 6 && font.widthOfTextAtSize(tajuk, 11) > A4W - 80) tajuk = tajuk.slice(0, -2);
+                if (tajuk) page.drawText(tajuk, { x: X0, y: yPos + ICH + 12, size: 11, font: font, color: rgb(0.15, 0.15, 0.15) });
 
-                    if (img) {
-                        if (hasil) {
-                            // SUDAH DIPOTONG ikut kerangka saiz kad (300 DPI) → isi bingkai TEPAT saiz kad sebenar
-                            const emb = await pdfDoc.embedJpg(hasil);
-                            page.drawImage(emb, { x: X0, y: yPos, width: ICW, height: ICH });
-                        } else {
-                            const embeddedImg = await pdfDoc.embedJpg(await imageToJpg(img, putaran));
-                            // 'contain': gambar TIDAK diherot walaupun nisbahnya bukan 1.585 (dipusat dalam bingkai kad)
-                            const dim = embeddedImg.scaleToFit(ICW, ICH);
-                            page.drawImage(embeddedImg, {
-                                x: X0 + (ICW - dim.width) / 2,
-                                y: yPos + (ICH - dim.height) / 2,
-                                width: dim.width, height: dim.height
-                            });
-                        }
-
-                        // PALANG (pilihan): boleh dimatikan, warna & saiz & bilangan baris pilihan pengguna
-                        if (icWm.on) {
-                            const warna = IC_WM_WARNA[icWm.warna] || IC_WM_WARNA.merah;
-                            const kos = Math.cos(15 * Math.PI / 180);
-                            // saiz fon menyesuaikan lebar kad supaya teks TIDAK terkeluar bingkai
-                            let saiz = icWm.saiz;
-                            while (saiz > 6 && font.widthOfTextAtSize(wmText, saiz) * kos > ICW * 0.85) saiz -= 0.5;
-                            const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
-                            // 1 = tengah · 2 = dua baris · 4 = PENUH (rata, tutup nombor IC & gambar)
-                            const kedudukan = (icWm.baris === 1) ? [ICH * 0.5]
-                                : (icWm.baris === 4) ? [ICH * 0.2, ICH * 0.4, ICH * 0.6, ICH * 0.8]
-                                : [ICH * 0.35, ICH * 0.7];
-                            kedudukan.forEach(f => {
-                                page.drawText(wmText, {
-                                    x: X0 + Math.max(4, (ICW - lebarTeks * kos) / 2),
-                                    y: yPos + f - saiz * 0.35,
-                                    size: saiz, font: font,
-                                    color: rgb(warna[0], warna[1], warna[2]),
-                                    rotate: degrees(-15), opacity: 0.85
-                                });
-                            });
-                        }
+                if (img) {
+                    if (hasil) {
+                        // SUDAH DIPOTONG ikut kerangka saiz kad (300 DPI) → isi bingkai TEPAT saiz kad sebenar
+                        const emb = await pdfDoc.embedJpg(hasil);
+                        page.drawImage(emb, { x: X0, y: yPos, width: ICW, height: ICH });
                     } else {
-                        page.drawText('(gambar belum dimuat naik)', { x: X0 + 6, y: yPos + ICH / 2, size: 9, font: font, color: rgb(0.65, 0.65, 0.65) });
+                        const embeddedImg = await pdfDoc.embedJpg(await imageToJpg(img, putaran));
+                        // 'contain': gambar TIDAK diherot walaupun nisbahnya bukan 1.585 (dipusat dalam bingkai kad)
+                        const dim = embeddedImg.scaleToFit(ICW, ICH);
+                        page.drawImage(embeddedImg, {
+                            x: X0 + (ICW - dim.width) / 2,
+                            y: yPos + (ICH - dim.height) / 2,
+                            width: dim.width, height: dim.height
+                        });
                     }
 
-                    // bingkai kad (garis potong)
-                    page.drawRectangle({ x: X0, y: yPos, width: ICW, height: ICH, borderColor: rgb(0.75, 0.75, 0.75), borderWidth: 0.5 });
+                    // PALANG (pilihan): boleh dimatikan, warna/saiz/baris + kedudukan auto/manual
+                    if (icWm.on) {
+                        const warna = IC_WM_WARNA[icWm.warna] || IC_WM_WARNA.merah;
+                        // saiz fon menyesuaikan lebar kad supaya teks TIDAK terkeluar bingkai
+                        let saiz = icWm.saiz;
+                        while (saiz > 6 && font.widthOfTextAtSize(wmText, saiz) * icPalangKos() > ICW * 0.85) saiz -= 0.5;
+                        const lebarTeks = font.widthOfTextAtSize(wmText, saiz);
+                        // (v39) kedudukan dikongsi dengan pratonton: icPalangKedudukan()
+                        // (koordinat helaian asal ATAS-KIRI) → tukar ke PDF (asal bawah-kiri)
+                        icPalangKedudukan(ICW, ICH, lebarTeks, saiz).forEach(p => {
+                            page.drawText(wmText, {
+                                x: X0 + p.x,
+                                y: yPos + ICH - p.y,
+                                size: saiz, font: font,
+                                color: rgb(warna[0], warna[1], warna[2]),
+                                rotate: degrees(-(icWm.sudut || 0)), opacity: 0.85   // pdf-lib: + = menaik (padan dgn pratonton)
+                            });
+                        });
+                    }
+                } else {
+                    page.drawText('(gambar belum dimuat naik)', { x: X0 + 6, y: yPos + ICH / 2, size: 9, font: font, color: rgb(0.65, 0.65, 0.65) });
                 }
 
-                // Kedua-dua kad sentiasa dilukis (depan atas, belakang bawah) supaya
-                // susun atur 1 muka seragam; bingkai kosong + nota jika sisi itu tiada.
-                // (v35) kedudukan kad kekal walaupun skala berubah: jurang 70pt antara kad
-                const yDepan = 580;
-                const yBelakang = yDepan - 70 - ICH;
-                await drawICWithWatermark(frontICImg, yDepan, capDepan, icPutar.front, icHasil.front);
-                await drawICWithWatermark(backICImg, yBelakang, capBelakang, icPutar.back, icHasil.back);
-                if (capKaki) {
-                    let kaki = capKaki;
-                    while (kaki.length > 8 && font.widthOfTextAtSize(kaki, 8) > A4W - 80) kaki = kaki.slice(0, -2);
-                    page.drawText(kaki, { x: X0, y: 60, size: 8, font: font, color: rgb(0.55, 0.55, 0.55) });
-                }
+                // bingkai kad (garis potong)
+                page.drawRectangle({ x: X0, y: yPos, width: ICW, height: ICH, borderColor: rgb(0.75, 0.75, 0.75), borderWidth: 0.5 });
+            }
 
-                const pdfBytes = await pdfDoc.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            // Kedua-dua kad sentiasa dilukis (depan atas, belakang bawah) supaya
+            // susun atur 1 muka seragam; bingkai kosong + nota jika sisi itu tiada.
+            // (v35) kedudukan kad kekal walaupun skala berubah: jurang 70pt antara kad
+            const yDepan = 580;
+            const yBelakang = yDepan - 70 - ICH;
+            await drawICWithWatermark(frontICImg, yDepan, capDepan, icPutar.front, icHasil.front);
+            await drawICWithWatermark(backICImg, yBelakang, capBelakang, icPutar.back, icHasil.back);
+            if (capKaki) {
+                let kaki = capKaki;
+                while (kaki.length > 8 && font.widthOfTextAtSize(kaki, 8) > A4W - 80) kaki = kaki.slice(0, -2);
+                page.drawText(kaki, { x: X0, y: 60, size: 8, font: font, color: rgb(0.55, 0.55, 0.55) });
+            }
+
+            return await pdfDoc.save();
+        }
+
+        // (v39) Hasil ikut format pilihan: PDF / JPG (JPEG) / PNG
+        async function icHasilBlob() {
+            if (!frontICImg && !backICImg) {
+                alert('Sila muat naik sekurang-kurangnya satu gambar IC.');
+                return null;
+            }
+            const asas = 'PDFEasy_Salinan_' + (IC_DOK_LABEL[icDokSemasa] || 'Dokumen') + '_' + stamp();
+            if (icFmt === 'pdf') {
+                const bytes = await icPdfBytes();
+                return { blob: new Blob([bytes], { type: 'application/pdf' }), name: asas + '.pdf' };
+            }
+            const cv = icHelaianKanvas(icDpi);
+            const mime = (icFmt === 'png') ? 'image/png' : 'image/jpeg';
+            const blob = await new Promise(res => {
+                try { cv.toBlob(res, mime, 0.92); } catch (e) { res(null); }
+            });
+            if (!blob) { alert('Gagal menjana imej. Cuba format PNG atau kualiti lain.'); return null; }
+            return { blob: blob, name: asas + '.' + (icFmt === 'png' ? 'png' : 'jpg') };
+        }
+
+        // Butang utama: format dipilih pengguna (PDF / JPG / PNG)
+        async function generateICPhotostat() {
+            showLoading('Menyusun salinan dokumen...');
+            try {
+                const out = await icHasilBlob();
+                if (!out) return;
                 // guna aliran sedia ada: pratonton dahulu → panel Simpan/Kongsi (kukuh di telefon)
-                triggerDownload(blob, 'PDFEasy_Salinan_' + (IC_DOK_LABEL[icDokSemasa] || 'Dokumen') + '_' + stamp() + '.pdf');
+                triggerDownload(out.blob, out.name);
             } catch (err) {
-                alert('Gagal menjana PDF: ' + (err && err.message ? err.message : err));
+                alert('Gagal menjana fail: ' + (err && err.message ? err.message : err));
             } finally {
                 hideLoading();
             }
+        }
+
+        // (v39) Kongsi terus (Web Share di telefon; di komputer → panel pratonton + WhatsApp/Telegram)
+        async function kongsiICPhotostat() {
+            showLoading('Menyediakan fail untuk dikongsi...');
+            try {
+                const out = await icHasilBlob();
+                if (!out) return;
+                let boleh = false;
+                try {
+                    const fail = new File([out.blob], out.name, { type: out.blob.type || 'application/octet-stream' });
+                    boleh = !!(navigator.canShare && navigator.canShare({ files: [fail] }));
+                    if (boleh) {
+                        try { await navigator.share({ files: [fail], title: 'Salinan dokumen (PDFEasy)' }); return; }
+                        catch (err) { if (err && err.name === 'AbortError') return; }
+                    }
+                } catch (e) { boleh = false; }
+                triggerDownload(out.blob, out.name);
+            } catch (err) {
+                alert('Gagal berkongsi: ' + (err && err.message ? err.message : err));
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Nama lama dikekalkan (ujian & pautan sedia ada) — sentiasa PDF
+        async function generateICPhotostatPDF() {
+            const fmtAsal = icFmt;
+            icFmt = 'pdf';
+            try { await generateICPhotostat(); }
+            finally { icFmt = fmtAsal; }
         }
 
         // ---- Seret & lepas fail, tampal (paste), dan PWA ----
@@ -5823,6 +6214,8 @@
             // (v35) pratonton A4 + tanda preset IC aktif pada muat pertama
             try { icPratonton(); } catch (e) { }
             try { const _b = document.querySelector('[data-dok="ic"]'); if (_b) icWmChip(_b, true); } catch (e) { }
+            // (v39) seret palang pada pratonton A4 (manual) + kawalan kedudukan
+            try { icPalangSeretPasang(); } catch (e) { }
         });
 
         /* =====================================================================
